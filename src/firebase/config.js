@@ -1,7 +1,7 @@
-import firebase from 'firebase/compat/app'
-import 'firebase/compat/auth'
-import 'firebase/compat/firestore'
-import 'firebase/compat/storage'
+import firebase from "firebase/app";
+import "firebase/auth";
+import "firebase/firestore";
+import "firebase/storage";
 
 const firebaseConfig = {
   apiKey: "AIzaSyA9A5kUQyN5cN9ASLjII8xrD3SfOyCwTJk",
@@ -13,14 +13,14 @@ const firebaseConfig = {
 };
 
 //init firebase
-firebase.initializeApp(firebaseConfig)
+firebase.initializeApp(firebaseConfig);
 
 //init services
-const projectFirestore = firebase.firestore()
-const projectAuth = firebase.auth()
-const projectStorage = firebase.storage()
+const projectFirestore = firebase.firestore();
+const projectAuth = firebase.auth();
+const projectStorage = firebase.storage();
 
 //timestamp
-const timestamp = firebase.firestore.Timestamp
+const timestamp = firebase.firestore.Timestamp;
 
-export { projectAuth, projectFirestore, projectStorage, timestamp }
+export { projectAuth, projectFirestore, projectStorage, timestamp };
