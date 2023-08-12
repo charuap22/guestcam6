@@ -75,6 +75,7 @@ const CreateEvent = () => {
   const history = useHistory();
 
   const handleSubmit = async (e) => {
+    setIsPending(true);
     e.preventDefault();
 
     const createdBy = {
@@ -89,30 +90,38 @@ const CreateEvent = () => {
       const uploadPath = `featureImages/${user.uid}/${thumbnail.name}`;
       const img = await projectStorage.ref(uploadPath).put(thumbnail);
       const imageURL = await img.ref.getDownloadURL();
-      setFeatureImage(imageURL);
-    }
-    const event = {
-      id:uuidv4(),
-      category,
-      dateOfEvent: timestamp.fromDate(new Date(dateOfEvent)),
-      eventName,
-      eventPageHeader,
-      featureImage: featureImage,
-      location,
-      noOfGuests,
-      shareGuestbook,
-      sharePictures,
-      siteCloses: timestamp.fromDate(end),
-      siteStatus: "Live",
-      welcomeMessage,
-      guestList: guestList,
-      createdBy,
-      adminId,
-      guestBook: [],
-    };
-    await addDocument(event);
-    if (!response.error) {
-      history.push("/");
+      //setFeatureImage(imageURL);
+      const event = {
+        id: uuidv4(),
+        category,
+        dateOfEvent: timestamp.fromDate(new Date(dateOfEvent)),
+        eventName,
+        eventPageHeader,
+        featureImage: imageURL,
+        location,
+        noOfGuests,
+        shareGuestbook,
+        sharePictures,
+        siteCloses: timestamp.fromDate(end),
+        siteStatus: "Live",
+        welcomeMessage,
+        guestList: guestList,
+        createdBy,
+        adminId,
+        guestBook: [],
+      };
+      await addDocument(event);
+      setIsPending(false);
+      console.log("created event", response);
+      if (!response.error) {
+        history.push("/");
+      } else {
+        setError(response.error);
+        return;
+      }
+    } else {
+      setError("Please select an event image");
+      return
     }
   };
   // Create a reference to the hidden file input element

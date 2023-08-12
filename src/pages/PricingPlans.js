@@ -65,7 +65,7 @@ const PricingPlans = ({ plans }) => {
 
     console.log(plan.id);
     try {
-      // update online status
+      // update plan subscription
       const documentRef = projectFirestore.collection("users").doc(user.uid);
       await documentRef.update({ planId: plan.id });
       changePlan(plan);

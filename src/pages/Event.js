@@ -101,7 +101,7 @@ const Event = () => {
             <Box my={"40px"} align={"center"}>
               <QRCode
                 id="123456"
-                value={"https://guestcam2-6896a.web.app/guest_login/" + id}
+                value={"https://guestcam3-8cb1f.web.app/guest_login/" + id}
               />
             </Box>
 
