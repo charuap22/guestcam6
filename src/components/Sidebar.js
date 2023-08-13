@@ -53,11 +53,6 @@ import { useHistory, Link } from "react-router-dom";
 import { useEvent } from "../hooks/useEvent";
 import { useUserInfo } from "../hooks/useUserInfo";
 
-// interface LinkItemProps {
-//   name: string;
-//   icon: IconType;
-// }
-
 const LinkItems = [
   { name: "Home", icon: FiHome, url: "/" },
   { name: "Create Event", icon: FiTrendingUp, url: "/newevent" },
@@ -77,7 +72,6 @@ export default function Sidebar({ role, children }) {
         display={{ base: "none", md: "block" }}
       />
       <Drawer
-        autoFocus={false}
         isOpen={isOpen}
         placement="left"
         onClose={onClose}
@@ -86,17 +80,16 @@ export default function Sidebar({ role, children }) {
         size="full"
       >
         <DrawerContent>
-          <SidebarContent
-            role={role}
-            eventId={eventId}
-            onClose={() => onClose}
-            display={{ base: "none", md: "block" }}
-            
-          />
+          <SidebarContent role={role} eventId={eventId} onClose={onClose} />
         </DrawerContent>
       </Drawer>
       {/* mobilenav */}
-      <MobileNav onOpen={onOpen} />
+      <MobileNav
+        role={role}
+        eventId={eventId}
+        display={{ base: "flex", md: "none" }}
+        onOpen={onOpen}
+      />
       <Box ml={{ base: 0, md: 60 }} p="4">
         {children}
       </Box>
@@ -104,16 +97,7 @@ export default function Sidebar({ role, children }) {
   );
 }
 
-// interface SidebarProps extends BoxProps {
-//   onClose: () => void;
-// }
-
 const SidebarContent = ({ eventId, role, onClose, ...rest }) => {
-  // const { user } = useAuthContext();
-  // console.log(user);
-  // if (!user) {
-  //   return <div className="loading">Loading...</div>;
-  // }
   const LinkItems_Guest = [
     {
       name: "Home",
@@ -166,6 +150,7 @@ const SidebarContent = ({ eventId, role, onClose, ...rest }) => {
         </Text>
         <CloseButton display={{ base: "flex", md: "none" }} onClick={onClose} />
       </Flex>
+
       <br></br>
       <AvatarInfo />
       <br></br>
@@ -175,7 +160,6 @@ const SidebarContent = ({ eventId, role, onClose, ...rest }) => {
             {link.name}
           </NavItem>
         ))}
-
       {role == "Admin" && eventId && (
         <>
           <Box position="relative" padding="5">
@@ -198,7 +182,6 @@ const SidebarContent = ({ eventId, role, onClose, ...rest }) => {
             {link.name}
           </NavItem>
         ))}
-
       {!isPending && role == "Admin" && (
         <NavItem url={"#"} onClick={logout}>
           Logout
@@ -213,10 +196,6 @@ const SidebarContent = ({ eventId, role, onClose, ...rest }) => {
   );
 };
 
-// interface NavItemProps extends FlexProps {
-//   icon: IconType;
-//   children: ReactText;
-// }
 const NavItem = ({ icon, children, url, ...rest }) => {
   return (
     <Link
@@ -253,13 +232,46 @@ const NavItem = ({ icon, children, url, ...rest }) => {
   );
 };
 
-// interface MobileProps extends FlexProps {
-//   onOpen: () => void;
-// }
-const MobileNav = ({ onOpen, ...rest }) => {
+const MobileNav = ({ role, eventId, onOpen, ...rest }) => {
+    const LinkItems_Guest = [
+      {
+        name: "Home",
+        icon: FiHome,
+        url: `/Guest/Dashboard/${eventId}`,
+      },
+      {
+        name: "Photos",
+        icon: FiTrendingUp,
+        url: `/gallery/${role}/${eventId}`,
+      },
+      { name: "Videos", icon: FiSettings, url: `/videos/${role}/${eventId}` },
+      {
+        name: "GuestBook",
+        icon: FiSettings,
+        url: `/guestbook/${role}/${eventId}`,
+      },
+    ];
+    const EventLinks = [
+      {
+        name: "Photos",
+        icon: FiTrendingUp,
+        url: `/gallery/${role}/${eventId}`,
+      },
+      {
+        name: "Videos",
+        icon: FiSettings,
+        url: `/videos/${role}/${eventId}`,
+      },
+      {
+        name: "GuestBook",
+        icon: FiSettings,
+        url: `/guestbook/${role}/${eventId}`,
+      },
+    ];
+    const { logout, isPending } = useLogout();
+
   return (
     <Flex
-      display={{ base: "flex", md: "none" }}
       ml={{ base: 0, md: 60 }}
       px={{ base: 4, md: 24 }}
       height="20"
@@ -268,30 +280,96 @@ const MobileNav = ({ onOpen, ...rest }) => {
       borderBottomWidth="1px"
       borderBottomColor={useColorModeValue("gray.200", "gray.700")}
       justifyContent="flex-start"
+      {...rest}
     >
-      <IconButton
+      {/* <IconButton
         variant="outline"
         onClick={onOpen}
         aria-label="open menu"
         icon={<FiMenu />}
-      />
+      /> */}
 
-      <Text fontSize="2xl" fontFamily="monospace" fontWeight="bold">
+      <HStack spacing={{ base: "0", md: "6" }}>
+        <Flex alignItems={"center"}>
+          <Menu>
+            <MenuButton
+              py={2}
+              transition="all 0.3s"
+              _focus={{ boxShadow: "none" }}
+            >
+              <IconButton
+                size="lg"
+                variant="ghost"
+                aria-label="open menu"
+                icon={<FiMenu />}
+              />
+            </MenuButton>
+            <MenuList
+              bg={useColorModeValue("white", "gray.900")}
+              borderColor={useColorModeValue("gray.200", "gray.700")}
+            >
+              <AvatarInfo />
+              
+              <MenuDivider />
+             
+
+              {role == "Admin" &&
+                LinkItems.map((link) => (
+                  <MenuItem key={link.name}>
+                    <Link
+                      to={link.url}
+                      style={{ textDecoration: "none" }}
+                      _focus={{ boxShadow: "none" }}
+                    >
+                      {link.name}
+                    </Link>
+ 
+                  </MenuItem>
+                ))}
+              {role == "Admin" && eventId && (
+                <>
+                  <Box position="relative" padding="5">
+                    <Divider />
+                    <AbsoluteCenter   px="4">
+                      Event
+                    </AbsoluteCenter>
+                  </Box>
+                  {EventLinks.map((link) => (
+                    <NavItem key={link.name} icon={link.icon} url={link.url}>
+                      {link.name}
+                    </NavItem>
+                  ))}
+                </>
+              )}
+              {role == "Guest" &&
+                eventId &&
+                LinkItems_Guest.map((link) => (
+                   <MenuItem key={link.name}>
+                    <Link
+                      to={link.url}
+                      style={{ textDecoration: "none" }}
+                      _focus={{ boxShadow: "none" }}
+                    >
+                      {link.name}
+                    </Link>
+ 
+                  </MenuItem>
+            
+                ))}
+              {!isPending && role == "Admin" && (
+            
+                 <MenuItem  onClick={logout}>Logout </MenuItem>
+              )}
+              {isPending && (
+                 <MenuItem >Logging out... </MenuItem>
+              )}
+            </MenuList>
+          </Menu>
+        </Flex>
+      </HStack>
+      <Text fontSize="2xl" ml="8" fontFamily="monospace" fontWeight="bold">
         GUESTCAM
       </Text>
-
-      <ToastContainer
-        position="top-center"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-      />
     </Flex>
   );
 };

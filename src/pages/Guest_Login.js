@@ -258,6 +258,12 @@ export default function Guest_Login() {
                         _placeholder={{
                           color: "gray.500",
                         }}
+                        width={{
+                          base: "100%",
+                          sm: "250px",
+                          md: "100%",
+                          lg: "100%",
+                        }}
                       />
                     </FormControl>
                   </Box>
