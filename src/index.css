@@ -54,6 +54,7 @@
 .img-container {
     display: inline-block;
         position: relative;
+        overflow: hidden;
 }
 .img-container .gallery-caption-left, .img-container .gallery-caption-right{
     display: none;

@@ -8,9 +8,7 @@ import { useAuthContext } from "../hooks/useAuthContext";
 import { v4 as uuidv4 } from "uuid";
 import { useParams } from "react-router-dom";
 import { useEvent } from "./useEvent";
-
-// import { uploadBytesResumable } from "firebase/storage";
-
+//import { ref, getDownloadURL, uploadBytesResumable } from "firebase/storage";
 const useGalleryUpload = (file, user, fileType) => {
   //this will be guest user or admin
   //
@@ -27,7 +25,8 @@ const useGalleryUpload = (file, user, fileType) => {
     const storageRef = projectStorage.ref(uploadPath);
     const collectionRef = projectFirestore.collection(fileType);
 
-    (storageRef, file).on(
+    // uploadBytesResumable(storageRef, file).on(
+    storageRef.put(file).on(
       "state_changed",
       (snap) => {
         let percentage = (snap.bytesTransferred / snap.totalBytes) * 100;

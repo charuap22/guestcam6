@@ -86,8 +86,8 @@ const ImageGrid = ({ images, setSelectedImg }) => {
                   formatDistanceToNow(doc.createdAt.toDate(),{addSuffix: true})
                   //moment(new Date(doc.createdAt.seconds * 1000)).fromNow()
                 }
-                opacity={0.8}
-                _hover={{ opacity: 1 }}
+                 sx={{transform: `scale(1)`,	transition: `.3s ease-in-out`}}
+                _hover={{ transform: `scale(1.3)` }}
                 onClick={() => setSelectedImg(doc.url)}
               />
             </Box>
