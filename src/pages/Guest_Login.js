@@ -259,9 +259,9 @@ export default function Guest_Login() {
                           color: "gray.500",
                         }}
                         width={{
-                          base: "100%",
-                          sm: "250px",
-                          md: "100%",
+                          base: "200px",
+                          sm: "200px",
+                          md: "100%", 
                           lg: "100%",
                         }}
                       />

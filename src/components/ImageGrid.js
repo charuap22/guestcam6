@@ -82,7 +82,7 @@ const ImageGrid = ({ images, setSelectedImg }) => {
                 )}
                 alt={
                   "by: " +
-                  doc.createdByName +
+                  doc.createdByName + " " +
                   formatDistanceToNow(doc.createdAt.toDate(),{addSuffix: true})
                   //moment(new Date(doc.createdAt.seconds * 1000)).fromNow()
                 }
