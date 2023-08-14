@@ -52,6 +52,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { useHistory, Link } from "react-router-dom";
 import { useEvent } from "../hooks/useEvent";
 import { useUserInfo } from "../hooks/useUserInfo";
+import { AvatarInfo_Mobile } from "./AvatarInfo_Mobile";
 
 const LinkItems = [
   { name: "Home", icon: FiHome, url: "/" },
@@ -233,143 +234,225 @@ const NavItem = ({ icon, children, url, ...rest }) => {
 };
 
 const MobileNav = ({ role, eventId, onOpen, ...rest }) => {
-    const LinkItems_Guest = [
-      {
-        name: "Home",
-        icon: FiHome,
-        url: `/Guest/Dashboard/${eventId}`,
-      },
-      {
-        name: "Photos",
-        icon: FiTrendingUp,
-        url: `/gallery/${role}/${eventId}`,
-      },
-      { name: "Videos", icon: FiSettings, url: `/videos/${role}/${eventId}` },
-      {
-        name: "GuestBook",
-        icon: FiSettings,
-        url: `/guestbook/${role}/${eventId}`,
-      },
-    ];
-    const EventLinks = [
-      {
-        name: "Photos",
-        icon: FiTrendingUp,
-        url: `/gallery/${role}/${eventId}`,
-      },
-      {
-        name: "Videos",
-        icon: FiSettings,
-        url: `/videos/${role}/${eventId}`,
-      },
-      {
-        name: "GuestBook",
-        icon: FiSettings,
-        url: `/guestbook/${role}/${eventId}`,
-      },
-    ];
-    const { logout, isPending } = useLogout();
-
+  const LinkItems_Guest = [
+    {
+      name: "Home",
+      icon: FiHome,
+      url: `/Guest/Dashboard/${eventId}`,
+    },
+    {
+      name: "Photos",
+      icon: FiTrendingUp,
+      url: `/gallery/${role}/${eventId}`,
+    },
+    { name: "Videos", icon: FiSettings, url: `/videos/${role}/${eventId}` },
+    {
+      name: "GuestBook",
+      icon: FiSettings,
+      url: `/guestbook/${role}/${eventId}`,
+    },
+  ];
+  const EventLinks = [
+    {
+      name: "Photos",
+      icon: FiTrendingUp,
+      url: `/gallery/${role}/${eventId}`,
+    },
+    {
+      name: "Videos",
+      icon: FiSettings,
+      url: `/videos/${role}/${eventId}`,
+    },
+    {
+      name: "GuestBook",
+      icon: FiSettings,
+      url: `/guestbook/${role}/${eventId}`,
+    },
+  ];
+  const { logout, isPending } = useLogout();
+  let history = useHistory();
   return (
-    <Flex
-      ml={{ base: 0, md: 60 }}
-      px={{ base: 4, md: 24 }}
-      height="20"
-      alignItems="center"
-      bg={useColorModeValue("white", "gray.900")}
-      borderBottomWidth="1px"
-      borderBottomColor={useColorModeValue("gray.200", "gray.700")}
-      justifyContent="flex-start"
-      {...rest}
-    >
-      {/* <IconButton
+    <>
+      <Flex
+        ml={{ base: 0, md: 60 }}
+        px={{ base: 4, md: 24 }}
+        height="20"
+        alignItems="center"
+        bg={useColorModeValue("white", "gray.900")}
+        borderBottomWidth="1px"
+        borderBottomColor={"gray.200"}
+        justifyContent="flex-start"
+        {...rest}
+      >
+        {/* <IconButton
         variant="outline"
         onClick={onOpen}
         aria-label="open menu"
         icon={<FiMenu />}
       /> */}
 
-      <HStack spacing={{ base: "0", md: "6" }}>
-        <Flex alignItems={"center"}>
-          <Menu>
-            <MenuButton
-              py={2}
-              transition="all 0.3s"
-              _focus={{ boxShadow: "none" }}
-            >
-              <IconButton
-                size="lg"
-                variant="ghost"
-                aria-label="open menu"
-                icon={<FiMenu />}
-              />
-            </MenuButton>
-            <MenuList
-              bg={useColorModeValue("white", "gray.900")}
-              borderColor={useColorModeValue("gray.200", "gray.700")}
-            >
-              <AvatarInfo />
-              
-              <MenuDivider />
-             
+        <Text
+          fontSize="2xl"
+          ml="8"
+          mr="8"
+          fontFamily="monospace"
+          fontWeight="bold"
+        >
+          GUESTCAM
+        </Text>
+        <AvatarInfo_Mobile></AvatarInfo_Mobile>
+      </Flex>
 
-              {role == "Admin" &&
-                LinkItems.map((link) => (
-                  <MenuItem key={link.name}>
-                    <Link
-                      to={link.url}
-                      style={{ textDecoration: "none" }}
-                      _focus={{ boxShadow: "none" }}
-                    >
-                      {link.name}
-                    </Link>
- 
-                  </MenuItem>
-                ))}
-              {role == "Admin" && eventId && (
-                <>
-                  <Box position="relative" padding="5">
-                    <Divider />
-                    <AbsoluteCenter   px="4">
-                      Event
-                    </AbsoluteCenter>
-                  </Box>
-                  {EventLinks.map((link) => (
-                    <NavItem key={link.name} icon={link.icon} url={link.url}>
-                      {link.name}
-                    </NavItem>
-                  ))}
-                </>
-              )}
-              {role == "Guest" &&
-                eventId &&
-                LinkItems_Guest.map((link) => (
-                   <MenuItem key={link.name}>
-                    <Link
-                      to={link.url}
-                      style={{ textDecoration: "none" }}
-                      _focus={{ boxShadow: "none" }}
-                    >
-                      {link.name}
-                    </Link>
- 
-                  </MenuItem>
-            
-                ))}
-              {!isPending && role == "Admin" && (
-            
-                 <MenuItem  onClick={logout}>Logout </MenuItem>
-              )}
-              {isPending && (
-                 <MenuItem >Logging out... </MenuItem>
-              )}
-            </MenuList>
-          </Menu>
+      {role == "Admin" && (
+        <Flex
+          ml={{ base: 0, md: 60 }}
+          px={{ base: 4, md: 24 }}
+          height="20"
+          alignItems="center"
+          bg={"white"}
+          borderBottomWidth="1px"
+          borderBottomColor={"gray.200"}
+          justifyContent="flex-start"
+          {...rest}
+        >
+          <Button
+            px={2}
+            mx={2}
+            bg={"#151f21"}
+            color={"white"}
+            rounded={"md"}
+            width={"100%"}
+            _hover={{
+              transform: "translateY(-2px)",
+              boxShadow: "lg",
+            }}
+            onClick={() => {
+               history.push(`/`);
+            }}
+          >
+            Home
+          </Button>
+          <Button
+            px={2}
+            mx={2}
+            bg={"#151f21"}
+            color={"white"}
+            rounded={"md"}
+            width={"100%"}
+            _hover={{
+              transform: "translateY(-2px)",
+              boxShadow: "lg",
+            }}
+            onClick={() => {
+              history.push(`/newevent`);
+            }}
+          >
+             New Event
+          </Button>
+          <Button
+            px={2}
+            mx={2}
+            bg={"#151f21"}
+            color={"white"}
+            rounded={"md"}
+            width={"100%"}
+            _hover={{
+              transform: "translateY(-2px)",
+              boxShadow: "lg",
+            }}
+            onClick={() => {
+              history.push(`/`);
+            }}
+          >
+            Settings
+          </Button>
         </Flex>
-      </HStack>
-      <Text fontSize="2xl" ml="8" fontFamily="monospace" fontWeight="bold">
-        GUESTCAM
-      </Text>
-    </Flex>
+      )}
+      {(role == "Admin" || role == "Guest") && eventId && (
+        <Flex
+          ml={{ base: 0, md: 60 }}
+          px={{ base: 4, md: 24 }}
+          height="20"
+          alignItems="center"
+          bg={"white"}
+          borderBottomWidth="1px"
+          borderBottomColor={"gray.200"}
+          justifyContent="flex-start"
+          {...rest}
+        >
+          {role == "Guest" && (
+            <Button
+              px={2}
+              mx={2}
+              bg={"#151f21"}
+              color={"white"}
+              rounded={"md"}
+              width={"100%"}
+              _hover={{
+                transform: "translateY(-2px)",
+                boxShadow: "lg",
+              }}
+              onClick={() => {
+                history.push(`/Guest/Dashboard/${eventId}`);
+              }}
+            >
+              Welcome
+            </Button>
+          )}
+          <Button
+            px={2}
+            mx={2}
+            bg={"#151f21"}
+            color={"white"}
+            rounded={"md"}
+            width={"100%"}
+            _hover={{
+              transform: "translateY(-2px)",
+              boxShadow: "lg",
+            }}
+            onClick={() => {
+               history.push(`/gallery/${role}/${eventId}`);
+            }}
+          >
+            Photos
+          </Button>
+          <Button
+            px={2}
+            mx={2}
+            bg={"#151f21"}
+            color={"white"}
+            rounded={"md"}
+            width={"100%"}
+            _hover={{
+              transform: "translateY(-2px)",
+              boxShadow: "lg",
+            }}
+            onClick={() => {
+              history.push(`/videos/${role}/${eventId}`);
+            }}
+          >
+            Videos
+          </Button>
+          <Button
+            px={2}
+            mx={2}
+            bg={"#151f21"}
+            color={"white"}
+            rounded={"md"}
+            width={"100%"}
+            _hover={{
+              transform: "translateY(-2px)",
+              boxShadow: "lg",
+            }}
+            onClick={() => {
+              history.push(`/guestbook/${role}/${eventId}`);
+            }}
+          >
+            Guestbook
+          </Button>
+        </Flex>
+      )}
+   
+    </>
   );
 };

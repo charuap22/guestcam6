@@ -27,6 +27,7 @@ import { useAuthContext } from "../hooks/useAuthContext";
 import { useDocument } from "../hooks/useDocument";
  
 import { useHistory } from "react-router-dom";
+import { wrap } from "framer-motion";
 const Dashboard = () => {
   const { isOpen, onToggle } = useDisclosure();
  
@@ -96,7 +97,7 @@ const Dashboard = () => {
                     history.push(`/pricing`);
                   }}
                 >
-                  <Button colorScheme="gray">Upgrade Package</Button>
+                  <Button py={2} colorScheme="gray" sx={{'text-wrap': `wrap`}}>Upgrade Package</Button>
                 </Box>
               </SimpleGrid>
             </Box>

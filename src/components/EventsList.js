@@ -88,7 +88,7 @@ export default function EventsList({ events }) {
             <Text color={"gray.500"}>{event.welcomeMessage}</Text>
             <Stack
               spacing={{ base: 4, sm: 6 }}
-              direction={{ base: "column", sm: "row" }}
+              direction={{ base: "row", sm: "column", md: "row", lg: "row" }}
             >
               <Box
                 size={"lg"}

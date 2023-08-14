@@ -188,10 +188,10 @@ const Event = () => {
                 <Progress colorScheme="yellow" size="md" value={20} />
               </Box>
             </Box>
-            <SimpleGrid columns={{ base: 3, sm: 2, lg: 3 }} spacing={2}>
+            <SimpleGrid columns={{ base: 2, sm: 2, lg: 2, xl: 3 }} spacing={2}>
               <Box>
                 <Button
-                  px={8}
+                  px={2}
                   bg={"#151f21"}
                   color={"white"}
                   rounded={"md"}
@@ -211,7 +211,7 @@ const Event = () => {
               </Box>
               <Box>
                 <Button
-                  px={8}
+                  px={2}
                   bg={"#151f21"}
                   color={"white"}
                   rounded={"md"}
@@ -229,7 +229,7 @@ const Event = () => {
               </Box>
               <Box>
                 <Button
-                  px={8}
+                  px={2}
                   bg={"#151f21"}
                   color={"white"}
                   width={"100%"}
@@ -248,7 +248,7 @@ const Event = () => {
               <Box>
                 {" "}
                 <Button
-                  px={8}
+                  px={2}
                   bg={"#151f21"}
                   color={"white"}
                   rounded={"md"}
@@ -265,7 +265,7 @@ const Event = () => {
               <Box>
                 {" "}
                 <Button
-                  px={8}
+                  px={2}
                   bg={"#151f21"}
                   color={"white"}
                   rounded={"md"}
@@ -281,7 +281,7 @@ const Event = () => {
               <Box>
                 {" "}
                 <Button
-                  px={8}
+                  px={2}
                   bg={"#151f21"}
                   color={"white"}
                   rounded={"md"}
@@ -297,7 +297,7 @@ const Event = () => {
               </Box>
               <Box>
                 <Button
-                  px={8}
+                  px={2}
                   bg={"#151f21"}
                   color={"white"}
                   rounded={"md"}
