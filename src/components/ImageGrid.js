@@ -5,8 +5,8 @@ import { projectFirestore } from "../firebase/config";
 import { motion } from "framer-motion";
 import { Avatar, Box, Image, Link, Stack, Text } from "@chakra-ui/react";
 import { SRLWrapper } from "simple-react-lightbox";
-import moment from "moment";
-import formatDistanceToNow from "date-fns/formatDistanceToNow";
+
+import ImageCard from "./ImageCard";
 
 const ImageGrid = ({ images, setSelectedImg }) => {
   console.log("images", images);
@@ -17,7 +17,6 @@ const ImageGrid = ({ images, setSelectedImg }) => {
   const handleClick = (id) => {
     projectFirestore.collection("gallery").doc(id).delete();
   };
- 
 
   return (
     // <div className="img-grid">
@@ -52,45 +51,12 @@ const ImageGrid = ({ images, setSelectedImg }) => {
           mx="auto"
           sx={{ columnCount: [1, 2, 3], columnGap: "8px" }}
         >
-          {images.map((doc) => (
-            <Box className="img-container" key={doc.id}>
-              <Box className="gallery-caption-left">
-                <h1>
-                  by: <b>{doc.createdByName}</b>{" "}
-                </h1>
-              </Box>
-              <Box className="gallery-caption-right">
-                <h1>
-                  <i>
-                    {moment(new Date(doc.createdAt.seconds * 1000)).fromNow()}
-                  </i>
-                </h1>
-              </Box>
-
-              <Image
-                // as={motion.img}
-                // initial={{ opacity: 0 }}
-                // animate={{ opacity: 1 }}
-                // transition={{ delay: 1 }}
-                w="100%"
-                key={doc.id}
-                mb={2}
-                d="inline-block"
-                src={doc.url.replace(
-                  "https://firebasestorage.googleapis.com/v0/b/guestcam2-6896a.appspot.com",
-                  "https://ik.imagekit.io/ppvclyjfm/"
-                )}
-                alt={
-                  "by: " +
-                  doc.createdByName + " " +
-                  formatDistanceToNow(doc.createdAt.toDate(),{addSuffix: true})
-                  //moment(new Date(doc.createdAt.seconds * 1000)).fromNow()
-                }
-                 sx={{transform: `scale(1)`,	transition: `.3s ease-in-out`}}
-                _hover={{ transform: `scale(1.3)` }}
-                onClick={() => setSelectedImg(doc.url)}
-              />
-            </Box>
+          {images.map((image) => (
+            <ImageCard
+              key={image.id}
+              image={image}
+              setSelectedImg={setSelectedImg}
+            ></ImageCard>
           ))}
         </Box>
       </SRLWrapper>

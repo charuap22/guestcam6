@@ -1,32 +1,39 @@
-import { useEffect, useState } from "react"
-import { projectFirestore } from "../firebase/config"
+import { useEffect, useState } from "react";
+import { projectFirestore } from "../firebase/config";
 
 export const useDocument = (collection, id) => {
-  const [document, setDocument] = useState(null)
-  const [error, setError] = useState(null)
+  const [document, setDocument] = useState(null);
+  const [error, setError] = useState(null);
+  const [isPending, setIsPending] = useState(false);
 
   // realtime document data
   useEffect(() => {
-    const ref = projectFirestore.collection(collection).doc(id)
+    setIsPending(true);
 
-    const unsubscribe = ref.onSnapshot(snapshot => {
-      // need to make sure the doc exists & has data
-      if(snapshot.data()) {
-        setDocument({...snapshot.data(), id: snapshot.id})
-        setError(null)
+    const ref = projectFirestore.collection(collection).doc(id);
+
+    const unsubscribe = ref.onSnapshot(
+      (snapshot) => {
+        // need to make sure the doc exists & has data
+        if (snapshot.data()) {
+          setDocument({ ...snapshot.data(), id: snapshot.id });
+          setError(null);
+          setIsPending(false);
+        } else {
+          setError("No such document exists");
+          setIsPending(false);
+        }
+      },
+      (err) => {
+        console.log(err.message);
+        setError("failed to get document");
+        setIsPending(false);
       }
-      else {
-        setError('No such document exists')
-      }
-    }, err => {
-      console.log(err.message)
-      setError('failed to get document')
-    })
+    );
 
     // unsubscribe on unmount
-    return () => unsubscribe()
+    return () => unsubscribe();
+  }, [collection, id]);
 
-  }, [collection, id])
-
-  return { document, error }
-}
+  return { document, error, isPending };
+};
