@@ -34,7 +34,6 @@ const Gallery = () => {
   const [data, setData] = useState(null);
   //const [isPending, setIsPending] = useState(false);
   //const [error, setError] = useState(false);
-  const [selectedImg, setSelectedImg] = useState(null);
 
   const {
     documents: images,
@@ -73,7 +72,6 @@ const Gallery = () => {
         >
           Gallery
         </chakra.h1>
-        
       </Box>
       {error && <p className="error">{error}</p>}
 
@@ -91,7 +89,7 @@ const Gallery = () => {
         {isPending &&
           skeletons.map((skeleton) => <ImageCardSkeleton key={skeleton} />)}
       </SimpleGrid>
-      {images && <ImageGrid images={images} setSelectedImg={setSelectedImg} />}
+      {images && <ImageGrid images={images} />}
     </Flex>
   );
 };
