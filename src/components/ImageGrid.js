@@ -4,6 +4,7 @@ import { projectFirestore } from "../firebase/config";
 // import Trashcan from "../assets/trashcan.svg";
 import { motion } from "framer-motion";
 import {
+  Alert,
   Avatar,
   Box,
   Button,
@@ -16,9 +17,31 @@ import { SRLWrapper } from "simple-react-lightbox";
 
 import ImageCard, { downloadImage } from "./ImageCard";
 
-const ImageGrid = ({ images }) => {
-  const [showSelectOption, setShowSelectOption] = useState(false);
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
+import firebase from "firebase/app";
+import { AlertIcon } from "chakra-ui-ionicons";
 
+export const downloadFolderAsZip = async (folderPath) => {
+  const jszip = new JSZip();
+  const folderRef = firebase.storage().ref(folderPath);
+  const files = (await folderRef.listAll()).items;
+  const downloadUrls = await Promise.all(
+    files.map(({ name }) => folderRef.child(name).getDownloadURL())
+  );
+  const downloadedFiles = await Promise.all(
+    downloadUrls.map((url) => fetch(url).then((res) => res.blob()))
+  );
+  downloadedFiles.forEach((file, i) => jszip.file(files[i].name, file));
+  const content = await jszip.generateAsync({ type: "blob" });
+  saveAs(content, folderPath);
+};
+
+const ImageGrid = ({ images, eventId }) => {
+  const [showSelectOption, setShowSelectOption] = useState(false);
+  const [error, setError] = useState(null);
+
+  const [zipProcessing, setZipProcessing] = useState(false);
   let selectedItems = [];
   if (images.length === 0) {
     return <div className="error">No images to load...</div>;
@@ -29,7 +52,7 @@ const ImageGrid = ({ images }) => {
   };
 
   const downloadImages = () => {
-    console.log('downloadimages')
+    console.log("downloadimages");
     selectedItems.map((image) => {
       downloadImage(image.url, image.id);
     });
@@ -69,6 +92,22 @@ const ImageGrid = ({ images }) => {
     //     ))}
     // </div>
     <>
+      <Box
+        w="100%"
+        maxW="90%"
+        mx="auto"
+        px={4}
+        spacing={4}
+        direction="row"
+        align="center"
+      >
+        {error && (
+          <Alert p={2} marginBottom={4} status="error">
+            <AlertIcon />
+            {error}
+          </Alert>
+        )}
+      </Box>
       <Stack
         w="100%"
         maxW="90%"
@@ -124,35 +163,51 @@ const ImageGrid = ({ images }) => {
         >
           Delete
         </Button>
-        <Button
-          px={2}
-          bg={"#151f21"}
-          color={"white"}
-          width={"100%"}
-          rounded={"md"}
-          _hover={{
-            transform: "translateY(-2px)",
-            boxShadow: "lg",
-          }}
-          onClick={() => {}}
-        >
-          Download All as Zip
-        </Button>
-        <Button
-          px={2}
-          bg={"#151f21"}
-          color={"white"}
-          width={"100%"}
-          rounded={"md"}
-          _hover={{
-            transform: "translateY(-2px)",
-            boxShadow: "lg",
-          }}
-          onClick={() => {}}
-        >
-          Select All
-        </Button>
+        {!zipProcessing && (
+          <Button
+            px={2}
+            bg={"#151f21"}
+            color={"white"}
+            width={"100%"}
+            rounded={"md"}
+            _hover={{
+              transform: "translateY(-2px)",
+              boxShadow: "lg",
+            }}
+            onClick={() => {
+              setZipProcessing(true);
+              downloadFolderAsZip("gallery/" + eventId)
+                .catch((error) => {
+                  setError(error.message);
+                  console.log(error.message);
+                })
+                .finally(() => {
+                  setZipProcessing(false);
+                });
+            }}
+          >
+            Download All as Zip
+          </Button>
+        )}
+        {zipProcessing && (
+          <Button
+            isLoading
+            loadingText="Processing"
+            px={2}
+            bg={"#151f21"}
+            color={"white"}
+            width={"100%"}
+            rounded={"md"}
+            _hover={{
+              transform: "translateY(-2px)",
+              boxShadow: "lg",
+            }}
+          >
+            Processing
+          </Button>
+        )}
       </Stack>
+
       <SRLWrapper>
         <Box
           as={motion.div}

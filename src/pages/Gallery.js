@@ -89,7 +89,7 @@ const Gallery = () => {
         {isPending &&
           skeletons.map((skeleton) => <ImageCardSkeleton key={skeleton} />)}
       </SimpleGrid>
-      {images && <ImageGrid images={images} />}
+      {images && <ImageGrid images={images} eventId={id} />}
     </Flex>
   );
 };
