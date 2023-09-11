@@ -1,7 +1,9 @@
 import React, { useState } from "react";
-import useFirestore from "../hooks/useFirestore";
-import { projectFirestore } from "../firebase/config";
+import { useFirestore } from "../hooks/useFirestore";
+//import { projectFirestore } from "../firebase/config";
 // import Trashcan from "../assets/trashcan.svg";
+import { toast } from "react-toastify";
+
 import { motion } from "framer-motion";
 import {
   Alert,
@@ -12,7 +14,24 @@ import {
   Link,
   Stack,
   Text,
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  PopoverHeader,
+  PopoverBody,
+  PopoverArrow,
+  PopoverCloseButton,
+  Flex,
 } from "@chakra-ui/react";
+import { BsThreeDotsVertical, BsChatSquareQuote } from "react-icons/bs";
+import { RiShutDownLine, RiRestartLine, RiFileShredLine } from "react-icons/ri";
+import {
+  AiOutlineSelect,
+  AiOutlineCloudDownload,
+  AiOutlineFileZip,
+  AiOutlineDelete,
+} from "react-icons/ai";
+import { ChevronDownIcon } from "@chakra-ui/icons";
 import { SRLWrapper } from "simple-react-lightbox";
 
 import ImageCard, { downloadImage } from "./ImageCard";
@@ -38,6 +57,7 @@ export const downloadFolderAsZip = async (folderPath) => {
 };
 
 const ImageGrid = ({ images, eventId }) => {
+  const { deleteDocument, response } = useFirestore("gallery");
   const [showSelectOption, setShowSelectOption] = useState(false);
   const [error, setError] = useState(null);
 
@@ -48,7 +68,7 @@ const ImageGrid = ({ images, eventId }) => {
   }
 
   const deleteImage = (id) => {
-    projectFirestore.collection("gallery").doc(id).delete();
+    // projectFirestore.collection("gallery").doc(id).delete();
   };
 
   const downloadImages = () => {
@@ -56,6 +76,13 @@ const ImageGrid = ({ images, eventId }) => {
     selectedItems.map((image) => {
       downloadImage(image.url, image.id);
     });
+  };
+  const deleteImages = () => {
+    console.log("downloadimages");
+    selectedItems.map((image) => {
+      deleteDocument(image.id);
+    });
+    toast("Deleted!");
   };
   const handleSelectImage = (image) => {
     if (image.selected == "selected") {
@@ -108,21 +135,14 @@ const ImageGrid = ({ images, eventId }) => {
           </Alert>
         )}
       </Box>
-      <Stack
-        w="100%"
-        maxW="90%"
-        mx="auto"
-        px={4}
-        spacing={4}
-        direction="row"
-        align="center"
-      >
+      <Flex justifyContent="right" mb={4} w="100%" maxW="90%" mx="auto" px={4}>
         <Button
-          px={2}
-          bg={"#151f21"}
+          px={4}
+          mr={2}
+          bg={showSelectOption ? "gray.500" : "#151f21"}
           color={"white"}
-          width={"100%"}
           rounded={"md"}
+          width={"auto"}
           _hover={{
             transform: "translateY(-2px)",
             boxShadow: "lg",
@@ -131,82 +151,94 @@ const ImageGrid = ({ images, eventId }) => {
             setShowSelectOption(!showSelectOption);
           }}
         >
-          Select
+          Select Images
         </Button>
-        <Button
-          px={2}
-          bg={"#151f21"}
-          color={"white"}
-          width={"100%"}
-          rounded={"md"}
-          _hover={{
-            transform: "translateY(-2px)",
-            boxShadow: "lg",
-          }}
-          onClick={() => {
-            downloadImages();
-          }}
-        >
-          Download
-        </Button>
-        <Button
-          px={2}
-          bg={"#151f21"}
-          color={"white"}
-          width={"100%"}
-          rounded={"md"}
-          _hover={{
-            transform: "translateY(-2px)",
-            boxShadow: "lg",
-          }}
-          onClick={() => {}}
-        >
-          Delete
-        </Button>
-        {!zipProcessing && (
-          <Button
-            px={2}
-            bg={"#151f21"}
-            color={"white"}
-            width={"100%"}
-            rounded={"md"}
-            _hover={{
-              transform: "translateY(-2px)",
-              boxShadow: "lg",
-            }}
-            onClick={() => {
-              setZipProcessing(true);
-              downloadFolderAsZip("gallery/" + eventId)
-                .catch((error) => {
-                  setError(error.message);
-                  console.log(error.message);
-                })
-                .finally(() => {
-                  setZipProcessing(false);
-                });
-            }}
-          >
-            Download All as Zip
-          </Button>
-        )}
-        {zipProcessing && (
-          <Button
-            isLoading
-            loadingText="Processing"
-            px={2}
-            bg={"#151f21"}
-            color={"white"}
-            width={"100%"}
-            rounded={"md"}
-            _hover={{
-              transform: "translateY(-2px)",
-              boxShadow: "lg",
-            }}
-          >
-            Processing
-          </Button>
-        )}
-      </Stack>
+        <Popover placement="bottom" isLazy>
+          <PopoverTrigger>
+            <Button
+              rightIcon={<ChevronDownIcon />}
+              background="yellow.500"
+              color={"white"}
+              w="fit-content"
+              _hover={{ bg: "gray.500" }}
+            >
+              Quick Actions
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent _focus={{ boxShadown: "none" }}>
+            <PopoverArrow />
+            <PopoverCloseButton />
+            <PopoverHeader fontWeight="bold">Quick Actions</PopoverHeader>
+            <PopoverBody>
+              <Stack>
+                <Button
+                  w="100%"
+                  variant="ghost"
+                  rightIcon={<AiOutlineCloudDownload />}
+                  justifyContent="space-between"
+                  fontWeight="normal"
+                  colorScheme="yellow"
+                  onClick={() => {
+                    downloadImages();
+                  }}
+                >
+                  Download
+                </Button>
+                <Button
+                  w="100%"
+                  variant="ghost"
+                  rightIcon={<AiOutlineDelete />}
+                  justifyContent="space-between"
+                  fontWeight="normal"
+                  colorScheme="yellow"
+                  onClick={() => {
+                    deleteImages();
+                  }}
+                >
+                  Delete
+                </Button>
+                {!zipProcessing && (
+                  <Button
+                    w="100%"
+                    variant="ghost"
+                    rightIcon={<AiOutlineFileZip />}
+                    justifyContent="space-between"
+                    fontWeight="normal"
+                    colorScheme="yellow"
+                    onClick={() => {
+                      setZipProcessing(true);
+                      downloadFolderAsZip("gallery/" + eventId)
+                        .catch((error) => {
+                          setError(error.message);
+                          console.log(error.message);
+                        })
+                        .finally(() => {
+                          setZipProcessing(false);
+                        });
+                    }}
+                  >
+                    Download All as Zip
+                  </Button>
+                )}
+                {zipProcessing && (
+                  <Button
+                    w="100%"
+                    variant="ghost"
+                    rightIcon={<AiOutlineFileZip />}
+                    justifyContent="space-between"
+                    fontWeight="normal"
+                    colorScheme="yellow"
+                    isLoading
+                    loadingText="Processing..."
+                  >
+                    Processing...
+                  </Button>
+                )}
+              </Stack>
+            </PopoverBody>
+          </PopoverContent>
+        </Popover>
+      </Flex>
 
       <SRLWrapper>
         <Box

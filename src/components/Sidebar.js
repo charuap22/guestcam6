@@ -327,7 +327,7 @@ const MobileNav = ({ role, eventId, onOpen, ...rest }) => {
               boxShadow: "lg",
             }}
             onClick={() => {
-               history.push(`/`);
+              history.push(`/`);
             }}
           >
             Home
@@ -347,7 +347,7 @@ const MobileNav = ({ role, eventId, onOpen, ...rest }) => {
               history.push(`/newevent`);
             }}
           >
-             New Event
+            New Event
           </Button>
           <Button
             px={2}
@@ -411,7 +411,7 @@ const MobileNav = ({ role, eventId, onOpen, ...rest }) => {
               boxShadow: "lg",
             }}
             onClick={() => {
-               history.push(`/gallery/${role}/${eventId}`);
+              history.push(`/gallery/${role}/${eventId}`);
             }}
           >
             Photos
@@ -450,9 +450,20 @@ const MobileNav = ({ role, eventId, onOpen, ...rest }) => {
           >
             Guestbook
           </Button>
+          <ToastContainer
+            position="top-center"
+            autoClose={5000}
+            hideProgressBar={false}
+            newestOnTop={false}
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="light"
+          />
         </Flex>
       )}
-   
     </>
   );
 };

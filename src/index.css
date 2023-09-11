@@ -56,14 +56,14 @@
         position: relative;
         overflow: hidden;
 }
-/* .img-container .gallery-caption-left, .img-container .gallery-caption-right,
+.img-container .gallery-caption-left, .img-container .gallery-caption-right,
 .img-container .gallery-caption-right2{
     display: none;
 }
 .img-container:hover .gallery-caption-left, .img-container:hover .gallery-caption-right, 
 .img-container:hover .gallery-caption-right2{
 display: block;
-} */
+}
 .img-container .gallery-caption-check{
     z-index: 1;
         position: absolute;

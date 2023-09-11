@@ -20,6 +20,7 @@ export const ProgressBar = ({ file,fileurl, user, fileType }) => {
     setUploadDone(false);
     if (url) {
       setUploadDone(true);
+      
     }
   }, [url, fileurl]);
 

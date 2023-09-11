@@ -21,13 +21,18 @@ export const downloadImage = async (imageSrc, imageName) => {
   document.body.removeChild(link);
 };
 
-const ImageCard = ({ image, onSelectImage, showSelectOption }) => {
+const ImageCard = ({
+  image,
+  onSelectImage,
+  showSelectOption
+}) => {
   const [isSelected, setSelected] = useState(false);
   const ToggleSelected = (image) => {
     setSelected(!isSelected);
   };
+ 
   return (
-    <Box className="img-container">
+    <Box className="img-container"  >
       <Box className="gallery-caption-left">
         <h1>
           by: <b>{image.createdByName}</b>{" "}
@@ -38,7 +43,7 @@ const ImageCard = ({ image, onSelectImage, showSelectOption }) => {
           <i>{moment(new Date(image.createdAt.seconds * 1000)).fromNow()}</i>
         </h1>
       </Box>
-      <Box className="gallery-caption-right2">
+      {/* <Box className="gallery-caption-right2">
         <IconButton
           onClick={() => {
             downloadImage(image.url, image.id);
@@ -51,7 +56,7 @@ const ImageCard = ({ image, onSelectImage, showSelectOption }) => {
         <IconButton
           icon={<CheckIcon w={8} h={8} color="black.500" />}
         ></IconButton>
-      </Box>
+      </Box> */}
       {/* <Checkbox
         className="gallery-caption-check"
         iconSize="5rem"
@@ -66,17 +71,22 @@ const ImageCard = ({ image, onSelectImage, showSelectOption }) => {
           onClick={() => {
             ToggleSelected(image);
             if (!isSelected)
-              onSelectImage({ id: image.id, selected: "selected" , url: image.url});
-            else onSelectImage({
-              id: image.id,
-              selected: "deselected",
-              url: image.url
-            });
+              onSelectImage({
+                id: image.id,
+                selected: "selected",
+                url: image.url,
+              });
+            else
+              onSelectImage({
+                id: image.id,
+                selected: "deselected",
+                url: image.url,
+              });
           }}
           w={8}
           h={8}
         ></CheckCircleIcon>
-          )}
+      )}
 
       <IKContext urlEndpoint="https://ik.imagekit.io/ppvclyjfm/">
         <IKImage
