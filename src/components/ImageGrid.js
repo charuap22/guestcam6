@@ -22,6 +22,7 @@ import {
   PopoverArrow,
   PopoverCloseButton,
   Flex,
+  useToast,
 } from "@chakra-ui/react";
 import { BsThreeDotsVertical, BsChatSquareQuote } from "react-icons/bs";
 import { RiShutDownLine, RiRestartLine, RiFileShredLine } from "react-icons/ri";
@@ -60,7 +61,8 @@ const ImageGrid = ({ images, eventId }) => {
   const { deleteDocument, response } = useFirestore("gallery");
   const [showSelectOption, setShowSelectOption] = useState(false);
   const [error, setError] = useState(null);
-
+  const toast = useToast();
+  const toast2 = useToast();
   const [zipProcessing, setZipProcessing] = useState(false);
   let selectedItems = [];
   if (images.length === 0) {
@@ -70,19 +72,30 @@ const ImageGrid = ({ images, eventId }) => {
   const deleteImage = (id) => {
     // projectFirestore.collection("gallery").doc(id).delete();
   };
-
+  const showSelectImagesToast = () => {
+    toast({
+      title: "Select images to download",
+      position: "top",
+      isClosable: true,
+      duration: 9000,
+    });
+  };
   const downloadImages = () => {
-    console.log("downloadimages");
+    if (selectedItems.length == 0) {
+      showSelectImagesToast();
+    }
     selectedItems.map((image) => {
       downloadImage(image.url, image.id);
     });
   };
   const deleteImages = () => {
-    console.log("downloadimages");
+    if (selectedItems.length == 0) {
+      showSelectImagesToast();
+    }
     selectedItems.map((image) => {
       deleteDocument(image.id);
     });
-    toast("Deleted!");
+  
   };
   const handleSelectImage = (image) => {
     if (image.selected == "selected") {
