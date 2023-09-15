@@ -57,12 +57,13 @@ export const downloadFolderAsZip = async (folderPath) => {
   saveAs(content, folderPath);
 };
 
-const ImageGrid = ({ images, eventId }) => {
-  const { deleteDocument, response } = useFirestore("gallery");
+const ImageGrid = ({ images, eventId, userId, userType }) => {
+  console.log("imagegrid images", images);
+  const { deleteDocument } = useFirestore("gallery");
   const [showSelectOption, setShowSelectOption] = useState(false);
   const [error, setError] = useState(null);
   const toast = useToast();
-  const toast2 = useToast();
+
   const [zipProcessing, setZipProcessing] = useState(false);
   let selectedItems = [];
   if (images.length === 0) {
@@ -93,9 +94,16 @@ const ImageGrid = ({ images, eventId }) => {
       showSelectImagesToast();
     }
     selectedItems.map((image) => {
-      deleteDocument(image.id);
+      if (image.createdBy == userId || userType == "Admin")
+        deleteDocument(image.id);
+      else
+        toast({
+          title: "You can delete only those images that you have uploaded!",
+          position: "top",
+          isClosable: true,
+          duration: 9000,
+        });
     });
-  
   };
   const handleSelectImage = (image) => {
     if (image.selected == "selected") {

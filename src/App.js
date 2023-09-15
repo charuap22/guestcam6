@@ -22,7 +22,8 @@ import { useUserInfo } from "./hooks/useUserInfo";
 
 function App() {
   const { authIsReady, user } = useAuthContext();
-  const {UserInfo} =useUserInfo()
+  const { UserInfo } = useUserInfo();
+  console.log("UserInfo", UserInfo);
   return (
     <>
       {authIsReady && (

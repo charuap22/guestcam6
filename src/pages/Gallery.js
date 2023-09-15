@@ -20,14 +20,10 @@ import {
 import ImageCardSkeleton from "../components/ImageCardSkeleton";
 const Gallery = () => {
   const { id } = useParams();
+  const { userType } = useParams();
   const { user } = useAuthContext();
-
+  console.log("user", user.uid);
   const skeletons = [1, 2, 3, 4, 5, 6];
-  const courses = [
-    "Full Stack Developement Program",
-    "Python Automation Testing Program",
-    "UI/UX Program",
-  ];
 
   const { changeEvent } = useEvent();
 
@@ -40,7 +36,7 @@ const Gallery = () => {
     error,
     isPending,
   } = useCollection("gallery", ["eventId", "==", id], ["createdAt", "desc"]);
-  console.log(data);
+  console.log("images", images);
   useEffect(() => {
     changeEvent(id);
   }, []);
@@ -89,7 +85,14 @@ const Gallery = () => {
         {isPending &&
           skeletons.map((skeleton) => <ImageCardSkeleton key={skeleton} />)}
       </SimpleGrid>
-      {images && <ImageGrid images={images} eventId={id} />}
+      {images && (
+        <ImageGrid
+          images={images}
+          eventId={id}
+          userId={user.uid}
+          userType={userType}
+        />
+      )}
     </Flex>
   );
 };

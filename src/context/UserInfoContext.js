@@ -27,12 +27,13 @@ export function UserInfoProvider({ children }) {
           if (doc.exists) {
              if (doc.data()) {
                UserInfoDetails = doc.data();
+               UserInfoDetails.uid = user.uid;
                console.log("UserInfo from context", doc.data());
                changeUserInfo(UserInfoDetails);
              }
           }
         });
-    }
+    }   
   }, [user]);
 
   const [state, dispatch] = useReducer(UserInfoReducer, { UserInfo: UserInfoDetails });

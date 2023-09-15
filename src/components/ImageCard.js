@@ -75,12 +75,14 @@ const ImageCard = ({
                 id: image.id,
                 selected: "selected",
                 url: image.url,
+                createdBy: image.createdBy,
               });
             else
               onSelectImage({
                 id: image.id,
                 selected: "deselected",
                 url: image.url,
+                createdBy: image.createdBy
               });
           }}
           w={8}
