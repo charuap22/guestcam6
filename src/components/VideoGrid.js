@@ -79,6 +79,7 @@ const VideoGrid = ({ videos, eventId, userId, userType }) => {
       downloadVideo(video.url, video.id);
     });
   };
+
   const deleteVideos = () => {
     if (selectedItems.length == 0) {
       showSelectVideosToast();
@@ -201,7 +202,7 @@ const VideoGrid = ({ videos, eventId, userId, userType }) => {
                     colorScheme="yellow"
                     onClick={() => {
                       setZipProcessing(true);
-                      downloadFolderAsZip("gallery/" + eventId)
+                      downloadFolderAsZip("videos/" + eventId)
                         .catch((error) => {
                           setError(error.message);
                           console.log(error.message);

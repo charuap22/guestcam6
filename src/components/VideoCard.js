@@ -11,8 +11,25 @@ export const downloadVideo = async (videoSrc, videoName) => {
   console.log("videoSrc", videoSrc);
   console.log("videoName", videoName);
   const VideoBlob = await fetch(videoSrc)
-    .then((response) => response.arrayBuffer())
-    .then((buffer) => new Blob([buffer], { type: "Video/jpeg" }));
+    .then((response) => response.blob())
+    .then((blob) => {
+      // Create blob link to download
+      const url = window.URL.createObjectURL(
+        new Blob([blob], { type: "video/mp4" })
+      );
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", videoName + ".mp4");
+
+      // Append to html link element page
+      document.body.appendChild(link);
+
+      // Start download
+      link.click();
+
+      // Clean up and remove the link
+      link.parentNode.removeChild(link);
+    });
 
   const link = document.createElement("a");
   link.href = URL.createObjectURL(VideoBlob);
@@ -40,7 +57,7 @@ const VideoCard = ({ video, onSelectVideo, showSelectOption }) => {
           <i>{moment(new Date(video.createdAt.seconds * 1000)).fromNow()}</i>
         </h1>
       </Box>
-    
+
       {showSelectOption && (
         <CheckCircleIcon
           className={`gallery-caption-check ${
@@ -70,7 +87,6 @@ const VideoCard = ({ video, onSelectVideo, showSelectOption }) => {
 
       <ReactPlayer
         width="100%"
-        
         style={{ display: "inline-block" }}
         url={video.url}
         controls
