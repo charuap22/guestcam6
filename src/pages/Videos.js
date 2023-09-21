@@ -10,8 +10,10 @@ import { useEvent } from "../hooks/useEvent";
 import VideoGrid from "../components/VideoGrid";
 import { Box, chakra, Flex } from "@chakra-ui/react";
 const Videos = () => {
-  const { id } = useParams();
-  const { user } = useAuthContext();
+ const { id } = useParams();
+ const { userType } = useParams();
+ const { user } = useAuthContext();
+ console.log("user", user.uid);
 
   const { changeEvent } = useEvent();
 
@@ -20,7 +22,7 @@ const Videos = () => {
   //const [error, setError] = useState(false);
   const [selectedImg, setSelectedImg] = useState(null);
 
-  const { documents, error } = useCollection(
+  const { documents: videos, error } = useCollection(
     "videos",
     ["eventId", "==", id],
     ["createdAt", "desc"]
@@ -63,8 +65,13 @@ const Videos = () => {
 
       {/* <video src="https://firebasestorage.googleapis.com/v0/b/guestcam2-6896a.appspot.com/o/gallery%2FJw0WCBPkTg1FHpxNtTZV%2Fd0a0de88-c661-4726-8dc1-cfab015fb6b7.mov?alt=media&token=9352ca4a-3200-425c-8464-c1caafb0c61c"  width="750" height="500" controls></video> */}
       <UploadForm user={user}></UploadForm>
-      {documents && (
-        <VideoGrid videos={documents} setSelectedImg={setSelectedImg} />
+      {videos && (
+        <VideoGrid
+          videos={videos}
+          eventId={id}
+          userId={user.uid}
+          userType={userType}
+        />
       )}
     </Flex>
   );
