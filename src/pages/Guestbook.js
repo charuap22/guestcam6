@@ -20,6 +20,10 @@ import { useFirestore } from "../hooks/useFirestore";
 import Comments from "../components/Comments";
 const Guestbook = () => {
   const { id } = useParams();
+   
+   const { userType } = useParams();
+ 
+
   const { error, document } = useDocument("events", id);
   const { updateDocument, response } = useFirestore("events");
 
@@ -37,6 +41,7 @@ const Guestbook = () => {
       createdAt: timestamp.fromDate(new Date()),
       id: uuidv4(),
     };
+  
     await updateDocument(document.id, {
       guestBook: [...document.guestBook, commentToAdd],
     });
@@ -89,9 +94,14 @@ const Guestbook = () => {
           >
             GuestBook
           </chakra.h1>
-          
         </Box>
-        <Comments comments={document.guestBook}></Comments>
+        
+        <Comments
+          comments={document.guestBook}
+          userId={user.uid}
+          userType={userType}
+          eventId={id}
+        ></Comments>
         {/* <Box>
         <Icon viewBox="0 0 40 35" mt={14} boxSize={10} color={"purple.400"}>
           <path

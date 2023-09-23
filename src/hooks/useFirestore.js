@@ -99,9 +99,54 @@ export const useFirestore = (collection) => {
     }
   };
 
+  // delete a comment
+  const deleteComment = async (eventId, id) => {
+    dispatch({ type: "IS_PENDING" });
+    try {
+      // fetch the "kids" document
+      let docRef = projectFirestore.collection("events").doc(eventId);
+      let docSnap = await docRef.get();
+      let docData = docSnap.data();
+
+      // remove the element that we no longer want in the document
+      docData.guestBook[id].delete();
+
+      // update the document in Firestore
+      await docRef.update(docData);
+      console.log(`Document updated with ${id} removed!`, docData);
+    } catch (ex) {
+      console.error(`EXCEPTION while removing ${id}:`, ex);
+    }
+
+    //  projectFirestore
+    //   .collection("events")
+    //   .doc(eventId)
+    //   .collection("guestBook")
+    //   .doc(id)
+    //   .get()
+    //   .subscribe((data) => {
+    //     data.ref.delete().then(
+    //       () => {
+    //         console.log("success");
+    //          dispatchIfNotCancelled({ type: "DELETED_DOCUMENT" });
+    //       },
+    //       (error) => {
+    //         console.log("error", error);
+    //         dispatchIfNotCancelled({ type: "ERROR", payload: "could not delete" });
+    //       }
+    //     );
+    //   });
+  };
+
   useEffect(() => {
     return () => setIsCancelled(true);
   }, []);
 
-  return { addDocument, deleteDocument, updateDocument, response };
+  return {
+    addDocument,
+    deleteDocument,
+    updateDocument,
+    deleteComment,
+    response,
+  };
 };
