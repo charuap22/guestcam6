@@ -19,6 +19,8 @@ import Guest_Dashboard from "./pages/Guest_Dashboard";
 import Videos from "./pages/Videos";
 import Guestbook from "./pages/Guestbook";
 import { useUserInfo } from "./hooks/useUserInfo";
+import UpdateEvent from "./pages/UpdateEvent";
+import UpdateEvent2 from "./pages/UpdateEvent";
 
 function App() {
   const { authIsReady, user } = useAuthContext();
@@ -46,6 +48,14 @@ function App() {
                 <CreateEvent />
               </Sidebar>
               {/* )} */}
+            </Route>
+            <Route path="/updateevent/:id">
+              {!user && <Redirect to="/login" />}
+              {user && (
+                <Sidebar role={UserInfo.role}>
+                  <UpdateEvent />
+                </Sidebar>
+              )}
             </Route>
             <Route path="/events/:id">
               {!user && <Redirect to="/login" />}

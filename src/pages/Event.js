@@ -291,7 +291,9 @@ const Event = () => {
                     transform: "translateY(-2px)",
                     boxShadow: "lg",
                   }}
-                  onClick={downloadQR}
+                  onClick={() => {
+                    history.push(`/updateevent/${document.id}`);
+                  }}
                 >
                   Edit Event
                 </Button>

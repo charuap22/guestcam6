@@ -108,6 +108,7 @@ const CreateEvent = () => {
         guestList: guestList,
         createdBy,
         adminId,
+        planId: plan.id,
         guestBook: [],
       };
       await addDocument(event);
@@ -121,7 +122,7 @@ const CreateEvent = () => {
       }
     } else {
       setError("Please select an event image");
-      return
+      return;
     }
   };
   // Create a reference to the hidden file input element
