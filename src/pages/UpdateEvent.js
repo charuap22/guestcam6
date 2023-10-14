@@ -99,7 +99,7 @@ const UpdateEvent = () => {
   const [siteStatus, setSiteStatus] = useState("Live");
   const [welcomeMessage, setWelcomeMessage] = useState("");
 
-  const [featureImageChanged, setfeatureImageChanged] = useState(false);
+  const [featureImageChanged,setfeatureImageChanged] = useState(false);
   const today = new Date();
 
   const date = today.setDate(today.getDate());
@@ -124,6 +124,7 @@ const UpdateEvent = () => {
       setSiteCloses(document.siteCloses);
       setSiteStatus(document.siteStatus);
       setWelcomeMessage(document.welcomeMessage);
+      
     }
   }, [document]);
 
@@ -154,13 +155,16 @@ const UpdateEvent = () => {
     const guestList = [];
 
     if (thumbnail) {
+
       const uploadPath = `featureImages/${user.uid}/${thumbnail.name}`;
       const img = await projectStorage.ref(uploadPath).put(thumbnail);
       const imageURL = await img.ref.getDownloadURL();
       //setFeatureImage(imageURL);
-      let fimg = "";
-      if (featureImageChanged) fimg = imageURL;
-      else fimg = featureImage;
+      let fimg="";
+      if(featureImageChanged)
+        fimg=imageURL;
+        else
+        fimg = featureImage
       const event = {
         id: document.id,
         category,

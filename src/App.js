@@ -21,6 +21,7 @@ import Guestbook from "./pages/Guestbook";
 import { useUserInfo } from "./hooks/useUserInfo";
 import UpdateEvent from "./pages/UpdateEvent";
 import UpdateEvent2 from "./pages/UpdateEvent";
+import CanvaTemplates from "./pages/CanvaTemplates";
 
 function App() {
   const { authIsReady, user } = useAuthContext();
@@ -41,13 +42,21 @@ function App() {
                 </Sidebar>
               )}
             </Route>
+            <Route path="/CanvaTemplates/:type">
+              {!user && <Redirect to="/login" />}
+              {user && (
+                <Sidebar role={UserInfo.role}>
+                  <CanvaTemplates />
+                </Sidebar>
+              )}
+            </Route>
             <Route path="/newevent">
-              {/* {!user && <Redirect to="/login" />}
-              {user && UserInfo ( */}
-              <Sidebar role={UserInfo.role}>
-                <CreateEvent />
-              </Sidebar>
-              {/* )} */}
+              {!user && <Redirect to="/login" />}
+              {user && (
+                <Sidebar role={UserInfo.role}>
+                  <CreateEvent />
+                </Sidebar>
+              )}
             </Route>
             <Route path="/updateevent/:id">
               {!user && <Redirect to="/login" />}

@@ -31,6 +31,7 @@ import { useEvent } from "../hooks/useEvent";
 import { useHistory } from "react-router-dom";
 import { useUserInfo } from "../hooks/useUserInfo";
 import { useEffect } from "react";
+import { usePlan } from "../hooks/usePlan";
 
 const downloadQR = () => {
   const canvas = document.getElementById("123456");
@@ -52,9 +53,16 @@ const Event = () => {
   const { UserInfo } = useUserInfo();
 
   const { eventId, changeEvent } = useEvent();
+  const { plan } = usePlan();
+
+
+
+  let barVal = 0;
   useEffect(() => {
     changeEvent(id);
-  }, []);
+    if (plan && document) barVal = plan.NoOfGuests_end - document.noOfGuests;
+    console.log(barVal);
+  }, [document, plan]);
   console.log("eventId: ", eventId);
 
   let history = useHistory();
@@ -180,13 +188,17 @@ const Event = () => {
                   textTransform={"uppercase"}
                   mb={"4"}
                 >
-                  {document.guestList && document.guestList.count}
-                  {!document.guestList && "0"}/{document.noOfGuests}
+                  {/* {document.guestList && document.guestList.count} */}
+                  {document.noOfGuests}/{plan.NoOfGuests_end}
                 </Text>
               </HStack>
 
               <Box border={"solid thin #c5c5c5"} borderRadius={2}>
-                <Progress colorScheme="yellow" size="md" value={20} />
+                <Progress
+                  colorScheme="yellow"
+                  size="md"
+                  value={(document.noOfGuests / plan.NoOfGuests_end) * 100}
+                />
               </Box>
             </Box>
             <SimpleGrid columns={{ base: 2, sm: 2, lg: 2, xl: 3 }} spacing={2}>
@@ -349,7 +361,7 @@ const Event = () => {
                     colorScheme="yellow"
                     id="share-pictures"
                     defaultChecked
-                    isDisabled={true}
+                    isDisabled={!document.sharePictures}
                   />
                 </ListItem>
                 <ListItem>
@@ -367,7 +379,7 @@ const Event = () => {
                     colorScheme="yellow"
                     id="share-guestbook"
                     defaultChecked
-                    isDisabled={true}
+                    isDisabled={!document.shareGuestbook}
                   />
                 </ListItem>
                 <ListItem>
@@ -377,7 +389,7 @@ const Event = () => {
                     guestbook and won't be able to leave a guestnook message.
                   </p>
                 </ListItem>
-                <ListItem>
+                {/* <ListItem>
                   <Text as={"span"} fontWeight={"bold"}>
                     Share guest photo downloads? :{" "}
                   </Text>
@@ -385,19 +397,36 @@ const Event = () => {
                     colorScheme="yellow"
                     id="share-guestbook"
                     defaultChecked
-                    isDisabled={true}
+                    isDisabled={!document.}
                   />
-                </ListItem>
-                <ListItem>
+                </ListItem> */}
+                {/* <ListItem>
                   <p mb={2}>
                     This setting will allow guests to download full definition
                     versions of any picture uploaded to your event site.They can
                     access this from the "Gallery" using the download icon in
                     the top corner of the image.
                   </p>
-                </ListItem>
+                </ListItem> */}
               </List>
             </Box>
+            <Box>
+              <iframe
+                loading="lazy"
+                src="https:&#x2F;&#x2F;www.canva.com&#x2F;design&#x2F;DAFvx1h2nUo&#x2F;view?embed"
+                allowfullscreen="allowfullscreen"
+                allow="fullscreen"
+              ></iframe>
+              <a
+                href="https:&#x2F;&#x2F;www.canva.com&#x2F;design&#x2F;DAFvx1h2nUo&#x2F;view?utm_content=DAFvx1h2nUo&amp;utm_campaign=designshare&amp;utm_medium=embeds&amp;utm_source=link"
+                target="_blank"
+                rel="noopener"
+              >
+                Table Card Template (20 x 20 cm)
+              </a>{" "}
+              by charu mahajan
+            </Box>
+          
           </Stack>
         </Stack>
       </SimpleGrid>
