@@ -227,23 +227,31 @@ const CanvaTemplates = () => {
             <List spacing={3} color="yellow.600" fontWeight={600}>
               <ListItem>
                 <ListIcon as={MdCheckCircle} color="green.500" />
-                <Link to={"10x15"}>Table Card Templates (10 x 15 cm)</Link>
+                <Link to={"/canvatemplates/10x15"}>
+                  Table Card Templates (10 x 15 cm)
+                </Link>
               </ListItem>
               <ListItem>
                 <ListIcon as={MdCheckCircle} color="green.500" />
-                <Link to={"20x20"}>Photobooth Signages (20 x 20 cm)</Link>
+                <Link to={"/canvatemplates/20x20"}>
+                  Photobooth Signages (20 x 20 cm)
+                </Link>
               </ListItem>
               <ListItem>
                 <ListIcon as={MdCheckCircle} color="green.500" />
-                <Link to={"10x10"}>Table Card Templates (10 x 10 cm)</Link>
+                <Link to={"/canvatemplates/10x10"}>
+                  Table Card Templates (10 x 10 cm)
+                </Link>
               </ListItem>
               <ListItem>
                 <ListIcon as={MdCheckCircle} color="green.500" />
-                <Link to={"50x65"}>Signage Templates (50 x 65 cm)</Link>
+                <Link to={"/canvatemplates/50x65"}>
+                  Signage Templates (50 x 65 cm)
+                </Link>
               </ListItem>
               <ListItem>
                 <ListIcon as={MdCheckCircle} color="green.500" />
-                <Link to={"BusinessCard"}>
+                <Link to={"/canvatemplates/BusinessCard"}>
                   Take Home QR Code Cards<br></br>&nbsp;&nbsp;&nbsp;&nbsp; (
                   Business Card Size )
                 </Link>
@@ -274,7 +282,7 @@ const CanvaTemplates = () => {
                 mb={2}
                 d="inline-block"
                 src={src.image}
-                alt="Alt"
+                
               />
             </Link>
           ))}
