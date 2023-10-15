@@ -274,17 +274,16 @@ const CanvaTemplates = () => {
           mx="auto"
         >
           {srces_1sided.map((src) => (
-            <Link href={src.link} isExternal>
-              <Image
+            <a href={src.link} target="_blank" >
+             <Image
                 key={src.image}
                 w="100%"
                 borderRadius="xl"
                 mb={2}
                 d="inline-block"
                 src={src.image}
-                
               />
-            </Link>
+            </a>
           ))}
         </SimpleGrid>
         <SimpleGrid
@@ -296,7 +295,7 @@ const CanvaTemplates = () => {
           mx="auto"
         >
           {srces_2sided.map((src) => (
-            <Link href={src.link} isExternal>
+             <a href={src.link} target="_blank" >
               <Image
                 key={src.image}
                 w="100%"
@@ -306,7 +305,7 @@ const CanvaTemplates = () => {
                 src={src.image}
                 alt={src.image}
               />
-            </Link>
+            </a>
           ))}
         </SimpleGrid>
       </Flex>
