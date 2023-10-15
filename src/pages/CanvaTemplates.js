@@ -26,9 +26,21 @@ import BusinessCard_Sharethelove from "../assets/canva/BusinessCard_Sharethelove
 import BusinessCard_vertical_Capturethelove from "../assets/canva/BusinessCard_vertical_Capturethelove.jpg";
 import BusinessCard_vertical_DigitalGuestbook from "../assets/canva/BusinessCard_vertical_Capturethelove.jpg";
 
-import { Box, Flex, Image, Link, SimpleGrid, chakra } from "@chakra-ui/react";
+import {
+  Box,
+  Flex,
+  Image,
+  List,
+  ListItem,
+  SimpleGrid,
+  chakra,
+  Heading,
+  Text,
+  ListIcon,
+} from "@chakra-ui/react";
 import { useParams } from "react-router-dom";
-
+import { Link } from "react-router-dom";
+import { MdCheckCircle } from "react-icons/md";
 const CanvaTemplates = () => {
   const { type } = useParams();
   const [error, setError] = useState(false);
@@ -146,23 +158,24 @@ const CanvaTemplates = () => {
   if (type == "10x15") {
     srces_1sided = srces_10x15_1s;
     srces_2sided = srces_10x15_2s;
-    title = "Table Card Template (10 x 15 cm)";
+    title = "Table Card Templates (10 x 15 cm)";
   } else if (type == "20x20") {
     srces_1sided = srces_20x20_1s;
     srces_2sided = srces_20x20_2s;
-    title = "Photobooth Signage (20 x 20 cm)";
+    title = "Photobooth Signages (20 x 20 cm)";
   } else if (type == "10x10") {
     srces_1sided = srces_10x10_1s;
     srces_2sided = srces_10x10_2s;
-    title = "Table Card Template (10 x 10 cm)";
+    title = "Table Card Templates (10 x 10 cm)";
   } else if (type == "50x65") {
     srces_1sided = srces_50x65_1s;
     srces_2sided = srces_50x65_2s;
-    title = "Signage Template (50 x 65 cm)";
+    title = "Signage Templates (50 x 65 cm)";
   } else if (type == "BusinessCard") {
     srces_1sided = srces_BusinessCard_1s;
     srces_2sided = srces_BusinessCard_2s;
-  } else if (type == "Business Cards") {
+    title = "Take Home QR Code Cards ( Business Card Size )";
+  } else {
     title = "";
   }
   return (
@@ -175,16 +188,7 @@ const CanvaTemplates = () => {
         width={"full"}
         overflow={"hidden"}
       >
-        <Box width={{ base: "full", sm: "lg", lg: "xl" }} margin={"auto"}>
-          <chakra.h3
-            fontFamily={"Work Sans"}
-            fontWeight={"bold"}
-            fontSize={20}
-            textTransform={"uppercase"}
-            color={"purple.400"}
-          >
-            {document.eventName}
-          </chakra.h3>{" "}
+        <Box width={"100%"} maxW="90%" margin={"auto"}>
           <chakra.h1
             py={5}
             fontSize={38}
@@ -194,6 +198,63 @@ const CanvaTemplates = () => {
           >
             Canva Templates
           </chakra.h1>
+          <Heading as="h1" size="xl" pb={5} color={"gray.500"}>
+            Share Your QR Code Printed Materials
+          </Heading>
+          <Text pb={5} fontSize="md">
+            Check out our canva template qr code selection for the very best in
+            unique or custom, handmade pieces. Easily update them with your
+            unique QR code, personilze with your names and edit your message.
+            fully customizable template editor that allows you to personalize
+            your printable directly in your web browser.
+          </Text>
+          <Text pb={5}>
+            All you need to do is<br></br>
+            Purchase &gt; Personalize &gt; Print!
+          </Text>
+          <Text pb={5} textAlign={"center"}>
+            &#x2022; No waiting &#x2022; No software to install &#x2022; No
+            fonts to download.
+          </Text>
+
+          <Text pb={5} textAlign={"center"}>
+            <b>Note:</b> You will need a free version of Canva account to use
+            them. <br></br>You can get them printed to display as Table Card
+            templates, Take Home Business Cards, , signage , photobooth or
+            anyway you like !
+          </Text>
+          <Box width={"300px"} margin={"auto"} textAlign={"left"}>
+            <List spacing={3} color="yellow.600" fontWeight={600}>
+              <ListItem>
+                <ListIcon as={MdCheckCircle} color="green.500" />
+                <Link to={"10x15"}>Table Card Templates (10 x 15 cm)</Link>
+              </ListItem>
+              <ListItem>
+                <ListIcon as={MdCheckCircle} color="green.500" />
+                <Link to={"20x20"}>Photobooth Signages (20 x 20 cm)</Link>
+              </ListItem>
+              <ListItem>
+                <ListIcon as={MdCheckCircle} color="green.500" />
+                <Link to={"10x10"}>Table Card Templates (10 x 10 cm)</Link>
+              </ListItem>
+              <ListItem>
+                <ListIcon as={MdCheckCircle} color="green.500" />
+                <Link to={"50x65"}>Signage Templates (50 x 65 cm)</Link>
+              </ListItem>
+              <ListItem>
+                <ListIcon as={MdCheckCircle} color="green.500" />
+                <Link to={"BusinessCard"}>
+                  Take Home QR Code Cards<br></br>&nbsp;&nbsp;&nbsp;&nbsp; (
+                  Business Card Size )
+                </Link>
+              </ListItem>
+            </List>
+          </Box>
+          <br />
+          <br />
+          <Heading as="h3" size="lg" pb={5} pt={5} color={"gray.400"}>
+            {title}
+          </Heading>
         </Box>
         {error && <p className="error">{error}</p>}
         <SimpleGrid

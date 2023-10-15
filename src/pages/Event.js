@@ -55,8 +55,6 @@ const Event = () => {
   const { eventId, changeEvent } = useEvent();
   const { plan } = usePlan();
 
-
-
   let barVal = 0;
   useEffect(() => {
     changeEvent(id);
@@ -311,6 +309,25 @@ const Event = () => {
                 </Button>
               </Box>
               <Box>
+                {" "}
+                <Button
+                  px={2}
+                  bg={"#151f21"}
+                  color={"white"}
+                  rounded={"md"}
+                  width={"100%"}
+                  _hover={{
+                    transform: "translateY(-2px)",
+                    boxShadow: "lg",
+                  }}
+                  onClick={() => {
+                    history.push(`/canvatemplates/`);
+                  }}
+                >
+                  Print Materials
+                </Button>
+              </Box>
+              <Box>
                 <Button
                   px={2}
                   bg={"#151f21"}
@@ -426,7 +443,6 @@ const Event = () => {
               </a>{" "}
               by charu mahajan
             </Box>
-          
           </Stack>
         </Stack>
       </SimpleGrid>

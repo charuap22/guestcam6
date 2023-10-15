@@ -42,7 +42,16 @@ function App() {
                 </Sidebar>
               )}
             </Route>
+
             <Route path="/CanvaTemplates/:type">
+              {!user && <Redirect to="/login" />}
+              {user && (
+                <Sidebar role={UserInfo.role}>
+                  <CanvaTemplates />
+                </Sidebar>
+              )}
+            </Route>
+            <Route path="/CanvaTemplates">
               {!user && <Redirect to="/login" />}
               {user && (
                 <Sidebar role={UserInfo.role}>

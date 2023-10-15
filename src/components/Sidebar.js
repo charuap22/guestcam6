@@ -42,6 +42,10 @@ import {
   FiBell,
   FiChevronDown,
 } from "react-icons/fi";
+import {MdEvent} from "react-icons/md";
+import {AiOutlinePrinter} from "react-icons/ai";
+import {IoMdPhotos} from "react-icons/io";
+import { BiSolidVideos, BiBookHeart } from "react-icons/bi";
 import { CalendarIcon } from "@chakra-ui/icons";
 import { IconType } from "react-icons";
 import { ReactText } from "react";
@@ -56,7 +60,8 @@ import { AvatarInfo_Mobile } from "./AvatarInfo_Mobile";
 
 const LinkItems = [
   { name: "Home", icon: FiHome, url: "/" },
-  { name: "Create Event", icon: FiTrendingUp, url: "/newevent" },
+  { name: "Create Event", icon: MdEvent, url: "/newevent" },
+  { name: "Print Materials", icon: AiOutlinePrinter, url: "/canvatemplates" },
   { name: "Settings", icon: FiSettings, url: "/" },
 ];
 
@@ -105,28 +110,28 @@ const SidebarContent = ({ eventId, role, onClose, ...rest }) => {
       icon: FiHome,
       url: `/Guest/Dashboard/${eventId}`,
     },
-    { name: "Photos", icon: FiTrendingUp, url: `/gallery/${role}/${eventId}` },
-    { name: "Videos", icon: FiSettings, url: `/videos/${role}/${eventId}` },
+    { name: "Photos", icon: IoMdPhotos, url: `/gallery/${role}/${eventId}` },
+    { name: "Videos", icon: BiSolidVideos, url: `/videos/${role}/${eventId}` },
     {
       name: "GuestBook",
-      icon: FiSettings,
+      icon: BiBookHeart,
       url: `/guestbook/${role}/${eventId}`,
     },
   ];
   const EventLinks = [
     {
       name: "Photos",
-      icon: FiTrendingUp,
+      icon: IoMdPhotos,
       url: `/gallery/${role}/${eventId}`,
     },
     {
       name: "Videos",
-      icon: FiSettings,
+      icon: BiSolidVideos,
       url: `/videos/${role}/${eventId}`,
     },
     {
       name: "GuestBook",
-      icon: FiSettings,
+      icon: BiBookHeart,
       url: `/guestbook/${role}/${eventId}`,
     },
   ];
@@ -348,6 +353,23 @@ const MobileNav = ({ role, eventId, onOpen, ...rest }) => {
             }}
           >
             New Event
+          </Button>
+          <Button
+            px={2}
+            mx={2}
+            bg={"#151f21"}
+            color={"white"}
+            rounded={"md"}
+            width={"100%"}
+            _hover={{
+              transform: "translateY(-2px)",
+              boxShadow: "lg",
+            }}
+            onClick={() => {
+              history.push(`/canvatemplates`);
+            }}
+          >
+            Print Materials
           </Button>
           <Button
             px={2}
