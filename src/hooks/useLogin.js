@@ -4,13 +4,12 @@ import { useAuthContext } from "./useAuthContext";
 import { usePlan } from "./usePlan";
 import { useHistory } from "react-router-dom";
 import { useDocument } from "./useDocument";
-
+import firebase from "firebase/app";
 export const useLogin = () => {
   const [isCancelled, setIsCancelled] = useState(false);
   const [error, setError] = useState(null);
   const [isPending, setIsPending] = useState(false);
   const { dispatch } = useAuthContext();
- 
 
   let history = useHistory();
   const login = async (email, password) => {
@@ -56,10 +55,69 @@ export const useLogin = () => {
       }
     }
   };
+  const Googlelogin = async () => {
+    setError(null);
+    setIsPending(true);
 
+    try {
+      // login
+      // Creates the provider object.
+      var provider = new firebase.auth.GoogleAuthProvider();
+      const res = await projectAuth.signInWithPopup(provider);
+
+      // update online status
+      const documentRef = projectFirestore
+        .collection("users")
+        .doc(res.user.uid);
+      await documentRef.update({ online: true });
+
+      dispatch({ type: "LOGIN", payload: res.user });
+      history.push(`/`);
+
+      if (!isCancelled) {
+        setIsPending(false);
+        setError(null);
+      }
+    } catch (err) {
+      if (!isCancelled) {
+        setError(err.message);
+        setIsPending(false);
+      }
+    }
+  };
+    const Facebooklogin = async () => {
+      setError(null);
+      setIsPending(true);
+
+      try {
+        // login
+        // Creates the provider object.
+        var provider = new firebase.auth.FacebookAuthProvider()
+        const res = await projectAuth.signInWithPopup(provider);
+
+        // update online status
+        const documentRef = projectFirestore
+          .collection("users")
+          .doc(res.user.uid);
+        await documentRef.update({ online: true });
+
+        dispatch({ type: "LOGIN", payload: res.user });
+        history.push(`/`);
+
+        if (!isCancelled) {
+          setIsPending(false);
+          setError(null);
+        }
+      } catch (err) {
+        if (!isCancelled) {
+          setError(err.message);
+          setIsPending(false);
+        }
+      }
+    };
   useEffect(() => {
     return () => setIsCancelled(true);
   }, []);
 
-  return { login, isPending, error };
+  return { login, Googlelogin,Facebooklogin, isPending, error };
 };

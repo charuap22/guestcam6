@@ -25,6 +25,8 @@ import {
   FormControl,
   FormLabel,
   Checkbox,
+  Divider,
+  AbsoluteCenter,
 } from "@chakra-ui/react";
 import background from "../assets/party_slide2.jpeg";
 import { AddCircleIcon } from "chakra-ui-ionicons";
@@ -35,12 +37,14 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 import { NavLink } from "react-router-dom";
+import { FacebookLoginButton } from "react-social-login-buttons";
+import { GoogleLoginButton } from "react-social-login-buttons";
 
 export default function Login() {
   const [email, setEmail] = useState("gaurav5@gmail.com");
   const [password, setPassword] = useState("123456");
 
-  const { login, isPending, error } = useLogin();
+  const { login, Googlelogin,Facebooklogin,isPending, error } = useLogin();
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -127,6 +131,7 @@ export default function Login() {
                   <Link color={"blue.500"}>Forgot password?</Link>
                 </Stack>
               </Stack>
+
               <Button
                 type="submit"
                 fontFamily={"heading"}
@@ -144,6 +149,24 @@ export default function Login() {
               </Button>
             </Stack>
           </form>
+          <Box position="relative" padding="10">
+            <Divider />
+            <AbsoluteCenter bg="white" px="4" fontWeight={"500"}>
+              OR
+            </AbsoluteCenter>
+          </Box>
+          <Stack>
+            <GoogleLoginButton
+              onClick={() => {
+               Googlelogin();
+              }}
+            />
+            <FacebookLoginButton
+              onClick={() => {
+                Facebooklogin();
+              }}
+            />
+          </Stack>
         </Stack>
       </Flex>
       <Flex
@@ -247,7 +270,7 @@ export default function Login() {
           </VStack>
           <Spacer></Spacer>
           <Box>
-            <Text color="white">© 2022 Chakra UI. All rights reserved.</Text>
+            <Text color="white">© 2023 Guestcam. All rights reserved.</Text>
           </Box>
         </Flex>
       </Flex>

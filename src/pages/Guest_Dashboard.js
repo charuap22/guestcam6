@@ -87,6 +87,7 @@ const Guest_Dashboard = () => {
               as={"span"}
               color={"red.400"}
               fontSize={{ base: "md", sm: "l", lg: "xl" }}
+              fontWeight={"500"}
             >
               {document.siteStatus}
               <CircleIcon
@@ -103,7 +104,7 @@ const Guest_Dashboard = () => {
             divider={<StackDivider borderColor={"gray.600"} />}
           >
             <VStack spacing={{ base: 4, sm: 6 }} align={"left"}>
-              <Text color={"gray.400"} fontSize={"2xl"} fontWeight={"300"}>
+              <Text color={"yellow.500"} fontSize={"2xl"} fontWeight={"500"}>
                 {document.eventPageHeader}
               </Text>
               <Text fontSize={"lg"}>{document.welcomeMessage}</Text>
