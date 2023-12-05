@@ -8,7 +8,8 @@ export const AvatarInfo_Mobile = () => {
   return (
     <>
       {user && (
-        <HStack>
+        <HStack 
+        j>
           <Avatar size={"sm"} name={user.displayName} src={user.photoURL} />
 
           <VStack alignItems="flex-start" spacing="1px">

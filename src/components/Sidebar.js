@@ -46,7 +46,7 @@ import {MdEvent} from "react-icons/md";
 import {AiOutlinePrinter} from "react-icons/ai";
 import {IoMdPhotos} from "react-icons/io";
 import { BiSolidVideos, BiBookHeart } from "react-icons/bi";
-import { CalendarIcon } from "@chakra-ui/icons";
+import { CalendarIcon, SettingsIcon } from "@chakra-ui/icons";
 import { IconType } from "react-icons";
 import { ReactText } from "react";
 import { AvatarInfo } from "./AvatarInfo";
@@ -57,6 +57,7 @@ import { useHistory, Link } from "react-router-dom";
 import { useEvent } from "../hooks/useEvent";
 import { useUserInfo } from "../hooks/useUserInfo";
 import { AvatarInfo_Mobile } from "./AvatarInfo_Mobile";
+import { HomeIcon } from "chakra-ui-ionicons";
 
 const LinkItems = [
   { name: "Home", icon: FiHome, url: "/" },
@@ -298,7 +299,7 @@ const MobileNav = ({ role, eventId, onOpen, ...rest }) => {
 
         <Text
           fontSize="2xl"
-          ml="8"
+         
           mr="8"
           fontFamily="monospace"
           fontWeight="bold"
@@ -320,7 +321,14 @@ const MobileNav = ({ role, eventId, onOpen, ...rest }) => {
           justifyContent="flex-start"
           {...rest}
         >
-          <Button
+          <IconButton
+            aria-label="Home"
+            onClick={() => {
+              history.push(`/`);
+            }}
+            icon={<HomeIcon />}
+          />
+          {/* <Button
             px={2}
             mx={2}
             bg={"#151f21"}
@@ -336,12 +344,12 @@ const MobileNav = ({ role, eventId, onOpen, ...rest }) => {
             }}
           >
             Home
-          </Button>
+          </Button> */}
           <Button
             px={2}
             mx={2}
-            bg={"#151f21"}
-            color={"white"}
+            // bg={"#151f21"}
+            // color={"white"}
             rounded={"md"}
             width={"100%"}
             _hover={{
@@ -357,8 +365,8 @@ const MobileNav = ({ role, eventId, onOpen, ...rest }) => {
           <Button
             px={2}
             mx={2}
-            bg={"#151f21"}
-            color={"white"}
+            // bg={"#151f21"}
+            // color={"white"}
             rounded={"md"}
             width={"100%"}
             _hover={{
@@ -371,23 +379,14 @@ const MobileNav = ({ role, eventId, onOpen, ...rest }) => {
           >
             Print Materials
           </Button>
-          <Button
-            px={2}
-            mx={2}
-            bg={"#151f21"}
-            color={"white"}
-            rounded={"md"}
-            width={"100%"}
-            _hover={{
-              transform: "translateY(-2px)",
-              boxShadow: "lg",
-            }}
+          <IconButton
+            aria-label="Home"
             onClick={() => {
               history.push(`/`);
             }}
-          >
-            Settings
-          </Button>
+            icon={<SettingsIcon />}
+          />
+    
         </Flex>
       )}
       {(role == "Admin" || role == "Guest") && eventId && (

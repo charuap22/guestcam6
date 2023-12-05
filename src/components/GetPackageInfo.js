@@ -20,12 +20,10 @@ const GetPackageInfo = () => {
   return (
     
     <Box>
-      <Heading fontSize={"2xl"} fontFamily={"body"} mb={"20px "}>
-        Current Package
-      </Heading>
+    
       <HStack>
-        <Heading fontSize={"18px"} mb={2} fontFamily={"body"}>
-          {plan.Name} ${plan.Price} USD
+        <Heading fontSize={"18px"}  fontFamily={"body"}>
+          {plan.Name} ${plan.Price} USD 
         </Heading>
       </HStack>
       <Text fontWeight={600} color={"gray.500"} mb={4}>

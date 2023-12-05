@@ -46,7 +46,7 @@ export default function EventsList({ events }) {
             <Heading
               lineHeight={1.1}
               fontWeight={600}
-              fontSize={{ base: "2xl", sm: "3xl", lg: "5  xl" }}
+              fontSize={{ base: "2xl", sm: "3xl", lg: "5xl" }}
             >
               <Text
                 as={"span"}
@@ -100,21 +100,21 @@ export default function EventsList({ events }) {
                 Date of Event:
                 <b> {event.dateOfEvent.toDate().toDateString()}</b>
               </Box>
-              <Link to={`/events/${event.id}`}>
-                <Button
-                  key={event.id}
-                  rounded={"full"}
-                  size={"lg"}
-                  fontWeight={"normal"}
-                  px={6}
-                  colorScheme={"red"}
-                  bg={"#a78200"}
-                  _hover={{ bg: "#634d01" }}
-                >
-                  Get started
-                </Button>
-              </Link>
             </Stack>
+            <Link to={`/events/${event.id}`}>
+              <Button
+                key={event.id}
+                rounded={"full"}
+                size={"lg"}
+                fontWeight={"normal"}
+                px={6}
+                colorScheme={"red"}
+                bg={"#a78200"}
+                _hover={{ bg: "#634d01" }}
+              >
+                Get started
+              </Button>
+            </Link>
           </Stack>
           <Flex
             flex={1}

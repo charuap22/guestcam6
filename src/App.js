@@ -23,6 +23,7 @@ import UpdateEvent from "./pages/UpdateEvent";
 import UpdateEvent2 from "./pages/UpdateEvent";
 import CanvaTemplates from "./pages/CanvaTemplates";
 
+import Home from "./site/pages/Home";
 function App() {
   const { authIsReady, user } = useAuthContext();
   const { UserInfo } = useUserInfo();
@@ -41,6 +42,9 @@ function App() {
                   <Dashboard />
                 </Sidebar>
               )}
+            </Route>
+            <Route exact path="/site">
+                  <Home />
             </Route>
 
             <Route path="/CanvaTemplates/:type">

@@ -15,6 +15,7 @@ import {
   Text,
   Alert,
   AlertIcon,
+  VStack,
 } from "@chakra-ui/react";
 import GuestList from "../components/GuestList";
 
@@ -77,28 +78,50 @@ const Dashboard = () => {
         </Box>
       </Slide>
       <Flex align={"center"} justify={"center"} bg={"gray.50"}>
-        <Stack spacing={8} mx={"auto"} py={12} px={6} width={"100%"}>
+        <Stack spacing={8} mx={"auto"} py={6} px={0} width={"100%"}>
           <Stack align={"center"}>
             <Box
-              w="80%"
+              w="95%"
               bg={"white"}
               boxShadow={"2xl"}
               rounded={"lg"}
-              p={6}
+              px={6}
+              paddingTop={6}
+              paddingBottom={3}
               textAlign={"left"}
             >
-              <SimpleGrid columns={2} spacing={10}>
+              <SimpleGrid
+                columns={{ sm: 1, md: 3 }}
+                spacing={{ sm: 0, md: 10 }}
+                verticalAlign={"center"}
+              >
+               
+                  <Heading
+                    fontSize={"3xl"}
+                    color={"yellow.500"}
+                    fontFamily={"body"}
+                    paddingTop={"5px"}
+                  >
+                    Package
+                  </Heading>
+                
+
                 <GetPackageInfo></GetPackageInfo>
-                <Box
-                  verticalAlign={"center"}
-                  pt={"25px"}
-                  align={"right"}
+                <Button
+                  rounded={"full"}
+                  size={"lg"}
+                  fontWeight={"normal"}
+                  px={6}
+                  colorScheme={"red"}
+                  bg={"#a78200"}
+                  _hover={{ bg: "#634d01" }}
                   onClick={() => {
                     history.push(`/pricing`);
                   }}
                 >
-                  <Button py={2} colorScheme="gray" sx={{'text-wrap': `wrap`}}>Upgrade Package</Button>
-                </Box>
+                  Upgrade Package
+                </Button>
+                
               </SimpleGrid>
             </Box>
           </Stack>
@@ -106,8 +129,8 @@ const Dashboard = () => {
             rounded={"lg"}
             bg={"white"}
             boxShadow={"lg"}
-            p={8}
-            width="80%"
+            p={6}
+            width="95%"
             mx={"auto"}
           >
             <Stack spacing={4}>
