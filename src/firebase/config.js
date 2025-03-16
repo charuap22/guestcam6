@@ -1,7 +1,8 @@
-import firebase from 'firebase/compat/app'
-import 'firebase/compat/auth'
-import 'firebase/compat/firestore'
-import 'firebase/compat/storage'
+import firebase from 'firebase/app'
+import 'firebase/auth'
+import 'firebase/firestore'
+import 'firebase/storage'
+// import "firebase/functions"; // For the extension
 
 const firebaseConfig = {
   apiKey: "AIzaSyA9A5kUQyN5cN9ASLjII8xrD3SfOyCwTJk",
@@ -23,4 +24,6 @@ const projectStorage = firebase.storage()
 //timestamp
 const timestamp = firebase.firestore.Timestamp
 
-export { projectAuth, projectFirestore, projectStorage, timestamp }
+//const functions = firebase.functions(); // Get the functions instance
+
+export { projectAuth, projectFirestore, projectStorage, timestamp }//, functions

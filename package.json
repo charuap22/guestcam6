@@ -1,16 +1,44 @@
 {
-  "name": "the-dojo",
+  "name": "guestcam",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@testing-library/jest-dom": "^5.14.1",
-    "@testing-library/react": "^11.2.7",
-    "@testing-library/user-event": "^12.8.3",
+    "@chakra-ui/icons": "^2.0.19",
+    "@chakra-ui/react": "^2.7.1",
+    "@emotion/react": "^11.11.1",
+    "@emotion/styled": "^11.11.0",
+    "@stripe/stripe-js": "^5.6.0",
+    "@testing-library/jest-dom": "^5.16.5",
+    "@testing-library/react": "^13.4.0",
+    "@testing-library/user-event": "^13.5.0",
+    "axios": "^1.7.9",
+    "chakra-ui-ionicons": "^0.3.3",
+    "date-fns": "^2.30.0",
+    "file-saver": "^2.0.5",
     "firebase": "8.5",
-    "react": "^17.0.2",
-    "react-dom": "^17.0.2",
-    "react-scripts": "4.0.3",
-    "web-vitals": "^1.1.2"
+    "firebase-admin": "^13.1.0",
+    "framer-motion": "^10.12.22",
+    "imagekitio-react": "^3.0.0",
+    "jol-player": "^4.0.0",
+    "jszip": "^3.10.1",
+    "moment": "^2.29.4",
+    "process": "^0.11.10",
+    "qrcode.react": "^3.1.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-google-button": "^0.7.2",
+    "react-icons": "^4.10.1",
+    "react-image-file-resizer": "^0.4.8",
+    "react-initials-avatar": "^1.1.2",
+    "react-player": "^2.12.0",
+    "react-router-dom": "5.1",
+    "react-scripts": "5.0.1",
+    "react-social-login-buttons": "^3.9.1",
+    "react-toastify": "^9.1.3",
+    "simple-react-lightbox": "^3.6.9-0",
+    "stripe": "^17.6.0",
+    "uuid": "^9.0.0",
+    "web-vitals": "^2.1.4"
   },
   "scripts": {
     "start": "react-scripts --openssl-legacy-provider start",
@@ -35,5 +63,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "@types/react-router-dom": "^5.3.3"
   }
 }
