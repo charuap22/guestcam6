@@ -48,7 +48,7 @@ import { useAuthContext } from "../hooks/useAuthContext";
 import { projectStorage, timestamp } from "../firebase/config";
 import { useFirestore } from "../hooks/useFirestore";
 import GetPackageInfo from "../components/GetPackageInfo";
-import { usePlan } from "../hooks/usePlan";
+import { usePlan } from "../context/PlanContext";
 
 const downloadQR = () => {
   const canvas = document.getElementById("123456");
@@ -81,7 +81,7 @@ const UpdateEvent = () => {
   const [avatarImg, setAvatarImg] = useState(null);
 
   const { user } = useAuthContext();
-  const { plan } = usePlan();
+const { currentPlan } = usePlan();
 
   // Create a reference to the hidden file input element
   const hiddenFileInput = useRef(null);
@@ -252,7 +252,7 @@ const UpdateEvent = () => {
               textAlign={"left"}
             >
               <SimpleGrid columns={2} spacing={10}>
-                <GetPackageInfo plan={plan}></GetPackageInfo>
+                <GetPackageInfo plan={currentPlan}></GetPackageInfo>
                 <Box verticalAlign={"center"} pt={"25px"} align={"right"}>
                   <Button colorScheme="gray">Upgrade Package</Button>
                 </Box>

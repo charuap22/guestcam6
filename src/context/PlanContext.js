@@ -1,60 +1,119 @@
-import { createContext, useEffect, useReducer } from "react";
-import { projectFirestore } from "../firebase/config";
-import { useAuthContext } from "../hooks/useAuthContext";
+import React, { createContext, useContext, useState, useEffect } from "react";
+import { projectFirestore, projectAuth } from "../firebase/config";
 
-export const PlanContext = createContext();
+const PlanContext = createContext();
 
-const planReducer = (state, action) => {
-  switch (action.type) {
-    case "CHANGE_PLAN":
-      return { ...state, plan: action.payload };
-    default:
-      return state;
-  }
-};
+export const PlanProvider = ({ children }) => {
+  const [currentPlan, setCurrentPlan] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-export function PlanProvider({ children }) {
-  //let p = "";
-  let planDetails = {};
-  const { user } = useAuthContext();
   useEffect(() => {
-    if (user) {
-      projectFirestore
-        .collection("users")
-        .doc(user.uid)
-        .get()
-        .then((doc) => {
-          if (doc.exists) {
-            if (doc.data().planId) {
-              //changePlan(p);
-              return projectFirestore
-                .collection("plans")
-                .doc(doc.data().planId)
-                .get()
-                .then((doc) => {
-                  if (doc.exists) {
-                    if (doc.data()) {
-                      planDetails = doc.data();
-                      console.log("plan from context", doc.data());
-                      changePlan(planDetails);
-                    }
-                  }
-                });
-            }
+    const fetchPlanData = async () => {
+      const user = projectAuth.currentUser;
+      if (!user) {
+        setCurrentPlan(null);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const userRef = projectFirestore.collection("users").doc(user.uid);
+        const unsubscribe = userRef.onSnapshot(async (doc) => {
+          if (!doc.exists) {
+            setCurrentPlan(null);
+            setLoading(false);
+            return;
           }
+
+          const userData = doc.data();
+          if (userData.planId) {
+            const productRef = projectFirestore
+              .collection("products")
+              .doc(userData.planId);
+            const productSnap = await productRef.get();
+
+            const planName = productSnap.exists
+              ? productSnap.data().name
+              : "Unknown Plan";
+            const guestStart = productSnap.exists
+              ? productSnap.data().stripe_metadata_NoOfGuests_start
+              : "0";
+            const guestEnd = productSnap.exists
+              ? productSnap.data().stripe_metadata_NoOfGuests_end
+              : "Unlimited";
+
+            setCurrentPlan({
+              planId: userData.planId,
+              planName,
+              price: userData.price,
+              subscribedOn: userData.subscribedOn
+                ? new Date(userData.subscribedOn.seconds * 1000)
+                : null,
+              subscriptionEndDate: userData.subscriptionEndDate
+                ? new Date(userData.subscriptionEndDate.seconds * 1000)
+                : null,
+              subscriptionStatus: userData.subscriptionStatus,
+              guestStart,
+              guestEnd,
+            });
+          } else {
+            setCurrentPlan(null);
+          }
+          setLoading(false);
         });
+
+        return () => unsubscribe();
+      } catch (err) {
+        console.error("Error fetching plan data:", err);
+        setLoading(false);
+      }
+    };
+
+    fetchPlanData();
+  }, []);
+
+  // ✅ Function to update the plan manually
+  const updatePlan = async () => {
+    const user = projectAuth.currentUser;
+    if (!user) return;
+
+    try {
+      const userRef = projectFirestore.collection("users").doc(user.uid);
+      const userSnap = await userRef.get();
+
+      if (userSnap.exists) {
+        const userData = userSnap.data();
+        console.log("🔄 Updating Plan Context with:", userData);
+
+        setCurrentPlan({
+          planId: userData.planId,
+          planName: userData.planName,
+          price: userData.price,
+          subscribedOn: userData.subscribedOn
+            ? new Date(userData.subscribedOn.seconds * 1000)
+            : null,
+          subscriptionEndDate: userData.subscriptionEndDate
+            ? new Date(userData.subscriptionEndDate.seconds * 1000)
+            : null,
+          subscriptionStatus: userData.subscriptionStatus,
+          guestStart: userData.guestStart || "0",
+          guestEnd: userData.guestEnd || "Unlimited",
+        });
+      }
+    } catch (err) {
+      console.error("🔥 Error updating plan:", err);
     }
-  }, [user]);
-
-  const [state, dispatch] = useReducer(planReducer, { plan: planDetails });
-
-  const changePlan = (plan) => {
-    dispatch({ type: "CHANGE_PLAN", payload: plan });
   };
- 
+
   return (
-    <PlanContext.Provider value={{ ...state, changePlan }}>
+    <PlanContext.Provider
+      value={{ currentPlan, loading, updatePlan }}
+    >
       {children}
     </PlanContext.Provider>
   );
-}
+};
+
+export const usePlan = () => {
+  return useContext(PlanContext);
+};

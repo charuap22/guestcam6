@@ -580,11 +580,11 @@ body .page.sidebar-true .site-main {
 .ttm-bgcolor-black .widget i,
 .widget a:hover,
 .section-title h4,
-#site-header-menu #site-navigation .menu ul.dropdown > li.active > a,
+#site-header-menu #site-navigation .menu ul.dropdown > li > a.active,
 #site-navigation .menu > ul,
 .ttm-header-style-classic-box.ttm-header-overlay #site-header-menu #site-navigation .menu > ul > li.active > a,
 .ttm-header-style-classic-box.ttm-header-overlay #site-header-menu #site-navigation .menu > ul > li:hover > a,
-.ttm-header-style-classic #site-header-menu #site-navigation .menu > ul > li.active > a,
+.ttm-header-style-classic #site-header-menu #site-navigation .menu > ul > li > a.active,
 .ttm-header-style-classic #site-header-menu #site-navigation .menu > ul > li:hover > a,
 .ttm-search-overlay,
 .ttm-header-icons .ttm-header-cart-link span.number-cart,
@@ -657,13 +657,13 @@ ul.social-icons li a:hover,
 .ttm-btn.ttm-btn-color-skincolor.ttm-btn-style-fill,
 .ttm-tabs ul.tabs li a.active,
 .ttm-tabs ul.tabs li a:focus,
-.ttm-tabs ul.tabs li.active a,
+.ttm-tabs ul.tabs li a.active,
 .ttm-bgcolor-skincolor > .ttm-bg-layer,
-#site-header-menu #site-navigation .menu ul li > ul li.active > a,
+#site-header-menu #site-navigation .menu ul li > ul li > a.active,
 #site-header-menu #site-navigation .menu ul li > ul li > a:hover,
 #site-header-menu #site-navigation .menu > ul > li > a:before,
 .accordion .toggle.active .toggle-title,
-.sidebar-left .widget.widget-nav-menu ul li.active a,
+.sidebar-left .widget.widget-nav-menu ul li a.active,
 .sidebar-left .widget.widget-nav-menu ul li:hover a,
 .sidebar .widget .widget-title:before,
 #site-navigation .menu ul.dropdown > li > a:before,
@@ -693,7 +693,7 @@ a.checkout-button:hover,
 .featured-imagebox-event.ttm-box-view-top-image .ttm-box-post-date,
 .ttm-progress-bar .progress .progress-bar.progress-bar-color-bar_skin,
 .mailchimp-inputbox input[type="submit"],
-div.product ul.tabs li.active,
+div.product ul.tabs li a.active,
 .progress .progress-bar.progress-bar-color-bar_skincolor.with-lable:before{
     background-color: #e6c250 ;
 }
@@ -716,7 +716,7 @@ div.product ul.tabs li.active,
 
 }
 .sidebar .widget .widget-title:before, 
-.ttm-tabs.style2 ul.tabs li.active a,
+.ttm-tabs.style2 ul.tabs li a.active,
 .ttm-bgcolor-skincolor .contactform .text-input:focus, .ttm-bgcolor-skincolor .contactform .text-area:focus,
 .sidebar .widget .widget-title:before,
 .ttm-bgcolor-grey .contactform .text-input:focus,
@@ -739,7 +739,7 @@ div.product ul.tabs li.active,
 .contactform .text-area:focus{
     border-bottom-color: #e6c250  !important ;
 }
-div.product ul.tabs li.active:before{
+div.product ul.tabs li a.active:before{
     border-top-color: #e6c250  !important ;
 }
 /*white-color*/
@@ -778,7 +778,7 @@ ul.social-icons li a,
 .ttm-btn.ttm-btn-color-skincolor.ttm-btn-style-fill,
 .layer-content.ttm-bgcolor-lightblack ul.ttm-list.ttm-list-style-icon .ttm-list-li-content,
 .title-box-only h2,
-.ttm-tabs ul.tabs li.active a,
+.ttm-tabs ul.tabs li a.active,
 .ttm-bgcolor-skincolor .layer-content,
 .ttm-bgcolor-skincolor .layer-content .featured-box .featured-icon i,
 .ttm-bgcolor-skincolor .layer-content h3,
@@ -791,10 +791,10 @@ ul.social-icons li a,
 .breadcrumb-wrapper a:hover,
 #site-header-menu #site-navigation .menu ul li > ul li > a:hover,
 #site-header-menu #site-navigation .menu ul li > ul li.active > a,
-.sidebar-left .widget.widget-nav-menu ul li.active a,
+.sidebar-left .widget.widget-nav-menu ul li a.active,
 .sidebar-left .widget.widget-nav-menu ul li:hover a,
 footer .widget a,
-.ttm-tabs ul.tabs li.active a,
+.ttm-tabs ul.tabs li a.active,
 .highlight-skin-button,
 .classic-border-button,
 .social-icons.square li>a:hover,
@@ -1259,7 +1259,10 @@ ul li .icon-box.icon-style-border{
     z-index: 1;
     position: relative;
 }
-.site-branding img {max-height: 60px;}
+
+.site-branding img {max-height: 60px;
+    margin-top: 25px;
+}
 
 .ttm-menu-toggle{ float: right; }
 .ttm-menu-toggle input[type=checkbox] { display: none; }
@@ -2148,5 +2151,9 @@ article.post blockquote p{
 
 .ttm-icon img {
     width: 50%;
+    margin: 0 auto;
+    margin-top: 20px;
+}
+.title-img img{
     margin: 0 auto;
 }

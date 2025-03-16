@@ -49,7 +49,9 @@ export const useSignup = () => {
         displayName,
         photoURL: photoURL,
         planId: "",
-        role: "Admin"
+        role: "Admin",
+        subscribedOn: "",
+        subscriptionStatus: "pending"
       });
 
       // dispatch login action

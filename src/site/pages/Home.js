@@ -1,5 +1,5 @@
 import React from "react";
-import whatwedo from "../../images/col-bgimage-3.jpg";
+import whatwedo from "../images/col-bgimage-3.jpg";
 
 import Header_revslider from "../components/header/Header_revslider";
 import Footer from "../components/footer/Footer";
@@ -10,9 +10,9 @@ const Home = () => {
       {/* <!--page start--> */}
       <div className="page">
         {/* <!-- preloader start --> */}
-        {/* <div id="preloader">
+        <div id="preloader">
           <div id="status">&nbsp;</div>
-        </div> */}
+        </div>
         {/* <!-- preloader end --> */}
         <Header_revslider></Header_revslider>
 

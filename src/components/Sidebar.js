@@ -31,6 +31,7 @@ import {
   Button,
   Divider,
   AbsoluteCenter,
+  Spacer,
 } from "@chakra-ui/react";
 import {
   FiHome,
@@ -60,10 +61,10 @@ import { AvatarInfo_Mobile } from "./AvatarInfo_Mobile";
 import { HomeIcon } from "chakra-ui-ionicons";
 
 const LinkItems = [
-  { name: "Home", icon: FiHome, url: "/" },
+  { name: "Home", icon: FiHome, url: "/dashboard" },
   { name: "Create Event", icon: MdEvent, url: "/newevent" },
   { name: "Print Materials", icon: AiOutlinePrinter, url: "/canvatemplates" },
-  { name: "Settings", icon: FiSettings, url: "/" },
+  { name: "Settings", icon: FiSettings, url: "/dashboard" },
 ];
 
 export default function Sidebar({ role, children }) {
@@ -297,15 +298,10 @@ const MobileNav = ({ role, eventId, onOpen, ...rest }) => {
         icon={<FiMenu />}
       /> */}
 
-        <Text
-          fontSize="2xl"
-         
-          mr="8"
-          fontFamily="monospace"
-          fontWeight="bold"
-        >
+        <Text fontSize="2xl" mt={"10px"} mr="8" fontFamily="monospace" fontWeight="bold">
           GUESTCAM
         </Text>
+        <Spacer />
         <AvatarInfo_Mobile></AvatarInfo_Mobile>
       </Flex>
 
@@ -324,7 +320,7 @@ const MobileNav = ({ role, eventId, onOpen, ...rest }) => {
           <IconButton
             aria-label="Home"
             onClick={() => {
-              history.push(`/`);
+              history.push(`/dashboard`);
             }}
             icon={<HomeIcon />}
           />
@@ -386,7 +382,6 @@ const MobileNav = ({ role, eventId, onOpen, ...rest }) => {
             }}
             icon={<SettingsIcon />}
           />
-    
         </Flex>
       )}
       {(role == "Admin" || role == "Guest") && eventId && (

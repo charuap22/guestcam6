@@ -27,7 +27,7 @@ export const useLogin = () => {
       await documentRef.update({ online: true });
 
       dispatch({ type: "LOGIN", payload: res.user });
-      history.push(`/`);
+      history.push(`/dashboard`);
       // projectFirestore
       //   .collection("users")
       //   .doc(res.user.uid)
@@ -72,7 +72,7 @@ export const useLogin = () => {
       await documentRef.update({ online: true });
 
       dispatch({ type: "LOGIN", payload: res.user });
-      history.push(`/`);
+      history.push(`/dashboard`);
 
       if (!isCancelled) {
         setIsPending(false);
@@ -102,7 +102,7 @@ export const useLogin = () => {
         await documentRef.update({ online: true });
 
         dispatch({ type: "LOGIN", payload: res.user });
-        history.push(`/`);
+        history.push(`/dasboard`);
 
         if (!isCancelled) {
           setIsPending(false);

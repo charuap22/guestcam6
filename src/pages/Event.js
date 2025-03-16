@@ -31,7 +31,7 @@ import { useEvent } from "../hooks/useEvent";
 import { useHistory } from "react-router-dom";
 import { useUserInfo } from "../hooks/useUserInfo";
 import { useEffect } from "react";
-import { usePlan } from "../hooks/usePlan";
+import { usePlan } from "../context/PlanContext";
 
 const downloadQR = () => {
   const canvas = document.getElementById("123456");
@@ -53,14 +53,15 @@ const Event = () => {
   const { UserInfo } = useUserInfo();
 
   const { eventId, changeEvent } = useEvent();
-  const { plan } = usePlan();
+ const { currentPlan, loading } = usePlan();
 
   let barVal = 0;
   useEffect(() => {
     changeEvent(id);
-    if (plan && document) barVal = plan.NoOfGuests_end - document.noOfGuests;
+    if (currentPlan && document)
+      barVal = currentPlan.NoOfGuests_end - document.noOfGuests;
     console.log(barVal);
-  }, [document, plan]);
+  }, [document, currentPlan]);
   console.log("eventId: ", eventId);
 
   let history = useHistory();
@@ -187,7 +188,7 @@ const Event = () => {
                   mb={"4"}
                 >
                   {/* {document.guestList && document.guestList.count} */}
-                  {document.noOfGuests}/{plan.NoOfGuests_end}
+                  {document.noOfGuests}/{currentPlan.NoOfGuests_end}
                 </Text>
               </HStack>
 
@@ -195,7 +196,9 @@ const Event = () => {
                 <Progress
                   colorScheme="yellow"
                   size="md"
-                  value={(document.noOfGuests / plan.NoOfGuests_end) * 100}
+                  value={
+                    (document.noOfGuests / currentPlan.NoOfGuests_end) * 100
+                  }
                 />
               </Box>
             </Box>
@@ -437,7 +440,7 @@ const Event = () => {
               <a
                 href="https:&#x2F;&#x2F;www.canva.com&#x2F;design&#x2F;DAFvx1h2nUo&#x2F;view?utm_content=DAFvx1h2nUo&amp;utm_campaign=designshare&amp;utm_medium=embeds&amp;utm_source=link"
                 target="_blank"
-                rel="noopener"
+                rel="noopener noreferrer"
               >
                 Table Card Template (20 x 20 cm)
               </a>{" "}

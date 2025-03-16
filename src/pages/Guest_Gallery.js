@@ -2,7 +2,7 @@ import React from "react";
 import UploadForm from "../components/UploadForm";
 import ImageGrid from "../components/ImageGrid";
 import { useState, useEffect } from "react";
-import { projectFirestore } from "../firebase/config";
+const { projectFirestore } = require("../firebase/config");
 import { useParams } from "react-router-dom";
 import { useAuthContext } from "../hooks/useAuthContext";
 import { useCollection } from "../hooks/useCollection";

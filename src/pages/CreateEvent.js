@@ -36,12 +36,12 @@ import { NavLink } from "react-router-dom";
 import { useCollection } from "../hooks/useCollection";
 import GetPackageInfo from "../components/GetPackageInfo";
 import { useFirestore } from "../hooks/useFirestore";
-import { usePlan } from "../hooks/usePlan";
+import { usePlan } from "../context/PlanContext";
 import { v4 as uuidv4 } from "uuid";
 const CreateEvent = () => {
   const { addDocument, response } = useFirestore("events");
 
-  const { plan } = usePlan();
+    const { currentPlan, loading } = usePlan();
   // const { error, documents } = useCollection("plans", ["id", "==", plan]);
   const [error, setError] = useState(null);
   const [isPending, setIsPending] = useState(false);
@@ -83,6 +83,7 @@ const CreateEvent = () => {
       photoUrl: user.photoURL,
       id: user.uid,
     };
+
     const adminId = user.uid;
     const guestList = [];
 
@@ -108,7 +109,8 @@ const CreateEvent = () => {
         guestList: guestList,
         createdBy,
         adminId,
-        planId: plan.id,
+        plan: currentPlan.Name,
+        amount: currentPlan.Price,
         guestBook: [],
       };
       await addDocument(event);
@@ -170,21 +172,39 @@ const CreateEvent = () => {
 
   return (
     <Flex align={"center"} justify={"center"} bg={"gray.50"}>
-      <Stack spacing={8} mx={"auto"} py={12} px={6} width={"100%"}>
+      <Stack spacing={8} mx={"auto"} py={6} px={0} width={"100%"}>
         <Stack align={"center"}>
           <Box
-            w="80%"
+            w="95%"
             bg={"white"}
             boxShadow={"2xl"}
             rounded={"lg"}
-            p={6}
+            px={6}
+            paddingTop={6}
+            paddingBottom={3}
             textAlign={"left"}
           >
-            <SimpleGrid columns={2} spacing={10}>
-              <GetPackageInfo plan={plan}></GetPackageInfo>
-              <Box verticalAlign={"center"} pt={"25px"} align={"right"}>
-                <Button colorScheme="gray">Upgrade Package</Button>
-              </Box>
+            <SimpleGrid
+              columns={{ sm: 1, md: 3 }}
+              spacing={{ sm: 0, md: 10 }}
+              verticalAlign={"center"}
+            >
+              {/* <GetPackageInfo plan={plan}></GetPackageInfo> */}
+              <GetPackageInfo></GetPackageInfo>
+              <Button
+                rounded={"full"}
+                size={"lg"}
+                fontWeight={"normal"}
+                px={6}
+                colorScheme={"red"}
+                bg={"#a78200"}
+                _hover={{ bg: "#634d01" }}
+                onClick={() => {
+                  history.push(`/pricing`);
+                }}
+              >
+                Upgrade Package
+              </Button>
             </SimpleGrid>
           </Box>
         </Stack>
@@ -192,13 +212,13 @@ const CreateEvent = () => {
           rounded={"lg"}
           bg={"white"}
           boxShadow={"lg"}
-          p={8}
-          width="80%"
+          p={6}
+          width="95%"
           mx={"auto"}
         >
-          <Stack spacing={4}>
-            <Heading fontSize={"xl"} mb={2}>
-              Create a new event
+          <Stack spacing={0}>
+            <Heading fontSize={"xl"} mb={0} pb={0}>
+              Create Event
             </Heading>
             <hr></hr>
             {thumbnailError && (
@@ -214,7 +234,7 @@ const CreateEvent = () => {
               </Alert>
             )}
             <form onSubmit={handleSubmit}>
-              <SimpleGrid columns={2} spacing={10}>
+              <SimpleGrid columns={{ sm: 1, md: 2 }} spacing={10}>
                 <Box>
                   <FormControl id="Name">
                     <FormLabel>Event Name</FormLabel>
@@ -228,7 +248,7 @@ const CreateEvent = () => {
                 </Box>
                 <Box>
                   <FormControl id="Header">
-                    <FormLabel>Event Page Header</FormLabel>
+                    <FormLabel> Page Header</FormLabel>
                     <Input
                       type="text"
                       required

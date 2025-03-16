@@ -32,9 +32,9 @@ const ImageCard = ({
   };
  
   return (
-    <Box className="img-container"  >
+    <Box className="img-container">
       <Box className="gallery-caption-left">
-        <h1>
+        <h1 fontSize={{ base: "24px", sm: "20px", md: "40px", lg: "56px" }}>
           by: <b>{image.createdByName}</b>{" "}
         </h1>
       </Box>
@@ -82,7 +82,7 @@ const ImageCard = ({
                 id: image.id,
                 selected: "deselected",
                 url: image.url,
-                createdBy: image.createdBy
+                createdBy: image.createdBy,
               });
           }}
           w={8}

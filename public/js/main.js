@@ -38,7 +38,7 @@
 
 (function($) {
 
-   'use strict'
+   
 
 /*------------------------------------------------------------------------------*/
 /* Preloader
@@ -479,7 +479,7 @@ $(".post-img-slide").owlCarousel({
 // ===== Scroll to Top ==== 
 jQuery('#totop').hide();
 jQuery(window).scroll(function() {
-    "use strict";
+    
     if (jQuery(this).scrollTop() >= 100) {        // If page is scrolled more than 50px
         jQuery('#totop').fadeIn(200);    // Fade in the arrow
         jQuery('#totop').addClass('top-visible');

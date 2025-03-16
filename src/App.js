@@ -22,8 +22,11 @@ import { useUserInfo } from "./hooks/useUserInfo";
 import UpdateEvent from "./pages/UpdateEvent";
 import UpdateEvent2 from "./pages/UpdateEvent";
 import CanvaTemplates from "./pages/CanvaTemplates";
-
+import SuccessPage from "./pages/SuccessPage";
 import Home from "./site/pages/Home";
+import About from "./site/pages/About";
+import CancelPage from "./pages/CancelPage";
+
 function App() {
   const { authIsReady, user } = useAuthContext();
   const { UserInfo } = useUserInfo();
@@ -34,7 +37,7 @@ function App() {
         <BrowserRouter>
           {/* <Sidebar  /> */}
           <Switch>
-            <Route exact path="/">
+            <Route exact path="/dashboard">
               {!user && <Redirect to="/login" />}
 
               {user && (
@@ -43,10 +46,12 @@ function App() {
                 </Sidebar>
               )}
             </Route>
-            <Route exact path="/site">
-                  <Home />
+            <Route exact path="/">
+              <Home />
             </Route>
-
+            <Route exact path="/about">
+              <About />
+            </Route>
             <Route path="/CanvaTemplates/:type">
               {!user && <Redirect to="/login" />}
               {user && (
@@ -161,6 +166,14 @@ function App() {
             <Route path="/pricing">
               {!user && <Redirect to="/login" />}
               {user && <Pricing />}
+            </Route>
+            <Route path="/success">
+              {!user && <Redirect to="/login" />}
+              {user && <SuccessPage />}
+            </Route>
+            <Route path="/cancel">
+              {!user && <Redirect to="/login" />}
+              {user && <CancelPage />}
             </Route>
           </Switch>
         </BrowserRouter>

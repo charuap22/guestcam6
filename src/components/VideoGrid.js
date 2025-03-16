@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { useFirestore } from "../hooks/useFirestore";
-import { projectFirestore } from "../firebase/config";
 // import Trashcan from "../assets/trashcan.svg";
 import { motion } from "framer-motion";
 import {

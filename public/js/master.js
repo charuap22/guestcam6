@@ -1,6 +1,7 @@
 (function ($) {
-  "use strict";
-
+  
+  $("#preloader").delay(1000).fadeOut("slow");
+  
   $(document).ready(function () {
     /* ===== REVOLUTION SLIDER LANDING ===== */
 

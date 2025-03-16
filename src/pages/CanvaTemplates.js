@@ -274,7 +274,7 @@ const CanvaTemplates = () => {
           mx="auto"
         >
           {srces_1sided.map((src) => (
-            <a href={src.link} target="_blank" >
+            <a href={src.link} target="_blank" rel="noreferrer" >
              <Image
                 key={src.image}
                 w="100%"
@@ -295,7 +295,7 @@ const CanvaTemplates = () => {
           mx="auto"
         >
           {srces_2sided.map((src) => (
-             <a href={src.link} target="_blank" >
+             <a href={src.link} target="_blank" rel="noreferrer" >
               <Image
                 key={src.image}
                 w="100%"

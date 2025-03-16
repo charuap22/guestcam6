@@ -1,6 +1,15 @@
-import React from 'react'
-
+import React from "react";
+import { useHistory, NavLink,Link } from "react-router-dom";
+import { AvatarInfo_Mobile } from "../../components/AvatarInfo_Mobile";
+import { useAuthContext } from "../../hooks/useAuthContext";
+import { useLogout } from "../../hooks/useLogout";
+import { Text } from "@chakra-ui/react";
+import { useUserInfo } from "../../hooks/useUserInfo";
+import { AvatarInfo } from "../../components/AvatarInfo";
 const Menu = () => {
+  const { authIsReady, user } = useAuthContext();
+  const { logout, isPending } = useLogout();
+  const { UserInfo } = useUserInfo();
   return (
     <>
       {/* <!-- ttm-header-wrap --> */}
@@ -15,19 +24,14 @@ const Menu = () => {
               <div className="container">
                 {/* <!-- site-branding --> */}
                 <div className="site-branding">
-                  <a
-                    className="home-link"
-                    href="index.html"
-                    title="GUESTCAM"
-                    rel="home"
-                  >
+                  <Link to="/">
                     <img
                       id="logo-img"
                       className="img-center"
                       src="images/logo-img.png"
                       alt="logo-img"
                     />
-                  </a>
+                  </Link>
                 </div>
                 {/* <!-- site-branding end --> */}
 
@@ -47,13 +51,15 @@ const Menu = () => {
                   <nav id="menu" className="menu">
                     <ul className="dropdown">
                       <li className="active">
-                        <a href="index.html">Home</a>
+                        <NavLink exact to="/" activeClassName="active">
+                          Home
+                        </NavLink>
                       </li>
                       <li>
-                        <a href="index.html">About Us</a>
+                        <NavLink to="/about">About Us</NavLink>
                       </li>
                       <li>
-                        <a href="#">Use Cases</a>
+                        <NavLink to="/usecases">Use Cases</NavLink>
                         <ul>
                           <li>
                             <a href="#">Wedding</a>
@@ -76,10 +82,33 @@ const Menu = () => {
                         </ul>
                       </li>
                       <li>
-                        <a href="#">How it works?</a>
+                        <NavLink to="/howitworks">How it works?</NavLink>
                       </li>
                       <li>
-                        <a href="#">Pricing</a>
+                        <NavLink to="/pricing">Pricing</NavLink>
+                      </li>
+
+                      <li>
+                        {!isPending && user && UserInfo.role === "Admin" && (
+                          <>
+                            <NavLink to="/dashboard">Dashboard</NavLink>
+                          </>
+                        )}
+                      </li>
+                      <li>
+                        {!isPending && user && UserInfo.role === "Admin" && (
+                          <>{user.displayName + ","}</>
+                        )}
+                      </li>
+                      <li>
+                        {!isPending && user && UserInfo.role === "Admin" && (
+                          <>
+                            <NavLink to="#" onClick={logout}>
+                              Logout
+                            </NavLink>
+                          </>
+                        )}
+                        {!user && <NavLink to="/login">Login</NavLink>}
                       </li>
                     </ul>
                   </nav>
@@ -93,6 +122,6 @@ const Menu = () => {
       {/* <!--ttm-header-wrap end --> */}
     </>
   );
-}
+};
 
-export default Menu
+export default Menu;
