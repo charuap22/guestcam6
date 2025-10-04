@@ -21,19 +21,19 @@ const firestoreReducer = (state, action) => {
       };
     case "DELETED_DOCUMENT":
       return { isPending: false, document: null, success: true, error: null };
-    case "ERROR":
-      return {
-        isPending: false,
-        document: null,
-        success: false,
-        error: action.payload,
-      };
     case "UPDATED_DOCUMENT":
       return {
         isPending: false,
         document: action.payload,
         success: true,
         error: null,
+      };
+    case "ERROR":
+      return {
+        isPending: false,
+        document: null,
+        success: false,
+        error: action.payload,
       };
     default:
       return state;
@@ -44,98 +44,121 @@ export const useFirestore = (collection) => {
   const [response, dispatch] = useReducer(firestoreReducer, initialState);
   const [isCancelled, setIsCancelled] = useState(false);
 
-  // collection ref
+  // Firestore collection reference
   const ref = projectFirestore.collection(collection);
 
-  // only dispatch if not cancelled
+  // Only dispatch if the component is still active
   const dispatchIfNotCancelled = (action) => {
     if (!isCancelled) {
       dispatch(action);
     }
   };
 
-  // add a document
+  // **✅ Improved Add Document**
   const addDocument = async (doc) => {
     dispatch({ type: "IS_PENDING" });
 
     try {
       const createdAt = timestamp.fromDate(new Date());
-      const addedDocument = await ref.add({ ...doc, createdAt });
+      const addedDocumentRef = await ref.add({ ...doc, createdAt }); // Firestore reference
+
+      const addedDocument = { id: addedDocumentRef.id, ...doc, createdAt }; // ✅ Return ID & Data
+
+      // 🔹 Log the saved document to verify all fields
+      const snap = await addedDocumentRef.get();
+      console.log("Saved in Firestore:", snap.data());
+      
       dispatchIfNotCancelled({
         type: "ADDED_DOCUMENT",
         payload: addedDocument,
       });
+
+      return {
+        id: addedDocumentRef.id,
+        success: true,
+        document: addedDocumentRef,
+      }; // ✅ Ensure full reference is returned
     } catch (err) {
       dispatchIfNotCancelled({ type: "ERROR", payload: err.message });
+      return { error: err.message }; // ✅ Handle errors
     }
   };
 
-  // delete a document
+  // **✅ Improved Update Document**
+  const updateDocument = async (id, updates) => {
+    dispatch({ type: "IS_PENDING" });
+
+    try {
+      const documentRef = ref.doc(id);
+      await documentRef.update(updates);
+
+      // ✅ Fetch the updated document after update
+      const updatedDocumentSnap = await documentRef.get();
+      const updatedDocument = {
+        id: updatedDocumentSnap.id,
+        ...updatedDocumentSnap.data(),
+      };
+
+      dispatchIfNotCancelled({
+        type: "UPDATED_DOCUMENT",
+        payload: updatedDocument,
+      });
+
+      return updatedDocument;
+    } catch (error) {
+      dispatchIfNotCancelled({ type: "ERROR", payload: error.message });
+      return null;
+    }
+  };
+
+  // **✅ Improved Delete Document**
   const deleteDocument = async (id) => {
     dispatch({ type: "IS_PENDING" });
 
     try {
       await ref.doc(id).delete();
       dispatchIfNotCancelled({ type: "DELETED_DOCUMENT" });
+      return { success: true };
     } catch (err) {
-      dispatchIfNotCancelled({ type: "ERROR", payload: "could not delete" });
+      dispatchIfNotCancelled({ type: "ERROR", payload: err.message });
+      return { error: err.message };
     }
   };
 
-  // update a document
-  const updateDocument = async (id, updates) => {
+  // **✅ Improved Delete Comment**
+  const deleteComment = async (eventId, commentId) => {
     dispatch({ type: "IS_PENDING" });
 
     try {
-      const updatedDocument = await ref.doc(id).update(updates);
+      const eventRef = projectFirestore.collection("events").doc(eventId);
+      const eventSnap = await eventRef.get();
+
+      if (!eventSnap.exists) {
+        throw new Error("Event not found");
+      }
+
+      const eventData = eventSnap.data();
+      const guestBook = eventData.guestBook || [];
+
+      // **✅ Remove the comment safely**
+      const updatedGuestBook = guestBook.filter(
+        (comment) => comment.id !== commentId
+      );
+
+      await eventRef.update({ guestBook: updatedGuestBook });
+
+      console.log(`✅ Comment ${commentId} removed successfully.`);
       dispatchIfNotCancelled({
         type: "UPDATED_DOCUMENT",
-        payload: updatedDocument,
+        payload: { guestBook: updatedGuestBook },
       });
-      return updatedDocument;
-    } catch (error) {
-      dispatchIfNotCancelled({ type: "ERROR", payload: error });
-      return null;
+
+      return { success: true };
+    } catch (err) {
+      console.error("❌ Error removing comment:", err.message);
+      dispatchIfNotCancelled({ type: "ERROR", payload: err.message });
+      return { error: err.message };
     }
-  };
-
-  // delete a comment
-  const deleteComment = async (eventId, id) => {
-    dispatch({ type: "IS_PENDING" });
-    try {
-      // fetch the "kids" document
-      let docRef = projectFirestore.collection("events").doc(eventId);
-      let docSnap = await docRef.get();
-      let docData = docSnap.data();
-
-      // remove the element that we no longer want in the document
-      docData.guestBook[id].delete();
-
-      // update the document in Firestore
-      await docRef.update(docData);
-      console.log(`Document updated with ${id} removed!`, docData);
-    } catch (ex) {
-      console.error(`EXCEPTION while removing ${id}:`, ex);
-    }
-
-    //  projectFirestore
-    //   .collection("events")
-    //   .doc(eventId)
-    //   .collection("guestBook")
-    //   .doc(id)
-    //   .get()
-    //   .subscribe((data) => {
-    //     data.ref.delete().then(
-    //       () => {
-    //         console.log("success");
-    //          dispatchIfNotCancelled({ type: "DELETED_DOCUMENT" });
-    //       },
-    //       (error) => {
-    //         console.log("error", error);
-    //         dispatchIfNotCancelled({ type: "ERROR", payload: "could not delete" });
-    //       }
-    //     );
-    //   });
   };
 
   useEffect(() => {
@@ -144,8 +167,8 @@ export const useFirestore = (collection) => {
 
   return {
     addDocument,
-    deleteDocument,
     updateDocument,
+    deleteDocument,
     deleteComment,
     response,
   };

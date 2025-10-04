@@ -2,13 +2,25 @@ import React from "react";
 import UploadForm from "../components/UploadForm";
 import ImageGrid from "../components/ImageGrid";
 import { useState, useEffect } from "react";
-const { projectFirestore } = require("../firebase/config");
+
 import { useParams } from "react-router-dom";
 import { useAuthContext } from "../hooks/useAuthContext";
 import { useCollection } from "../hooks/useCollection";
 import { useEvent } from "../hooks/useEvent";
-import { useAuthContext } from "../hooks/useAuthContext";
+//import { useAuthContext } from "../hooks/useAuthContext";
+import {
+  Box,
+  chakra,
+  Flex,
+  useColorModeValue,
+  Button,
+  Stack,
+  Textarea,
+  SimpleGrid,
+} from "@chakra-ui/react";
+import ImageCardSkeleton from "../components/ImageCardSkeleton";  
 
+const { projectFirestore } = require("../firebase/config");
 const Guest_Gallery = () => {
   const { id } = useParams();
   const { user } = useAuthContext();

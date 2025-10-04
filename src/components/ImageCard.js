@@ -1,4 +1,4 @@
-import { Box, Checkbox, IconButton, Image } from "@chakra-ui/react";
+import { Box, Checkbox, IconButton, Image, Text } from "@chakra-ui/react";
 import React, { useState } from "react";
 import moment from "moment";
 import formatDistanceToNow from "date-fns/formatDistanceToNow";
@@ -21,27 +21,31 @@ export const downloadImage = async (imageSrc, imageName) => {
   document.body.removeChild(link);
 };
 
-const ImageCard = ({
-  image,
-  onSelectImage,
-  showSelectOption
-}) => {
+const ImageCard = ({ image, onSelectImage, showSelectOption }) => {
   const [isSelected, setSelected] = useState(false);
   const ToggleSelected = (image) => {
     setSelected(!isSelected);
   };
- 
+
   return (
     <Box className="img-container">
       <Box className="gallery-caption-left">
-        <h1 fontSize={{ base: "24px", sm: "20px", md: "40px", lg: "56px" }}>
-          by: <b>{image.createdByName}</b>{" "}
-        </h1>
+        <Text
+          fontSize={{ base: "14px", sm: "16px", md: "18px" }} // adjust as needed
+          fontWeight="600"
+          color="gray.800"
+        >
+          by: <b>{image.createdByName}</b>
+        </Text>
       </Box>
       <Box className="gallery-caption-right">
-        <h1>
-          <i>{moment(new Date(image.createdAt.seconds * 1000)).fromNow()}</i>
-        </h1>
+        <Text
+          fontSize={{ base: "12px", sm: "14px", md: "16px" }}
+          color="gray.800"
+          fontStyle="italic"
+        >
+          {moment(new Date(image.createdAt.seconds * 1000)).fromNow()}
+        </Text>
       </Box>
       {/* <Box className="gallery-caption-right2">
         <IconButton

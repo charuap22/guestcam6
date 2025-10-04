@@ -56,12 +56,20 @@ const Event = () => {
  const { currentPlan, loading } = usePlan();
 
   let barVal = 0;
+  // useEffect(() => {
+  //   changeEvent(id);
+  //   if (currentPlan && document)
+  //     barVal = currentPlan.NoOfGuests_end - document.noOfGuests;
+  //   console.log(barVal);
+  // }, [document, currentPlan]);
   useEffect(() => {
     changeEvent(id);
-    if (currentPlan && document)
-      barVal = currentPlan.NoOfGuests_end - document.noOfGuests;
-    console.log(barVal);
-  }, [document, currentPlan]);
+    if (currentPlan?.NoOfGuests_end && document) {
+      const remaining = currentPlan.NoOfGuests_end - document.noOfGuests;
+      console.log("Remaining guests:", remaining);
+    }
+  }, [document, currentPlan, id, changeEvent]);
+
   console.log("eventId: ", eventId);
 
   let history = useHistory();
@@ -72,11 +80,19 @@ const Event = () => {
     return <div className="loading">Loading...</div>;
   }
   return (
-    <Container maxW={"7xl"}>
+    <Flex
+      w="full"
+      align="center"
+      justify="space-between"
+      px={3} // Reduced padding
+      bg="white"
+      rounded="lg"
+      boxShadow="lg"
+    >
       <SimpleGrid
         columns={{ base: 1, lg: 2 }}
         spacing={{ base: 8, md: 10 }}
-        py={{ base: 18, md: 24 }}
+        py={{ base: 18, md: 3 }}
       >
         <VStack>
           <Image
@@ -188,7 +204,8 @@ const Event = () => {
                   mb={"4"}
                 >
                   {/* {document.guestList && document.guestList.count} */}
-                  {document.noOfGuests}/{currentPlan.NoOfGuests_end}
+                  {document.noOfGuests}/
+                  {currentPlan?.NoOfGuests_end || "Unlimited"}
                 </Text>
               </HStack>
 
@@ -197,7 +214,9 @@ const Event = () => {
                   colorScheme="yellow"
                   size="md"
                   value={
-                    (document.noOfGuests / currentPlan.NoOfGuests_end) * 100
+                    currentPlan?.NoOfGuests_end
+                      ? (document.noOfGuests / currentPlan.NoOfGuests_end) * 100
+                      : 0
                   }
                 />
               </Box>
@@ -305,7 +324,7 @@ const Event = () => {
                     boxShadow: "lg",
                   }}
                   onClick={() => {
-                    history.push(`/updateevent/${document.id}`);
+                    history.push(`/edit-event/${document.id}`);
                   }}
                 >
                   Edit Event
@@ -449,7 +468,7 @@ const Event = () => {
           </Stack>
         </Stack>
       </SimpleGrid>
-    </Container>
+    </Flex>
   );
 };
 

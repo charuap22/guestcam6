@@ -5,74 +5,77 @@ import {
   projectFirestore,
 } from "../firebase/config";
 import { useAuthContext } from "./useAuthContext";
-import { ToastContainer, toast } from "react-toastify";
 import { useHistory } from "react-router-dom";
+import { toast } from "react-toastify";
 
 import "react-toastify/dist/ReactToastify.css";
 
 export const useSignup_Guest = () => {
-  const [IsActive, setIsActive] = useState(true);
+  const [isActive, setIsActive] = useState(true);
   const [error, setError] = useState(null);
-
   const [isPending, setIsPending] = useState(false);
   const { dispatch } = useAuthContext();
+  const history = useHistory();
 
-  let history = useHistory();
   const signup = async (displayName, thumbnail, eventId) => {
     setError(null);
     setIsPending(true);
 
     try {
-      // signup
+      // ✅ Step 1: Sign in anonymously
       const res = await projectAuth.signInAnonymously();
-
-      if (!res) {
-        throw new Error("Could not complete signup");
-      }
+      if (!res) throw new Error("Could not complete signup");
 
       let photoURL = "";
-      // upload user thumbnail
+      // ✅ Step 2: Upload user thumbnail if provided
       if (thumbnail) {
         const uploadPath = `thumbnails/${res.user.uid}/${thumbnail.name}`;
         const img = await projectStorage.ref(uploadPath).put(thumbnail);
-        const imgUrl = await img.ref.getDownloadURL();
-        photoURL = imgUrl;
+        photoURL = await img.ref.getDownloadURL();
       }
-      
-      // add display name AND PHOTO_URL  to user
-      await res.user.updateProfile({ displayName, photoURL: photoURL });
-      //create user document
-      await projectFirestore.collection("users").doc(res.user.uid).set({
-        online: true,
-        displayName,
-        photoURL: photoURL,
-        planId: "",
-        role: "Guest",
-      });
-      // dispatch login action
-      dispatch({
-        type: "LOGIN",
-        payload: res.user
-      });
+
+      // ✅ Step 3: Update Firebase auth profile
+      await res.user.updateProfile({ displayName, photoURL });
+
+      // ✅ Step 4: Save guest details to Firestore
+      await projectFirestore.collection("guests").doc(res.user.uid).set(
+        {
+          online: true,
+          displayName,
+          photoURL,
+          eventId, // ✅ Assign event to the guest
+        },
+        { merge: true } // ✅ Prevent overwriting existing data
+      );
+
+      // ✅ Step 5: Dispatch login action
+      dispatch({ type: "LOGIN", payload: res.user });
+
+      // ✅ Step 6: Redirect to Guest Dashboard
       history.push(`/Guest/Dashboard/${eventId}`);
-      if (IsActive) {
+
+      if (isActive) {
         setIsPending(false);
         setError(null);
-        // toast.success("Success!", {
-        //   position: "top-right",
-        //   autoClose: 2000,
-        //   hideProgressBar: false,
-        //   closeOnClick: true,
-        //   pauseOnHover: true,
-        //   draggable: true,
-        //   progress: undefined,
-        //   theme: "colored",
-        // });
+        toast.success("Guest login successful!", {
+          position: "top-right",
+          autoClose: 2000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          theme: "colored",
+        });
       }
     } catch (err) {
-      if (IsActive) {
+      if (isActive) {
         setError(err.message);
         setIsPending(false);
+        toast.error(`Error: ${err.message}`, {
+          position: "top-right",
+          autoClose: 3000,
+          theme: "colored",
+        });
       }
     }
   };
