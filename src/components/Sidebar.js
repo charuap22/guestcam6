@@ -43,9 +43,9 @@ import {
   FiBell,
   FiChevronDown,
 } from "react-icons/fi";
-import {MdEvent} from "react-icons/md";
-import {AiOutlinePrinter} from "react-icons/ai";
-import {IoMdPhotos} from "react-icons/io";
+import { MdEvent } from "react-icons/md";
+import { AiOutlinePrinter } from "react-icons/ai";
+import { IoMdPhotos } from "react-icons/io";
 import { BiSolidVideos, BiBookHeart } from "react-icons/bi";
 import { CalendarIcon, SettingsIcon } from "@chakra-ui/icons";
 import { IconType } from "react-icons";
@@ -62,7 +62,7 @@ import { HomeIcon } from "chakra-ui-ionicons";
 
 const LinkItems = [
   { name: "Home", icon: FiHome, url: "/dashboard" },
-  { name: "Create Event", icon: MdEvent, url: "/newevent" },
+  { name: "Create Event", icon: MdEvent, url: "/create-event" },
   { name: "Print Materials", icon: AiOutlinePrinter, url: "/canvatemplates" },
   { name: "Settings", icon: FiSettings, url: "/dashboard" },
 ];
@@ -70,7 +70,7 @@ const LinkItems = [
 export default function Sidebar({ role, children }) {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { eventId } = useEvent();
-
+  console.log( eventId);
   return (
     <Box minH="100vh" bg={useColorModeValue("gray.100", "gray.900")}>
       <SidebarContent
@@ -298,7 +298,13 @@ const MobileNav = ({ role, eventId, onOpen, ...rest }) => {
         icon={<FiMenu />}
       /> */}
 
-        <Text fontSize="2xl" mt={"10px"} mr="8" fontFamily="monospace" fontWeight="bold">
+        <Text
+          fontSize="2xl"
+          mt={"10px"}
+          mr="8"
+          fontFamily="monospace"
+          fontWeight="bold"
+        >
           GUESTCAM
         </Text>
         <Spacer />
@@ -353,7 +359,7 @@ const MobileNav = ({ role, eventId, onOpen, ...rest }) => {
               boxShadow: "lg",
             }}
             onClick={() => {
-              history.push(`/newevent`);
+              history.push(`/create-event`);
             }}
           >
             New Event

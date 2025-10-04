@@ -4,28 +4,58 @@ import { projectFirestore, projectAuth } from "../firebase/config";
 const PlanContext = createContext();
 
 export const PlanProvider = ({ children }) => {
-  const [currentPlan, setCurrentPlan] = useState(null);
+ const [currentPlan, setCurrentPlan] = useState({ metadata: {} });
+//useState(null);
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null);
+
+  const updatePlan = (newPlan) => {
+    setCurrentPlan({
+      planId: newPlan.planId,
+      planName: newPlan.planName,
+      price: newPlan.price,
+      subscribedOn: new Date(),
+      subscriptionEndDate: new Date(
+        new Date().setFullYear(new Date().getFullYear() + 1)
+      ),
+      subscriptionStatus: "active",
+      guestStart: newPlan.NoOfGuests_start || "0",
+      guestEnd: newPlan.NoOfGuests_end || "Unlimited",
+    });
+  };
+
 
   useEffect(() => {
-    const fetchPlanData = async () => {
-      const user = projectAuth.currentUser;
-      if (!user) {
+    // ✅ Listen for auth state changes
+    const unsubscribeAuth = projectAuth.onAuthStateChanged((authUser) => {
+      if (authUser) {
+        console.log("✅ User Logged In:", authUser.uid);
+        setUser(authUser);
+      } else {
+        console.warn("🔴 No user logged in.");
+        setUser(null);
         setCurrentPlan(null);
         setLoading(false);
-        return;
       }
+    });
 
+    return () => unsubscribeAuth();
+  }, []);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchPlanData = async () => {
+      setLoading(true);
       try {
+        console.log("Fetching plan for user:", user.uid);
         const userRef = projectFirestore.collection("users").doc(user.uid);
-        const unsubscribe = userRef.onSnapshot(async (doc) => {
-          if (!doc.exists) {
-            setCurrentPlan(null);
-            setLoading(false);
-            return;
-          }
+        const userSnap = await userRef.get();
 
-          const userData = doc.data();
+        if (userSnap.exists) {
+          const userData = userSnap.data();
+          console.log("🔥 User Data:", userData);
+
           if (userData.planId) {
             const productRef = projectFirestore
               .collection("products")
@@ -42,6 +72,10 @@ export const PlanProvider = ({ children }) => {
               ? productSnap.data().stripe_metadata_NoOfGuests_end
               : "Unlimited";
 
+            console.log(
+              `✅ Plan found: ${planName} (${guestStart}-${guestEnd} Guests)`
+            );
+
             setCurrentPlan({
               planId: userData.planId,
               planName,
@@ -57,58 +91,24 @@ export const PlanProvider = ({ children }) => {
               guestEnd,
             });
           } else {
+            console.warn("⚠️ No planId found in Firestore.");
             setCurrentPlan(null);
           }
-          setLoading(false);
-        });
-
-        return () => unsubscribe();
+        } else {
+          console.error("❌ User document not found.");
+        }
       } catch (err) {
         console.error("Error fetching plan data:", err);
+      } finally {
         setLoading(false);
       }
     };
 
     fetchPlanData();
-  }, []);
-
-  // ✅ Function to update the plan manually
-  const updatePlan = async () => {
-    const user = projectAuth.currentUser;
-    if (!user) return;
-
-    try {
-      const userRef = projectFirestore.collection("users").doc(user.uid);
-      const userSnap = await userRef.get();
-
-      if (userSnap.exists) {
-        const userData = userSnap.data();
-        console.log("🔄 Updating Plan Context with:", userData);
-
-        setCurrentPlan({
-          planId: userData.planId,
-          planName: userData.planName,
-          price: userData.price,
-          subscribedOn: userData.subscribedOn
-            ? new Date(userData.subscribedOn.seconds * 1000)
-            : null,
-          subscriptionEndDate: userData.subscriptionEndDate
-            ? new Date(userData.subscriptionEndDate.seconds * 1000)
-            : null,
-          subscriptionStatus: userData.subscriptionStatus,
-          guestStart: userData.guestStart || "0",
-          guestEnd: userData.guestEnd || "Unlimited",
-        });
-      }
-    } catch (err) {
-      console.error("🔥 Error updating plan:", err);
-    }
-  };
+  }, [user]); // ✅ Only run when `user` changes
 
   return (
-    <PlanContext.Provider
-      value={{ currentPlan, loading, updatePlan }}
-    >
+    <PlanContext.Provider value={{ currentPlan, loading, updatePlan }}>
       {children}
     </PlanContext.Provider>
   );

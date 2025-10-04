@@ -16,10 +16,11 @@ import {
   Alert,
   AlertIcon,
   Icon,
-  Divider
+  Divider,
+  Spinner,
 } from "@chakra-ui/react";
 import GuestList from "../components/GuestList";
-import { FaCrown, FaArrowUp } from "react-icons/fa";
+import { FaCrown, FaArrowUp, FaPlusCircle } from "react-icons/fa";
 import { useCollection } from "../hooks/useCollection";
 
 import EventsList from "../components/EventsList";
@@ -36,69 +37,72 @@ const Dashboard = () => {
 
   const { user } = useAuthContext();
 
-  const { documents, error } = useCollection("events", [
-    "adminId",
-    "==",
-    user.uid,
-  ]);
+ 
 
   const { document, error2 } = useDocument("users", user.uid);
   console.log(user.uid, "users", document);
   //const planId = document.planId;
+
   if (!document || !user) {
-    return <div className="loading">Loading...</div>;
+    return (
+      <Flex minH="80vh" align="center" justify="center">
+        <Spinner size="xl" color="blue.500" />
+        <Text ml={3} fontSize="lg" fontWeight="bold" color="gray.600">
+          Loading your dashboard...
+        </Text>
+      </Flex>
+    );
   }
   return (
     <Flex direction="column" align="center" bg="gray.50" minH="100vh" p={6}>
+      {/* Plan Info & Upgrade Section */}
       <Flex
         w="full"
         align="center"
         justify="space-between"
-        p={4}
-        bg="gray.100"
+        px={3} // Reduced padding
+        bg="white"
         rounded="lg"
+        boxShadow="lg"
       >
-        <Flex align="center">
-          <Icon as={FaCrown} w={8} h={8} color="yellow.500" mr={3} />
-          <GetPackageInfo />
-        </Flex>
-        <Button
-          leftIcon={<FaArrowUp />}
-          colorScheme="yellow"
-          variant="solid"
-          onClick={() => history.push("/pricing")}
-        >
-          Upgrade Plan
-        </Button>
+        <GetPackageInfo />
+        <HStack spacing={2} flexWrap="wrap">
+          <Button
+            leftIcon={<FaArrowUp />}
+            colorScheme="yellow"
+            variant="solid"
+            size="md"
+            px={3} // Reduced padding
+            py={3}
+            onClick={() => history.push("/pricing")}
+          >
+            Upgrade Plan
+          </Button>
+          <Button
+            colorScheme="blue"
+            variant="solid"
+            size="md"
+            px={3} // Reduced padding
+            py={3}
+            onClick={() => history.push("/create-event")}
+          >
+            + Create Event
+          </Button>
+        </HStack>
       </Flex>
-
       <Divider my={6} />
 
+      <Box rounded="lg" bg="white" boxShadow="lg" p={8} width="full">
+        <Stack spacing={4}>
+          {/* <Heading fontSize={"xl"} mb={2}>
+            Event
+          </Heading>
+          <hr></hr> */}
 
-        <Box
-          rounded={"lg"}
-          bg={"white"}
-          boxShadow={"lg"}
-          p={8}
-          width="full"
-          mx={"auto"}
-        >
-          <Stack spacing={4}>
-            <Heading fontSize={"xl"} mb={2}>
-              Event
-            </Heading>
-            <hr></hr>
-
-            {error && (
-              <Alert status="error">
-                <AlertIcon />
-                {error}
-              </Alert>
-            )}
-            {documents && <EventsList events={documents}></EventsList>}
-          </Stack>
-        </Box>
-      
+         
+          <EventsList></EventsList> 
+        </Stack>
+      </Box>
     </Flex>
   );
 };

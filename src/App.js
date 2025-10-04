@@ -19,8 +19,8 @@ import Guest_Dashboard from "./pages/Guest_Dashboard";
 import Videos from "./pages/Videos";
 import Guestbook from "./pages/Guestbook";
 import { useUserInfo } from "./hooks/useUserInfo";
-import UpdateEvent from "./pages/UpdateEvent";
-import UpdateEvent2 from "./pages/UpdateEvent";
+import UpdateEvent from "./pages/EditEvent";
+import UpdateEvent2 from "./pages/EditEvent";
 import CanvaTemplates from "./pages/CanvaTemplates";
 import SuccessPage from "./pages/SuccessPage";
 import Home from "./site/pages/Home";
@@ -68,7 +68,7 @@ function App() {
                 </Sidebar>
               )}
             </Route>
-            <Route path="/newevent">
+            <Route path="/create-event">
               {!user && <Redirect to="/login" />}
               {user && (
                 <Sidebar role={UserInfo.role}>
@@ -76,7 +76,7 @@ function App() {
                 </Sidebar>
               )}
             </Route>
-            <Route path="/updateevent/:id">
+            <Route path="/edit-event/:id">
               {!user && <Redirect to="/login" />}
               {user && (
                 <Sidebar role={UserInfo.role}>
@@ -127,9 +127,9 @@ function App() {
             <Route path="/Guest/Dashboard/:id">
               {/* {!user && <Redirect to="/login_Guest" />}
               {user && ( */}
-              <Sidebar role={UserInfo.role}>
+              <Sidebar_Guest role={UserInfo.role}>
                 <Guest_Dashboard />
-              </Sidebar>
+              </Sidebar_Guest>
               {/* )}  */}
             </Route>
             <Route path="/Guest/Gallery/:id">

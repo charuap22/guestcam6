@@ -41,7 +41,7 @@ import { FacebookLoginButton } from "react-social-login-buttons";
 import { GoogleLoginButton } from "react-social-login-buttons";
 
 export default function Login() {
-  const [email, setEmail] = useState("gaurav5@gmail.com");
+  const [email, setEmail] = useState("gaurav9@gmail.com");
   const [password, setPassword] = useState("123456");
 
   const { login, Googlelogin,Facebooklogin,isPending, error } = useLogin();

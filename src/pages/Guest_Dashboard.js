@@ -144,7 +144,7 @@ const Guest_Dashboard = () => {
                       boxShadow: "lg",
                     }}
                     onClick={() => {
-                      history.push(`/videos/${UserInfo.role}/${document.id}`);
+                      history.push(`/videos/guest/${document.id}`);
                     }}
                   >
                     Videos
@@ -165,7 +165,7 @@ const Guest_Dashboard = () => {
                     }}
                     onClick={() => {
                       history.push(
-                        `/guestbook/${UserInfo.role}/${document.id}`
+                        `/guestbook/guest/${document.id}`
                       );
                     }}
                   >

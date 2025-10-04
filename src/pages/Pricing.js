@@ -29,64 +29,66 @@ const Pricing = () => {
   const [subscriptionEndDate, setSubscriptionEndDate] = useState(null);
     const toast = useToast();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const user = projectAuth.currentUser;
+useEffect(() => {
+  const fetchData = async () => {
+    try {
+      const user = projectAuth.currentUser;
 
-        const plansPromise = projectFirestore.collection("products").get();
-        const subscriptionPromise = user
-          ? projectFirestore
-              .collection("customers")
-              .doc(user.uid)
-              .collection("purchases")
-              .orderBy("purchasedAt", "desc")
-              .limit(1)
-              .get()
-          : Promise.resolve(null);
+      // ✅ Fetch products
+      const plansSnapshot = await projectFirestore.collection("products").get();
+      console.log(plansSnapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
 
-        const [plansSnapshot, purchaseSnapshot] = await Promise.all([
-          plansPromise,
-          subscriptionPromise,
-        ]);
-
-        const plansData = await Promise.all(
-          plansSnapshot.docs.map(async (doc) => {
-            const productData = doc.data();
-            if (!productData.active) return null;
-
-            const pricesSnap = await doc.ref.collection("prices").get();
-            const prices = pricesSnap.docs.map((priceDoc) => ({
-              id: priceDoc.id,
-              ...priceDoc.data(),
-            }));
-
-            return { id: doc.id, ...productData, prices };
-          })
-        );
-
-        setPlans(plansData.filter(Boolean)); // Remove null values
-        setCurrentSubscription(
-          purchaseSnapshot && !purchaseSnapshot.empty
-            ? purchaseSnapshot.docs[0].data()
-            : null
-        );
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to fetch plans. Please try again later.",
-          status: "error",
-          duration: 3000,
-          isClosable: true,
-        });
-        console.error("Error fetching data:", error);
-      } finally {
-        setLoading(false);
+      // ✅ Fetch user subscription (if logged in)
+      let purchaseSnapshot = null;
+      if (user) {
+        purchaseSnapshot = await projectFirestore
+          .collection("customers")
+          .doc(user.uid)
+          .collection("purchases")
+          .orderBy("purchasedAt", "desc")
+          .limit(1)
+          .get();
       }
-    };
 
-    fetchData();
-  }, [toast]);
+      // ✅ Build plans array
+      const plansData = await Promise.all(
+        plansSnapshot.docs.map(async (doc) => {
+          const productData = doc.data();
+          if (!productData.active) return null;
+
+          const pricesSnap = await doc.ref.collection("prices").get();
+          const prices = pricesSnap.docs.map((priceDoc) => ({
+            id: priceDoc.id,
+            ...priceDoc.data(),
+          }));
+
+          return { id: doc.id, ...productData, prices };
+        })
+      );
+
+      setPlans(plansData.filter(Boolean)); // remove nulls
+      setCurrentSubscription(
+        purchaseSnapshot && !purchaseSnapshot.empty
+          ? purchaseSnapshot.docs[0].data()
+          : null
+      );
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch plans. Please try again later.",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+      console.error("Error fetching data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchData();
+}, [toast]);
+
   const [loadingPlan, setLoadingPlan] = useState(null); // Track which plan is loading
 
 const handleCheckout = async (user, priceId, productKey, price) => {
