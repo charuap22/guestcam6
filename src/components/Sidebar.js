@@ -154,7 +154,7 @@ const SidebarContent = ({ eventId, role, onClose, ...rest }) => {
     >
       <Flex h="20" alignItems="center" mx="8" justifyContent="space-between">
         <Text fontSize="2xl" fontWeight="bold">
-          GUESTCAM
+          GUESTPOV
         </Text>
         <CloseButton display={{ base: "flex", md: "none" }} onClick={onClose} />
       </Flex>
@@ -305,7 +305,7 @@ const MobileNav = ({ role, eventId, onOpen, ...rest }) => {
           fontFamily="monospace"
           fontWeight="bold"
         >
-          GUESTCAM
+          GUESTPOV
         </Text>
         <Spacer />
         <AvatarInfo_Mobile></AvatarInfo_Mobile>

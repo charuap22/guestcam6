@@ -162,7 +162,7 @@ const HeroKenburn = () => {
               data-voffset="['109','82','53','53']"
               data-fontsize="['16','16','16','14']"
               data-lineheight="['26','26','26','24']"
-              data-fontweight="['300','300','300','300']"
+              data-fontweight="['600','600','600','600']"
               data-color="['#e0e0e0','#e0e0e0','#e0e0e0','#e0e0e0']"
               data-width="none"
               data-height="none"
@@ -237,7 +237,7 @@ const HeroKenburn = () => {
               data-paddingbottom="[15,15,15,10]"
               data-paddingleft="[30,30,30,25]"
             >
-              Buy Now{" "}
+              Pricing Plans{" "}
               <span>
                 <i className="ti ti-angle-right"></i>
               </span>
@@ -282,132 +282,163 @@ const HeroKenburn = () => {
               data-no-retina
             />
 
-            {/* <!-- <div className="tp-caption" id="slide-2-layer-1" 
-                                    data-x="['left','left','left','center']" 
-                                    data-hoffset="['50','50','50','-290']" 
-                                    data-y="['top','top','top','middle']" data-voffset="['336','228','80','-120']"
-
-                                data-lineheight="['110','90','120','74']"
-                                data-fontweight="[400,400,400,400]"
-                                data-fontsize="['110','90','75','75']"
-                                data-width="none"
-                                data-height="none"
-                                data-whitespace="nowrap"
-                                data-visibility="['on','on','on','off']"
-                                data-type="text"
-                                data-responsive_offset="on"
-                                data-frames='[{"delay":190,"speed":850,"frame":"0","from":"x:{-250,250};y:{-150,150};rX:{-90,90};rY:{-90,90};rZ:{-360,360};sX:0;sY:0;opacity:0;","to":"o:1;","ease":"Power2.easeOut"},{"delay":"wait","speed":300,"frame":"999","to":"opacity:0;","ease":"Power3.easeInOut"}]'
-                                data-textalign="['inherit','inherit','inherit','inherit']"
-                                data-paddingtop="[0,0,0,0]"
-                                data-paddingright="[0,0,0,0]"
-                                data-paddingbottom="[0,0,0,0]"
-                                data-paddingleft="[0,0,0,0]"
-                                ><strong className="ttm-textcolor-skincolor"><i className="ti ti-gift"></i></strong>
-                                </div> --> */}
-
             <div
-              className="tp-caption tp-resizeme heading-slide"
-              id="slide-2-layer-2"
-              data-x="['left','left','left','center']"
-              data-hoffset="['187','177','143','-1']"
-              data-y="['top','top','top','middle']"
-              data-voffset="['354','237','95','-101']"
-              data-fontsize="['85','85','62','36']"
-              data-lineheight="['110','110','100','70']"
-              data-fontweight="[600,600,600,600]"
-              data-color="['#fff','#fff','#fff','#fff']"
-              data-width="none"
-              data-height="none"
+              class="tp-caption tp-shapewrapper ttm-bgcolor-skincolor tp-resizeme"
+              id="slide-1-layer-1"
+              data-x="['left','left','left','left']"
+              data-hoffset="['50','50','40','-50']"
+              data-y="['top','top','top','top']"
+              data-voffset="['200','240','70','100']"
+              data-fontsize="['15','15','8','8']"
+              data-lineheight="['26','26','20','20']"
+              data-width="10"
+              data-height="200"
               data-whitespace="nowrap"
-              data-type="text"
-              data-responsive_offset="on"
-              data-frames='[{"delay":380,"speed":1500,"frame":"0","from":"x:[-100%];z:0;rX:0deg;rY:0;rZ:0;sX:1;sY:1;skX:0;skY:0;","mask":"x:0px;y:0px;s:inherit;e:inherit;","to":"o:1;","ease":"Power3.easeInOut"},{"delay":"wait","speed":300,"frame":"999","to":"opacity:0;","ease":"Power3.easeInOut"}]'
-              data-textalign="['inherit','inherit','inherit','inherit']"
-              data-paddingtop="[0,0,0,0]"
-              data-paddingright="[0,0,0,0]"
-              data-paddingbottom="[0,0,0,0]"
-              data-paddingleft="[0,0,0,0]"
-            >
-              Ready to use{" "}
-            </div>
-
-            <div
-              className="tp-caption tp-resizeme"
-              id="slide-2-layer-3"
-              data-x="['center','center','center','center']"
-              data-hoffset="['0','0','0','0']"
-              data-y="['middle','middle','middle','middle']"
-              data-voffset="['-18','-21','-27','-25']"
-              data-fontsize="['85','85','52','36']"
-              data-lineheight="['110','110','110','110']"
-              data-fontweight="['600','600','600','600']"
-              data-color="['#fff','#fff','#fff','#fff']"
-              data-width="none"
-              data-height="none"
-              data-whitespace="nowrap"
-              data-type="text"
-              data-responsive_offset="on"
-              data-frames='[{"delay":960,"speed":1500,"frame":"0","from":"x:[-100%];z:0;rX:0deg;rY:0;rZ:0;sX:1;sY:1;skX:0;skY:0;","mask":"x:0px;y:0px;s:inherit;e:inherit;","to":"o:1;","ease":"Power3.easeInOut"},{"delay":"wait","speed":300,"frame":"999","to":"opacity:0;","ease":"Power3.easeInOut"}]'
-              data-textalign="['inherit','inherit','inherit','inherit']"
-              data-paddingtop="[0,0,0,0]"
-              data-paddingright="[0,0,0,0]"
-              data-paddingbottom="[0,0,0,0]"
-              data-paddingleft="[0,0,0,0]"
-            >
-              <strong className="ttm-textcolor-skincolor"> GUESTCAM</strong> at
-              your events?
-            </div>
-
-            <div
-              className="tp-caption tp-resizeme"
-              id="slide-2-layer-4"
-              data-x="['right','right','right','center']"
-              data-hoffset="['49','49','50','330']"
-              data-y="['middle','middle','middle','middle']"
-              data-voffset="['80','20','26','-104']"
-              data-width="['97','80','65','40']"
-              data-height="['97','80','65','40']"
-              data-lineheight="['97','80','65','40']"
-              data-whitespace="nowrap"
-              data-visibility="['on','on','off','off']"
+              data-visibility="['on','on','on','off']"
               data-type="shape"
               data-responsive_offset="on"
-              data-frames='[{"delay":1320,"speed":800,"frame":"0","from":"z:0;rX:0;rY:0;rZ:0;sX:0.9;sY:0.9;skX:0;skY:0;opacity:0;","to":"o:1;","ease":"Power3.easeInOut"},{"delay":"wait","speed":300,"frame":"999","to":"opacity:0;","ease":"Power3.easeInOut"},{"frame":"hover","speed":"300","ease":"Linear.easeNone","to":"o:1;rX:0;rY:0;rZ:0;z:0;","style":"c:rgb(255,255,255);bg:rgba(255,61,85,0);bc:transparent;bw:0px 0 0 0;br:50px 50px 50px 50px;"}]'
-              data-textalign="['inherit','inherit','inherit','inherit']"
+              data-frames='[{"delay":220,"speed":470,"frame":"0","from":"x:50px;opacity:0;","to":"o:1;","ease":"Power3.easeInOut"},{"delay":"wait","speed":300,"frame":"999","to":"opacity:0;","ease":"Power3.easeInOut"}]'
+              data-textAlign="['inherit','inherit','inherit','inherit']"
               data-paddingtop="[0,0,0,0]"
               data-paddingright="[0,0,0,0]"
               data-paddingbottom="[0,0,0,0]"
               data-paddingleft="[0,0,0,0]"
             ></div>
 
+            <div
+              class="tp-caption tp-resizeme"
+              id="slide-1-layer-2"
+              data-x="['left','left','left','center']"
+              data-hoffset="['90','90','71','20']"
+              data-y="['top','top','top','middle']"
+              data-voffset="['195','234','64','-100']"
+              data-fontsize="['64','64','64','53']"
+              data-lineheight="['70','70','70','60']"
+              data-fontweight="[600,600,600,600]"
+              data-color="['#ffffff','#ffffff','#ffffff','#ffffff']"
+              data-width="none"
+              data-height="none"
+              data-whitespace="nowrap"
+              data-type="text"
+              data-responsive_offset="on"
+              data-frames='[{"delay":380,"speed":1500,"frame":"0","from":"x:[175%];y:0px;z:0;rX:0;rY:0;rZ:0;sX:1;sY:1;skX:0;skY:0;opacity:1;","mask":"x:[-100%];y:0;s:inherit;e:inherit;","to":"o:1;","ease":"Power3.easeOut"},{"delay":"wait","speed":300,"frame":"999","to":"opacity:0;","ease":"Power3.easeInOut"}]'
+              data-textAlign="['inherit','inherit','inherit','inherit']"
+              data-paddingtop="[0,0,0,0]"
+              data-paddingright="[0,0,0,0]"
+              data-paddingbottom="[0,0,0,0]"
+              data-paddingleft="[0,0,0,0]"
+            >
+              GuestPOV is a{" "}
+              <strong class="ttm-textcolor-skincolor">local</strong>,
+              <strong class="ttm-textcolor-skincolor"> streamlined</strong>{" "}
+              solution
+            </div>
+
+            <div
+              class="tp-caption tp-resizeme"
+              id="slide-1-layer-3"
+              data-x="['left','left','left','center']"
+              data-hoffset="['89','89','69','1']"
+              data-y="['top','top','top','middle']"
+              data-voffset="['260','302','130','-38']"
+              data-fontsize="['65','65','65','50']"
+              data-lineheight="['70','70','70','60']"
+              data-fontweight="[600,600,600,600]"
+              data-color="['#ffffff','#ffffff','#ffffff','#ffffff']"
+              data-width="none"
+              data-height="none"
+              data-whitespace="nowrap"
+              data-type="text"
+              data-responsive_offset="on"
+              data-frames='[{"delay":890,"speed":1500,"frame":"0","from":"x:[-175%];y:0px;z:0;rX:0;rY:0;rZ:0;sX:1;sY:1;skX:0;skY:0;opacity:1;","mask":"x:[100%];y:0;s:inherit;e:inherit;","to":"o:1;","ease":"Power3.easeOut"},{"delay":"wait","speed":300,"frame":"999","to":"opacity:0;","ease":"Power3.easeInOut"}]'
+              data-textAlign="['inherit','inherit','inherit','inherit']"
+              data-paddingtop="[0,0,0,0]"
+              data-paddingright="[0,0,0,0]"
+              data-paddingbottom="[0,0,0,0]"
+              data-paddingleft="[0,0,0,0]"
+            >
+              designed to make{" "}
+            </div>
+
+            <div
+              class="tp-caption tp-resizeme"
+              id="slide-1-layer-4"
+              data-x="['left','left','left','center']"
+              data-hoffset="['89','89','70','0']"
+              data-y="['top','top','top','middle']"
+              data-voffset="['330','370','203','23']"
+              data-fontsize="['65','65','65','50']"
+              data-lineheight="['70','70','70','60']"
+              data-fontweight="[600,600,600,600]"
+              data-color="['#ffffff','#ffffff','#ffffff','#ffffff']"
+              data-width="none"
+              data-height="none"
+              data-whitespace="nowrap"
+              data-type="text"
+              data-responsive_offset="on"
+              data-frames='[{"delay":1400,"speed":1500,"frame":"0","from":"x:[175%];y:0px;z:0;rX:0;rY:0;rZ:0;sX:1;sY:1;skX:0;skY:0;opacity:1;","mask":"x:[-100%];y:0;s:inherit;e:inherit;","to":"o:1;","ease":"Power3.easeOut"},{"delay":"wait","speed":300,"frame":"999","to":"opacity:0;","ease":"Power3.easeInOut"}]'
+              data-textAlign="['inherit','inherit','inherit','inherit']"
+              data-paddingtop="[0,0,0,0]"
+              data-paddingright="[0,0,0,0]"
+              data-paddingbottom="[0,0,0,0]"
+              data-paddingleft="[0,0,0,0]"
+            >
+              <strong class="ttm-textcolor-skincolor">memory-sharing </strong>
+              effortless.
+            </div>
+
+            <div
+              class="tp-caption tp-resizeme"
+              id="slide-1-layer-5"
+              data-x="['left','left','left','left']"
+              data-hoffset="['50','50','50','50']"
+              data-y="['top','top','top','top']"
+              data-voffset="['440','460','500','440']"
+              data-fontsize="['20','20','20','20']"
+              data-lineheight="['28','28','28','28']"
+              data-color="['#ffffff','#ffffff','#ffffff','#ffffff']"
+              data-width="none"
+              data-height="none"
+              data-whitespace="nowrap"
+              data-visibility="['on','on','off','off']"
+              data-type="text"
+              data-responsive_offset="on"
+              data-frames='[{"delay":1460,"speed":1500,"frame":"0","from":"y:[100%];z:0;rX:0deg;rY:0;rZ:0;sX:1;sY:1;skX:0;skY:0;opacity:0;","to":"o:1;","ease":"Power4.easeInOut"},{"delay":"wait","speed":300,"frame":"999","to":"opacity:0;","ease":"Power3.easeInOut"}]'
+              data-textAlign="['inherit','inherit','inherit','inherit']"
+              data-paddingtop="[0,0,0,0]"
+              data-paddingright="[0,0,0,0]"
+              data-paddingbottom="[0,0,0,0]"
+              data-paddingleft="[0,0,0,0]"
+            >
+              Because the best part of any event isn’t just what you see—it’s<br></br>
+              how your guests see it, too.
+            </div>
+
             <a
-              className="tp-caption tp-resizeme highlight-skin-button"
+              class="tp-caption tp-resizeme highlight-skin-button"
               href="#"
               target="_self"
-              id="slide-2-layer-6"
+              id="slide-1-layer-6"
               data-x="['left','left','left','center']"
-              data-hoffset="['50','50','50','0']"
+              data-hoffset="['50','50','40','0']"
               data-y="['middle','middle','middle','middle']"
-              data-voffset="['200','130','89','39']"
-              data-fontsize="['14','14','14','20']"
-              data-lineheight="['14','14','14','14']"
-              data-fontweight="[600,600,600,600]"
+              data-voffset="['260','220','103','95']"
               data-width="none"
               data-height="none"
               data-whitespace="nowrap"
               data-type="text"
               data-actions=""
               data-responsive_offset="on"
-              data-frames='[{"delay":1760,"speed":1500,"frame":"0","from":"y:[100%];z:0;rX:0deg;rY:0;rZ:0;sX:1;sY:1;skX:0;skY:0;opacity:0;","to":"o:1;","ease":"Power4.easeInOut"},{"delay":"wait","speed":300,"frame":"999","to":"opacity:0;","ease":"Power3.easeInOut"}]'
-              data-textalign="['inherit','inherit','inherit','inherit']"
-              data-paddingtop="[15,15,15,10]"
-              data-paddingright="[30,30,30,25]"
-              data-paddingbottom="[15,15,15,10]"
-              data-paddingleft="[30,30,30,25]"
+              data-frames='[{"delay":1750,"speed":1500,"frame":"0","from":"y:[100%];z:0;rX:0deg;rY:0;rZ:0;sX:1;sY:1;skX:0;skY:0;opacity:0;","to":"o:1;","ease":"Power4.easeInOut"},{"delay":"wait","speed":300,"frame":"999","to":"opacity:0;","ease":"Power3.easeInOut"}]'
+              data-textAlign="['inherit','inherit','inherit','inherit']"
+              data-paddingtop="[15,15,15,15]"
+              data-paddingright="[30,30,30,30]"
+              data-paddingbottom="[15,15,15,15]"
+              data-paddingleft="[30,30,30,30]"
             >
-              Get Started{" "}
+              Pricing Plans{" "}
               <span>
-                <i className="ti ti-angle-right"></i>
+                <i class="ti ti-angle-right"></i>
               </span>
             </a>
           </li>

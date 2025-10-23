@@ -1,4 +1,4 @@
-import { createContext, useReducer } from "react";
+import { createContext, useReducer, useCallback, useMemo } from "react";
 
 export const EventContext = createContext();
 
@@ -11,19 +11,24 @@ const eventReducer = (state, action) => {
   }
 };
 
-//
-
 export function EventProvider({ children }) {
-  //useReducer(eventReducer, { eventId: "" });
   const [state, dispatch] = useReducer(eventReducer, { eventId: "" });
-  
-  const changeEvent = (eventId) => {
+
+  // ✅ Memoize to prevent function identity changes
+  const changeEvent = useCallback((eventId) => {
     dispatch({ type: "CHANGE_EVENT", payload: eventId });
-  };
-  
+  }, []);
+
+  // ✅ Memoize the provided value so React doesn't re-render all consumers unnecessarily
+  const value = useMemo(
+    () => ({
+      ...state,
+      changeEvent,
+    }),
+    [state, changeEvent]
+  );
+
   return (
-    <EventContext.Provider value={{ ...state,changeEvent }}>
-      {children}
-    </EventContext.Provider>
+    <EventContext.Provider value={value}>{children}</EventContext.Provider>
   );
 }

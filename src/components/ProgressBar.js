@@ -1,69 +1,86 @@
+// components/ProgressBar.js
 import React, { useEffect, useState } from "react";
+import {
+  Box,
+  Center,
+  Text,
+  CircularProgress,
+  CircularProgressLabel,
+} from "@chakra-ui/react";
 import useGalleryUpload from "../hooks/useGalleryUpload";
-import { motion } from "framer-motion";
-import { Progress,Box,Center,Text, CircularProgress, CircularProgressLabel } from "@chakra-ui/react";
-import { useAuthContext } from "../hooks/useAuthContext";
-import { useEvent } from "../hooks/useEvent";
-import { useParams } from "react-router-dom";
-import Resizer from "react-image-file-resizer";
 
-export const ProgressBar = ({ file,fileurl, user, fileType }) => {
-  //const { eventId } = useEvent();
-
+export const ProgressBar = ({ file, fileurl, user, fileType, onDone }) => {
   const { progress, url } = useGalleryUpload(file, user, fileType);
   const [uploadDone, setUploadDone] = useState(false);
-  console.log(progress, url);
- const [avatarImg, setAvatarImg] = useState(null);
 
- 
   useEffect(() => {
-    setUploadDone(false);
     if (url) {
       setUploadDone(true);
-      
+      if (onDone) onDone({ file, url, fileType });
     }
-  }, [url, fileurl]);
+  }, [url, onDone, file, fileType]);
 
   return (
     <>
-      {
-        progress!==100 && (
-          <>
-            {/* <Box w="100%">
-            <Center>
-              <Text key={file.name}>{file.name}</Text>
-            </Center>
-          </Box>
-          <Progress
-            width="80%"
-            colorScheme="green"
-            size="sm"
-            value=
-          /> */}
-            <Box
-              w={"200px"}
-              height={"200px"}
-              backgroundImage={`url(${fileurl})`}
-              backgroundSize={"cover"}
-              backgroundPosition={"center center"}
+      {!uploadDone && (
+        <Box
+          w="160px"
+          h="160px"
+          borderRadius="lg"
+          overflow="hidden"
+          position="relative"
+          backgroundImage={`url(${fileurl})`}
+          backgroundSize="cover"
+          backgroundPosition="center"
+          boxShadow="md"
+          m={2}
+        >
+          <Center
+            position="absolute"
+            inset={0}
+            bg="rgba(0,0,0,0.5)"
+            backdropFilter="blur(2px)"
+            borderRadius="lg"
+          >
+            <CircularProgress
+              size="90px"
+              value={progress}
+              color="#d4af37"
+              thickness="10px"
             >
-              <CircularProgress
-                size="100px"
-                marginTop={"40px"}
-                value={progress}
-                color="green.400"
-              >
-                <CircularProgressLabel color={"white"}>
-                  {progress}
-                </CircularProgressLabel>
-              </CircularProgress>
-            </Box>
-          </>
-        )}
+              <CircularProgressLabel color="white" fontWeight="bold">
+                {Math.round(progress)}%
+              </CircularProgressLabel>
+            </CircularProgress>
+          </Center>
+        </Box>
+      )}
+
+      {uploadDone && (
+        <Box
+          w="160px"
+          h="160px"
+          borderRadius="lg"
+          overflow="hidden"
+          position="relative"
+          backgroundImage={`url(${fileurl})`}
+          backgroundSize="cover"
+          backgroundPosition="center"
+          boxShadow="md"
+          m={2}
+        >
+          <Center
+            position="absolute"
+            inset={0}
+            bg="rgba(0,0,0,0.4)"
+            borderRadius="lg"
+          >
+            <Text color="white" fontWeight="semibold">
+              Uploaded ✓
+            </Text>
+          </Center>
+        </Box>
+      )}
     </>
-    // <>
-    //   <div className="progress-bar" style={{ width: progress + "%" }}></div>
-    //
-    // </>
   );
 };

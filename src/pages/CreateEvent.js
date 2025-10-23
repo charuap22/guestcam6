@@ -81,7 +81,7 @@ const CreateEvent = () => {
 
   // Event options categorized
   const eventOptions = {
-    Wedding: ["Reception", "Engagement", "Bridal Shower"],
+    Wedding: ["Wedding", "Reception", "Engagement", "Bridal Shower"],
     Corporate: ["Conference", "Seminar", "Product Launch"],
     Birthday: ["Kids Party", "18th Birthday", "50th Celebration"],
   };

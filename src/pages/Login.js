@@ -183,7 +183,7 @@ export default function Login() {
             lineHeight={1.1}
             fontSize={{ base: "xl", sm: "xl", md: "xl", lg: "2xl" }}
           >
-            GUESTCAM
+            GUESTPOV
           </Heading>
           <Spacer></Spacer>
           <VStack align="stretch" spacing={8}>
@@ -270,7 +270,7 @@ export default function Login() {
           </VStack>
           <Spacer></Spacer>
           <Box>
-            <Text color="white">© 2023 Guestcam. All rights reserved.</Text>
+            <Text color="white">© 2023 GuestPOV. All rights reserved.</Text>
           </Box>
         </Flex>
       </Flex>

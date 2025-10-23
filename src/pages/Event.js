@@ -54,7 +54,7 @@ const Event = () => {
 
   const { eventId, changeEvent } = useEvent();
  const { currentPlan, loading } = usePlan();
-
+const textGold = "#d4af37";
   let barVal = 0;
   // useEffect(() => {
   //   changeEvent(id);
@@ -63,7 +63,7 @@ const Event = () => {
   //   console.log(barVal);
   // }, [document, currentPlan]);
   useEffect(() => {
-    changeEvent(id);
+    if (id)       changeEvent(id);
     if (currentPlan?.NoOfGuests_end && document) {
       const remaining = currentPlan.NoOfGuests_end - document.noOfGuests;
       console.log("Remaining guests:", remaining);
@@ -129,17 +129,26 @@ const Event = () => {
               />
             </Box>
 
-            <Text fontSize={"md"}>{document.welcomeMessage}</Text>
-            <Text
-              color={"gray.400"}
-              mt={"20px"}
-              mb={"20px"}
-              fontSize={"2xl"}
-              fontWeight={"300"}
-            >
-              {document.eventPageHeader}
-            </Text>
-            <Text fontSize={"md"}>GUESTCAM</Text>
+         <VStack spacing={4} align="stretch" mb={4}>
+                    <Box textAlign="center">
+                      <Text fontSize="sm" color="gray.500">
+                        {document.eventPageHeader}
+                      </Text>
+                      <Heading
+                        as="h2"
+                        fontSize={{ base: "2xl", md: "3xl" }}
+                        mt={2}
+                        color={textGold}
+                      >
+                        {document.eventName}
+                      </Heading>
+                      <Text fontSize="sm" color="gray.500" mt={2}>
+                        {document.welcomeMessage}
+                      </Text>
+                    </Box>
+                  </VStack>
+        
+            <Text fontSize={"md"}>GUESTPOV</Text>
           </Box>
         </VStack>
         <Stack spacing={{ base: 6, md: 10 }}>

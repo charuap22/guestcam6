@@ -1,5 +1,9 @@
 import React from 'react'
-
+import {
+   
+  Text,
+   
+} from "@chakra-ui/react";
 const Footer = () => {
   return (
     <>
@@ -17,13 +21,13 @@ const Footer = () => {
                       <span className="ttm-textcolor-skincolor">more?</span>
                     </h2>
                     <p>
-                      Organising GUESTCAM for your event is a win-win for you
-                      and your guests.
+                      Choosing GUESTPOV for your event is a win-win for you and
+                      your guests.
                     </p>
 
                     <a
                       className="ttm-btn ttm-btn-size-md ttm-btn-shape-round ttm-btn-style-border ttm-btn-color-white mt-20"
-                      href="#"
+                      href="/howitworks"
                     >
                       How It Works?
                     </a>
@@ -43,19 +47,16 @@ const Footer = () => {
                     <h4 className="widget-title">Contact Us</h4>
                     <ul className="widget-contact">
                       <li>
-                        <i className="fa fa-map-marker"></i>Themeforest, Envanto
-                        HQ
-                        <br />
-                        24 Fifth st., Los Angeles, USA
+                        <i className="fa fa-map-marker"></i>Langley, British
+                        Columbia Canada
                       </li>
                       <li>
                         <i className="fa fa-envelope-o"></i>
-                        <a href="#">info@example.com</a>
+                        <a href="#">info@guestpov.ca</a>
                       </li>
                       <li>
-                        <i className="fa fa-phone"></i>Phone: (+01) 123 456 7890{" "}
+                        <i className="fa fa-phone"></i>Phone: 1-778-998-5506{" "}
                         <br />
-                        Support: (+01) 123 456 7890{" "}
                       </li>
                     </ul>
                   </div>
@@ -65,16 +66,19 @@ const Footer = () => {
                     <h4 className="widget-title">Quick Links </h4>
                     <ul className="menu-footer-services">
                       <li>
-                        <a href="#">Pricing</a>
+                        <a href="/pricing">Pricing</a>
                       </li>
                       <li>
-                        <a href="#">How It Works</a>
+                        <a href="/howitworks">How It Works</a>
                       </li>
                       <li>
-                        <a href="#">FAQ's</a>
+                        <a href="/about">About Us</a>
                       </li>
                       <li>
-                        <a href="#">Contact</a>
+                        <a href="/contact">Contact</a>
+                      </li>
+                      <li>
+                        <a href="/usecases">Use Cases</a>
                       </li>
                     </ul>
                   </div>
@@ -84,46 +88,36 @@ const Footer = () => {
                     <h4 className="widget-title">Our Services </h4>
                     <ul className="menu-footer-services">
                       <li>
-                        <a href="#">Weddings</a>
+                        <a href="/usecases">Weddings</a>
                       </li>
                       <li>
-                        <a href="#">Corporate </a>
+                        <a href="/usecases">Corporate </a>
                       </li>
                       <li>
-                        <a href="#">Birthdays</a>
+                        <a href="/usecases">Birthdays</a>
                       </li>
                       <li>
-                        <a href="#">Celebrations</a>
+                        <a href="/usecases">Celebrations</a>
                       </li>
                       <li>
-                        <a href="#">Holidays</a>
+                        <a href="/usecases">Holidays</a>
                       </li>
                     </ul>
                   </div>
                 </div>
                 <div className="widget-area col-xs-12 col-sm-6 col-md-6 col-lg-3">
                   <div className="widget widget-out-link clearfix ">
-                    <h4 className="widget-title">Frequent Questions</h4>
+                    <h4 className="widget-title">GuestPov</h4>
                     <ul className="widget-text">
                       <li>
-                        <a href="#">Why should I use GUESTCAM on my Event? </a>
+                        <a href="#">Privacy Policy </a>
                       </li>
                       {/* <!-- <li><a href="#">What do I need to make Kululu work on my wedding? </a></li> --> */}
                       <li>
-                        <a href="#">
-                          Do I or my guests need to download an app?
-                        </a>
+                        <a href="#">Terms of Use</a>
                       </li>
                       <li>
-                        <a href="#">
-                          Why is it better than Google Photos/Dropbox/other
-                          apps?{" "}
-                        </a>
-                      </li>
-                      <li>
-                        <a href="#">
-                          Can I print the QR code for the wedding pictures?{" "}
-                        </a>
+                        <a href="#">Affiliates and Partners</a>
                       </li>
                     </ul>
                   </div>
@@ -138,17 +132,15 @@ const Footer = () => {
               <div className="col-md-8 col-sm-12 col-xs-12 ttm-footer2-left">
                 <div className="company-info">
                   <div className="company-logo">
-                    <img
-                      src="images/logo-img.png"
-                      alt="company-logo"
-                      height="45"
-                    />
+                    <img src="images/GuestPOV.svg" alt="company-logo" />
                   </div>
                   <div className="company-desc">
-                    At vero eos et accusamus et iusto odio dignissimos ducimus
-                    qui blanditiis praesue corrupti quos dolores et quas
-                    molestias excepturi sint occaecati cupiditate non provident,
-                    similique sunt in culp.
+                    <Text color="gray.600" mt={4}>
+                      We are proudly Canadian-owned and operating out of British
+                      Columbia, serving our communities with a platform built
+                      close to home—because every event is unique, and every
+                      moment deserves to be remembered.
+                    </Text>
                   </div>
                 </div>
               </div>
@@ -177,7 +169,7 @@ const Footer = () => {
                     </li>
                   </ul>
                 </div>
-                <p>Copyright © 2023 Guestcam. All rights reserved.</p>
+                <p>Copyright © 2025 Guestpov. All rights reserved.</p>
               </div>
             </div>
           </div>
