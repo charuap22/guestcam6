@@ -1,3 +1,4 @@
+// src/hooks/useCollection.js
 import { useEffect, useState, useRef } from "react";
 import { projectFirestore } from "../firebase/config";
 
@@ -6,43 +7,74 @@ export const useCollection = (collection, _query, _orderBy) => {
   const [error, setError] = useState(null);
   const [isPending, setIsPending] = useState(false);
 
-  // if we don't use a ref --> infinite loop in useEffect
-  // _query is an array and is "different" on every function call
+  // keep stable references so effect doesn't re-run because arrays are recreated
   const query = useRef(_query).current;
   const orderBy = useRef(_orderBy).current;
 
   useEffect(() => {
-    setIsPending(true);
+    // If no collection or no valid query (we call hook unconditionally from component),
+    // we just return empty state rather than attempting an invalid Firestore query.
+    if (!collection) {
+      setDocuments([]);
+      setIsPending(false);
+      setError(null);
+      return;
+    }
 
     let ref = projectFirestore.collection(collection);
 
-    if (query) {
+    // If a query was passed as an array like ["eventId", "==", id]
+    if (query && Array.isArray(query) && query.length === 3) {
+      // guard: don't run a where if the value (3rd item) is undefined/null
+      const value = query[2];
+      if (value === undefined || value === null) {
+        // no valid filter value yet — return empty results until value exists
+        setDocuments([]);
+        setIsPending(false);
+        setError(null);
+        return;
+      }
       ref = ref.where(...query);
     }
-    if (orderBy) {
+
+    if (orderBy && Array.isArray(orderBy) && orderBy.length >= 1) {
       ref = ref.orderBy(...orderBy);
     }
 
+    setIsPending(true);
+
     const unsubscribe = ref.onSnapshot(
       (snapshot) => {
-        let results = [];
-        snapshot.docs.forEach((doc) => {
-          results.push({ ...doc.data(), id: doc.id });
-        });
-
-        // update state
+        const results = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
         setDocuments(results);
         setIsPending(false);
         setError(null);
       },
-      (error) => {
-        console.log(error);
-        setError("could not fetch the data");
+      (err) => {
+        // Surface the real error so debugging is possible
+        console.error("useCollection onSnapshot error:", err);
+        // If Firestore tells us index is required, include message (console link is clickable)
+        if (
+          err?.code === "failed-precondition" &&
+          err.message?.includes("index")
+        ) {
+          setError("Firestore index required: " + err.message);
+        } else if (
+          err?.code === "permission-denied" ||
+          (err.message &&
+            err.message.includes("Missing or insufficient permissions"))
+        ) {
+          setError("Permission error: " + err.message);
+        } else {
+          setError(err.message || "could not fetch the data");
+        }
         setIsPending(false);
       }
     );
 
-    // unsubscribe on unmount
     return () => unsubscribe();
   }, [collection, query, orderBy]);
 

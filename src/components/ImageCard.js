@@ -1,109 +1,153 @@
-import { Box, Checkbox, IconButton, Image, Text } from "@chakra-ui/react";
-import React, { useState } from "react";
-import moment from "moment";
-import formatDistanceToNow from "date-fns/formatDistanceToNow";
-import { IKImage, IKVideo, IKContext, IKUpload } from "imagekitio-react";
-import { DownloadIcon } from "chakra-ui-ionicons";
-import { CheckCircleIcon, CheckIcon, DeleteIcon } from "@chakra-ui/icons";
+// src/components/ImageCard.js
+import React from "react";
+import {
+  Box,
+  Image,
+  Text,
+  VStack,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalBody,
+  ModalCloseButton,
+  ModalFooter,
+  Button,
+  useDisclosure,
+} from "@chakra-ui/react";
+import { motion } from "framer-motion";
+import { formatDistanceToNow } from "date-fns";
+import { FiDownload } from "react-icons/fi";
+import { downloadImage } from "../utils/downloads"; // <- use the util
 
-export const downloadImage = async (imageSrc, imageName) => {
-  console.log("imageSrc", imageSrc);
-  console.log("imageName", imageName);
-  const imageBlob = await fetch(imageSrc)
-    .then((response) => response.arrayBuffer())
-    .then((buffer) => new Blob([buffer], { type: "image/jpeg" }));
+const MotionBox = motion(Box);
+const gold = "#d4af37";
 
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(imageBlob);
-  link.download = imageName;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-};
+const ImageCard = ({ image }) => {
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const caption = image?.caption || "Untitled";
+  const author = image?.createdByName || image?.createdBy || "Guest";
 
-const ImageCard = ({ image, onSelectImage, showSelectOption }) => {
-  const [isSelected, setSelected] = useState(false);
-  const ToggleSelected = (image) => {
-    setSelected(!isSelected);
-  };
+  // safe time handling
+  let timeAgo = "";
+  try {
+    const date = image?.createdAt?.toDate
+      ? image.createdAt.toDate()
+      : new Date(image?.createdAt);
+    if (!isNaN(date)) timeAgo = formatDistanceToNow(date, { addSuffix: true });
+  } catch (err) {
+    // ignore invalid date
+  }
+
+  const isVideo = /\.(mp4|mov|webm|m4v)$/i.test(image?.url || "");
 
   return (
-    <Box className="img-container">
-      <Box className="gallery-caption-left">
-        <Text
-          fontSize={{ base: "14px", sm: "16px", md: "18px" }} // adjust as needed
-          fontWeight="600"
-          color="gray.800"
-        >
-          by: <b>{image.createdByName}</b>
-        </Text>
-      </Box>
-      <Box className="gallery-caption-right">
-        <Text
-          fontSize={{ base: "12px", sm: "14px", md: "16px" }}
-          color="gray.800"
-          fontStyle="italic"
-        >
-          {moment(new Date(image.createdAt.seconds * 1000)).fromNow()}
-        </Text>
-      </Box>
-      {/* <Box className="gallery-caption-right2">
-        <IconButton
-          onClick={() => {
-            downloadImage(image.url, image.id);
-          }}
-          icon={<DownloadIcon w={8} h={8} color="black.500" />}
-        ></IconButton>
-        <IconButton
-          icon={<DeleteIcon w={8} h={8} color="black.500" />}
-        ></IconButton>
-        <IconButton
-          icon={<CheckIcon w={8} h={8} color="black.500" />}
-        ></IconButton>
-      </Box> */}
-      {/* <Checkbox
-        className="gallery-caption-check"
-        iconSize="5rem"
-        colorScheme="yellow"
-        defaultChecked
-      ></Checkbox> */}
-      {showSelectOption && (
-        <CheckCircleIcon
-          className={`gallery-caption-check ${
-            isSelected ? "img-selected-check" : null
-          }`}
-          onClick={() => {
-            ToggleSelected(image);
-            if (!isSelected)
-              onSelectImage({
-                id: image.id,
-                selected: "selected",
-                url: image.url,
-                createdBy: image.createdBy,
-              });
-            else
-              onSelectImage({
-                id: image.id,
-                selected: "deselected",
-                url: image.url,
-                createdBy: image.createdBy,
-              });
-          }}
-          w={8}
-          h={8}
-        ></CheckCircleIcon>
-      )}
+    <>
+      <MotionBox
+        whileHover={{ scale: 1.02, boxShadow: "0 10px 30px rgba(0,0,0,0.12)" }}
+        transition={{ duration: 0.18 }}
+        borderRadius="lg"
+        overflow="hidden"
+        bg="white"
+        border="1px solid rgba(0,0,0,0.04)"
+        onClick={onOpen}
+        cursor="pointer"
+      >
+        <Box position="relative" overflow="hidden" h="220px">
+          <Image
+            src={image?.url}
+            alt={caption}
+            w="100%"
+            h="100%"
+            objectFit="cover"
+          />
 
-      <IKContext urlEndpoint="https://ik.imagekit.io/ppvclyjfm/">
-        <IKImage
-          path={image.url.replace(
-            "https://firebasestorage.googleapis.com/v0/b/guestcam3-8cb1f.appspot.com",
-            ""
-          )}
-          lqip={{ active: true, quality: 20 }}
-        />
-      </IKContext>
-    </Box>
+          {/* caption gradient at bottom — non-blocking */}
+          <Box
+            position="absolute"
+            left={0}
+            right={0}
+            bottom={0}
+            p={3}
+            style={{ pointerEvents: "none" }}
+            bg="linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.55) 100%)"
+            color="white"
+          >
+            <VStack align="start" spacing={0}>
+              {/* <Text
+                fontSize="md"
+                fontWeight="semibold"
+                textShadow="0 1px 2px rgba(0,0,0,0.6)"
+              >
+                {caption}
+              </Text> */}
+              <Text fontSize="xs" color="gray.200">
+                {author} {timeAgo ? `• ${timeAgo}` : ""}
+              </Text>
+            </VStack>
+          </Box>
+        </Box>
+      </MotionBox>
+
+      {/* Lightbox modal */}
+      <Modal isOpen={isOpen} onClose={onClose} size="xl" isCentered>
+        <ModalOverlay bg="blackAlpha.800" backdropFilter="blur(6px)" />
+        <ModalContent bg="transparent" maxW="900px">
+          <ModalCloseButton color={gold} />
+          <ModalBody
+            p={0}
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+          >
+            <Box maxW="90vw" maxH="80vh">
+              {isVideo ? (
+                <video
+                  src={image?.url}
+                  controls
+                  style={{ width: "100%", maxHeight: "80vh", borderRadius: 8 }}
+                />
+              ) : (
+                <Image
+                  src={image?.url}
+                  alt={caption}
+                  objectFit="contain"
+                  maxH="80vh"
+                  borderRadius="md"
+                />
+              )}
+
+              <Box mt={3} color="white">
+                {/* <Text fontSize="lg" fontWeight="semibold" color={gold}>
+                  {caption}
+                </Text> */}
+                <Text fontSize="sm" color="gray.300">
+                  Uploaded by {author}
+                </Text>
+              </Box>
+            </Box>
+          </ModalBody>
+
+          <ModalFooter>
+            <Button
+              bg={gold}
+              color="black"
+              mr={3}
+              leftIcon={<FiDownload />}
+              onClick={(e) => {
+                e.stopPropagation();
+                downloadImage(image?.url, image?.filename || image?.id);
+              }}
+              _hover={{ bg: "black", color: gold }}
+            >
+              Download
+            </Button>
+            <Button variant="ghost" color="white" onClick={onClose}>
+              Close
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    </>
   );
 };
 

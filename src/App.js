@@ -26,7 +26,10 @@ import SuccessPage from "./pages/SuccessPage";
 import Home from "./site/pages/Home";
 import About from "./site/pages/About";
 import CancelPage from "./pages/CancelPage";
-
+import UseCases from "./site/pages/UseCases";
+import HowItWorks from "./site/pages/HowItWorks";
+import PricingPage from "./site/pages/PricingPage";
+ 
 function App() {
   const { authIsReady, user } = useAuthContext();
   const { UserInfo } = useUserInfo();
@@ -51,6 +54,15 @@ function App() {
             </Route>
             <Route exact path="/about">
               <About />
+            </Route>
+            <Route exact path="/usecases">
+              <UseCases />
+            </Route>
+            <Route exact path="/howitworks">
+              <HowItWorks />
+            </Route>
+            <Route exact path="/pricing">
+              <PricingPage />
             </Route>
             <Route path="/CanvaTemplates/:type">
               {!user && <Redirect to="/login" />}
@@ -163,10 +175,10 @@ function App() {
               {!user && <Signup />} */}
               <Signup />
             </Route>
-            <Route path="/pricing">
+            {/* <Route path="/pricing">
               {!user && <Redirect to="/login" />}
               {user && <Pricing />}
-            </Route>
+            </Route> */}
             <Route path="/success">
               {!user && <Redirect to="/login" />}
               {user && <SuccessPage />}

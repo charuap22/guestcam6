@@ -45,7 +45,7 @@ import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import firebase from "firebase/app";
 import { AlertIcon } from "chakra-ui-ionicons";
-import { downloadFolderAsZip } from "./ImageGrid";
+import { downloadFolderAsZip } from "../utils/downloads";
 
 const VideoGrid = ({ videos, eventId, userId, userType }) => {
   const { deleteDocument } = useFirestore("videos");

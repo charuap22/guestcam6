@@ -28,7 +28,7 @@ const Menu = () => {
                     <img
                       id="logo-img"
                       className="img-center"
-                      src="images/logo-img.png"
+                      src="images/GuestPOV.svg"
                       alt="logo-img"
                     />
                   </Link>
@@ -62,22 +62,16 @@ const Menu = () => {
                         <NavLink to="/usecases">Use Cases</NavLink>
                         <ul>
                           <li>
-                            <a href="#">Wedding</a>
+                            <a href="/usecases#wedding">Wedding</a>
                           </li>
                           <li>
-                            <a href="#">Private Party</a>
+                            <a href="/usecases#privateparty">Private Party</a>
                           </li>
                           <li>
-                            <a href="#">Corporate Party</a>
+                            <a href="/usecases#Corporate">Corporate Party</a>
                           </li>
                           <li>
-                            <a href="#">Birthdays</a>
-                          </li>
-                          <li>
-                            <a href="#">Holidays</a>
-                          </li>
-                          <li>
-                            <a href="#">Celebrations</a>
+                            <a href="/usecases#wedding">Birthdays</a>
                           </li>
                         </ul>
                       </li>
@@ -88,7 +82,7 @@ const Menu = () => {
                         <NavLink to="/pricing">Pricing</NavLink>
                       </li>
 
-                      <li>
+                      {/* <li>
                         {!isPending && user && UserInfo.role === "Admin" && (
                           <>
                             <NavLink to="/dashboard">Dashboard</NavLink>
@@ -109,7 +103,7 @@ const Menu = () => {
                           </>
                         )}
                         {!user && <NavLink to="/login">Login</NavLink>}
-                      </li>
+                      </li> */}
                     </ul>
                   </nav>
                 </div>

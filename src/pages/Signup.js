@@ -264,7 +264,7 @@ export default function Signup() {
             lineHeight={1.1}
             fontSize={{ base: "xl", sm: "xl", md: "xl", lg: "2xl" }}
           >
-            GUESTCAM
+            GUESTPOV
           </Heading>
           <Spacer></Spacer>
           <VStack align="stretch" spacing={8}>
