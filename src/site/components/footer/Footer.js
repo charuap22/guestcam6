@@ -1,9 +1,6 @@
-import React from 'react'
-import {
-   
-  Text,
-   
-} from "@chakra-ui/react";
+import React from "react";
+import { Text, Link } from "@chakra-ui/react";
+
 const Footer = () => {
   return (
     <>
@@ -52,12 +49,14 @@ const Footer = () => {
                       </li>
                       <li>
                         <i className="fa fa-envelope-o"></i>
-                        <a href="#">info@guestpov.ca</a>
+                        <Link href="mailto:info@guestpov.ca?subject=GuestPOV%20Inquiry">
+                          info@guestpov.ca
+                        </Link>
                       </li>
-                      <li>
+                      {/* <li>
                         <i className="fa fa-phone"></i>Phone: 1-778-998-5506{" "}
                         <br />
-                      </li>
+                      </li> */}
                     </ul>
                   </div>
                 </div>
@@ -148,25 +147,22 @@ const Footer = () => {
                 <div className="ttm-social-link-wrapper">
                   <ul className="social-icons">
                     <li>
-                      <a href="#" target="_blank">
+                      <a
+                        href="https://www.facebook.com/profile.php?id=61581981119620"
+                        target="_blank"
+                      >
                         <i className="fa fa-facebook"></i>
                       </a>
                     </li>
                     <li>
-                      <a href="#" target="_blank">
+                      <a
+                        href="https://www.instagram.com/guestpov_official/"
+                        target="_blank"
+                      >
                         <i className="fa fa-twitter"></i>
                       </a>
                     </li>
-                    <li>
-                      <a href="#" target="_blank">
-                        <i className="fa fa-instagram"></i>
-                      </a>
-                    </li>
-                    <li>
-                      <a href="#" target="_blank">
-                        <i className="fa fa-youtube-play"></i>
-                      </a>
-                    </li>
+                  
                   </ul>
                 </div>
                 <p>Copyright © 2025 Guestpov. All rights reserved.</p>
@@ -178,6 +174,6 @@ const Footer = () => {
       {/* <!--footer-END--> */}
     </>
   );
-}
+};
 
-export default Footer
+export default Footer;

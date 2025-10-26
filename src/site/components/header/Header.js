@@ -1,7 +1,12 @@
 import React, { useEffect, useState } from "react";
 import Menu from "../Menu";
+import LoadScript from "../../helpers/LoadScript";
 
 const Header = ({ title, subtitle, headerImage }) => {
+    LoadScript("./js/master.js");
+    LoadScript("./js/main.js");
+
+
   const [offset, setOffset] = useState(0);
 
   // Parallax scroll effect
@@ -121,7 +126,7 @@ const Header = ({ title, subtitle, headerImage }) => {
                   className="ttm-textcolor-white"
                   style={{ color: "#f5f5f5" }}
                 >
-                  {subtitle}
+                  {title}
                 </span>
               </div>
             </div>

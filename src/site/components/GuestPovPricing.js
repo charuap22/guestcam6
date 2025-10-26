@@ -17,9 +17,10 @@ import {
 import { CheckIcon } from "@chakra-ui/icons";
 
 export default function GuestPovPricing() {
+  // Light/dark support
   const bg = useColorModeValue("gray.50", "gray.900");
   const cardBg = useColorModeValue("white", "gray.800");
-  const accentGold = "#C5A572"; // warm gold
+  const accentGold = "#C5A572"; // warm gold tone
   const borderGold = "rgba(197, 165, 114, 0.4)";
   const textGold = "#B89152";
 
@@ -28,7 +29,7 @@ export default function GuestPovPricing() {
       id: "lite",
       name: "Lite",
       price: "$75",
-      currency: "USD",
+      currency: "CAD",
       highlight: false,
       features: [
         "Single Gallery",
@@ -42,7 +43,7 @@ export default function GuestPovPricing() {
       id: "flex",
       name: "Flex",
       price: "$125",
-      currency: "USD",
+      currency: "CAD",
       highlight: true,
       features: [
         "Includes Albums",
@@ -56,7 +57,7 @@ export default function GuestPovPricing() {
       id: "max",
       name: "Max",
       price: "$165",
-      currency: "USD",
+      currency: "CAD",
       highlight: false,
       features: [
         "Multi-Day Events",
@@ -161,7 +162,7 @@ export default function GuestPovPricing() {
                   >
                     {plan.price}
                   </Text>
-                  <Text color="gray.500" fontSize="sm" ml={1}>
+                  <Text color="gray.500" fontSize="sm">
                     {plan.currency}
                   </Text>
                 </HStack>
@@ -217,7 +218,7 @@ export default function GuestPovPricing() {
         </Stack>
 
         <Text fontSize="sm" color="gray.500" mt={6} textAlign="center">
-          Prices shown in USD. All plans include secure storage and downloadable
+          Prices shown in CAD. All plans include secure storage and downloadable
           albums for every event.
         </Text>
       </Flex>

@@ -111,25 +111,25 @@ function LazyVideo({ src, poster, title, subtitle, videoHeight = "480px" }) {
 export default function WhatWeDo() {
   const videos = [
     {
-      src: "/videos/video1.mp4",
+      src: "/videos/video1.webm",
       poster: "/images/video1_poster.jpg",
       title: "Slideshow",
       subtitle: "Auto-play highlights of every moment",
     },
     {
-      src: "/videos/video4.mp4",
+      src: "/videos/video4.webm",
       poster: "/images/video4_poster.jpg",
       title: "Guest Book",
       subtitle: "Messages, wishes & beautiful memories",
     },
     {
-      src: "/videos/video3.mp4",
+      src: "/videos/video3.webm",
       poster: "/images/video3_poster.jpg",
       title: "Video Gallery",
       subtitle: "Watch every guest’s special clip",
     },
     {
-      src: "/videos/video2.mp4",
+      src: "/videos/video2.webm",
       poster: "/images/video2_poster.jpg",
       title: "Photo Gallery",
       subtitle: "High-quality photo collection from guests",

@@ -126,7 +126,7 @@ const Home = () => {
                     <div className="featured-content">
                       <div className="featured-title">
                         <h5>
-                          <a href="#"> Wedding</a>
+                          <a href="/usecases"> Wedding</a>
                         </h5>
                       </div>
                     </div>
@@ -144,7 +144,7 @@ const Home = () => {
                     <div className="featured-content">
                       <div className="featured-title">
                         <h5>
-                          <a href="#">Private Party</a>
+                          <a href="/usecases">Private Party</a>
                         </h5>
                       </div>
                     </div>
@@ -162,7 +162,7 @@ const Home = () => {
                     <div className="featured-content">
                       <div className="featured-title">
                         <h5>
-                          <a href="#">Corporate Party</a>
+                          <a href="/usecases">Corporate Party</a>
                         </h5>
                       </div>
                     </div>
@@ -182,7 +182,7 @@ const Home = () => {
                     <div className="featured-content">
                       <div className="featured-title">
                         <h5>
-                          <a href="#"> Birthdays</a>
+                          <a href="/usecases"> Birthdays</a>
                         </h5>
                       </div>
                     </div>
@@ -200,7 +200,7 @@ const Home = () => {
                     <div className="featured-content">
                       <div className="featured-title">
                         <h5>
-                          <a href="#">Holidays</a>
+                          <a href="/usecases">Holidays</a>
                         </h5>
                       </div>
                     </div>
@@ -218,7 +218,7 @@ const Home = () => {
                     <div className="featured-content">
                       <div className="featured-title">
                         <h5>
-                          <a href="#">Celebrations</a>
+                          <a href="/usecases">Celebrations</a>
                         </h5>
                       </div>
                     </div>
@@ -237,9 +237,6 @@ const Home = () => {
             <WhatWeDo />
           </section>
           {/* <!--service-section.style2 end--> */}
-
-         
-          
         </div>
         {/* <!-- site-main end --> */}
 

@@ -71,7 +71,9 @@ const HowItWorks = () => {
     <>
       <Header
         title="How It Works"
-        subtitle="How It Works"
+        subtitle="Get a private QR code that instantly saves every photo and video to your live event gallery.
+No app, no hassle.
+Perfect for photos, videos, guestbook, and slideshow."
         headerImage={bannerBg}
       />
 

@@ -6,6 +6,7 @@ import Menu from "../Menu";
 const Header_revslider = () => {
   LoadScript("./js/master.js");
   LoadScript("./js/main.js");
+   
   return (
     <>
       {/* <!--header start--> */}

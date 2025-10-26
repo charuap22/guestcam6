@@ -10,19 +10,16 @@ const PricingPage = () => {
 
   return (
     <>
-      
-        <Header
-          title="PRICING"
-          subtitle="Pricing"
-          headerImage={bannerBg}
-        ></Header>
+      <Header
+        title="PRICING"
+        subtitle="Purchase now and set up later."
+        headerImage={bannerBg}
+      ></Header>
 
-        <div className="site-main">
-  <GuestPovPricing></GuestPovPricing>
-        </div>
-        {/* site-main end */}
-     
- 
+      <div className="site-main">
+        <GuestPovPricing></GuestPovPricing>
+      </div>
+      {/* site-main end */}
 
       <Footer />
     </>
