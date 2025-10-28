@@ -186,7 +186,7 @@ const HeroKenburn = () => {
 
             <a
               className="tp-caption tp-resizeme highlight-skin-button"
-              href="#"
+              href="/howitworks"
               target="_self"
               id="slide-1-layer-6"
               data-x="['center','center','center','center']"
@@ -206,6 +206,7 @@ const HeroKenburn = () => {
               data-textalign="['inherit','inherit','inherit','inherit']"
               data-paddingtop="[15,15,15,10]"
               data-paddingright="[30,30,30,25]"
+              data-marginright="[30,30,30,25]"
               data-paddingbottom="[15,15,15,10]"
               data-paddingleft="[30,30,30,25]"
             >
@@ -214,7 +215,7 @@ const HeroKenburn = () => {
 
             <a
               className="tp-caption tp-resizeme classic-border-button"
-              href="#"
+              href="/pricing"
               target="_self"
               id="slide-1-layer-7"
               data-x="['center','center','center','center']"
@@ -308,11 +309,11 @@ const HeroKenburn = () => {
             <div
               class="tp-caption tp-resizeme"
               id="slide-1-layer-2"
-              data-x="['left','left','left','center']"
+              data-x="['left','left','left','left']"
               data-hoffset="['90','90','71','20']"
               data-y="['top','top','top','middle']"
               data-voffset="['195','234','64','-100']"
-              data-fontsize="['64','64','64','53']"
+              data-fontsize="['24','24','24','20']"
               data-lineheight="['70','70','70','60']"
               data-fontweight="[600,600,600,600]"
               data-color="['#ffffff','#ffffff','#ffffff','#ffffff']"
@@ -337,11 +338,11 @@ const HeroKenburn = () => {
             <div
               class="tp-caption tp-resizeme"
               id="slide-1-layer-3"
-              data-x="['left','left','left','center']"
-              data-hoffset="['89','89','69','1']"
+              data-x="['left','left','left','left']"
+              data-hoffset="['89','89','69','20']"
               data-y="['top','top','top','middle']"
               data-voffset="['260','302','130','-38']"
-              data-fontsize="['65','65','65','50']"
+              data-fontsize="['65','65','65','35']"
               data-lineheight="['70','70','70','60']"
               data-fontweight="[600,600,600,600]"
               data-color="['#ffffff','#ffffff','#ffffff','#ffffff']"
@@ -363,11 +364,11 @@ const HeroKenburn = () => {
             <div
               class="tp-caption tp-resizeme"
               id="slide-1-layer-4"
-              data-x="['left','left','left','center']"
-              data-hoffset="['89','89','70','0']"
+              data-x="['left','left','left','left']"
+              data-hoffset="['89','89','70','20']"
               data-y="['top','top','top','middle']"
               data-voffset="['330','370','203','23']"
-              data-fontsize="['65','65','65','50']"
+              data-fontsize="['65','65','65','35']"
               data-lineheight="['70','70','70','60']"
               data-fontweight="[600,600,600,600]"
               data-color="['#ffffff','#ffffff','#ffffff','#ffffff']"
@@ -410,13 +411,14 @@ const HeroKenburn = () => {
               data-paddingbottom="[0,0,0,0]"
               data-paddingleft="[0,0,0,0]"
             >
-              Because the best part of any event isn’t just what you see—it’s<br></br>
+              Because the best part of any event isn’t just what you see—it’s
+              <br></br>
               how your guests see it, too.
             </div>
 
             <a
               class="tp-caption tp-resizeme highlight-skin-button"
-              href="#"
+              href="/pricing"
               target="_self"
               id="slide-1-layer-6"
               data-x="['left','left','left','center']"

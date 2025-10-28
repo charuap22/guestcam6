@@ -16,9 +16,11 @@ import {
   useColorModeValue,
   chakra,
   Flex,
-  keyframes,
+ 
   Divider,
 } from "@chakra-ui/react";
+import { keyframes } from "@emotion/react";
+
 import Footer from "../components/footer/Footer";
 import { CheckIcon } from "@chakra-ui/icons";
 import Header from "../components/header/Header";
@@ -138,7 +140,11 @@ const UseCases = () => {
 
   return (
     <>
-      <Header title="Use Cases" subtitle="Use Cases" headerImage={bannerBg} />
+      <Header
+        title="Use Cases"
+        subtitle="Each celebration is one of a kind — from birthdays and milestones to baby showers and ceremonies. Treasure these moments; they come only once."
+        headerImage={bannerBg}
+      />
 
       <Box as="main" py={{ base: 8, md: 12 }} bg={LIGHT_GREY}>
         <Grid
@@ -224,9 +230,9 @@ const UseCases = () => {
                 Event Photo Sharing Made Easy
               </Heading>
               <Text color="gray.600" mt={5} mb={5}>
-                Collect and share your guests’ memories effortlessly. GuestPOV is
-                designed to make every moment — from the grand entrance to the
-                final dance — beautifully captured and instantly shared.
+                Collect and share your guests’ memories effortlessly. GuestPOV
+                is designed to make every moment — from the grand entrance to
+                the final dance — beautifully captured and instantly shared.
               </Text>
 
               <List spacing={5} mb={4}>

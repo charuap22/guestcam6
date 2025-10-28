@@ -1,5 +1,5 @@
 import React from "react";
-import { useHistory, NavLink,Link } from "react-router-dom";
+import { useHistory, NavLink, Link } from "react-router-dom";
 import { AvatarInfo_Mobile } from "../../components/AvatarInfo_Mobile";
 import { useAuthContext } from "../../hooks/useAuthContext";
 import { useLogout } from "../../hooks/useLogout";
@@ -82,7 +82,7 @@ const Menu = () => {
                         <NavLink to="/pricing">Pricing</NavLink>
                       </li>
 
-                      {/* <li>
+                      <li>
                         {!isPending && user && UserInfo.role === "Admin" && (
                           <>
                             <NavLink to="/dashboard">Dashboard</NavLink>
@@ -103,7 +103,7 @@ const Menu = () => {
                           </>
                         )}
                         {!user && <NavLink to="/login">Login</NavLink>}
-                      </li> */}
+                      </li>
                     </ul>
                   </nav>
                 </div>

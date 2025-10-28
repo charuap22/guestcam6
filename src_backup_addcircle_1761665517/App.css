@@ -1,0 +1,101 @@
+/* .App {
+  display: flex;
+}
+.App .container{
+  flex-grow: 1;
+ 
+}
+.logo{
+  max-width: 200px;
+}
+.App {
+  text-align: center;
+} */
+
+.App-logo {
+  height: 40vmin;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.App-link {
+  color: #61dafb;
+}
+
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+.content-inner{
+  display: none;
+  transition: opacity 2s;
+  opacity: 0;
+}
+.content-inner.active {
+  display: block;
+transition: opacity 2s;
+  opacity: 1;
+}
+p{
+  font-size: 16px;
+}
+/* Make sure header container is positioned so we can absolutely place the toggle */
+.ttm-stickable-header .container {
+  position: relative;
+}
+
+/* Move the toggle (hamburger icon) to the right */
+.ttm-menu-toggle {
+  position: absolute;
+  top: 18px;   /* adjust vertical alignment */
+  right: 16px; /* push to right edge */
+  z-index: 9999; /* keep it above logo/image */
+}
+
+/* Optional: add space so logo doesn’t go under it */
+.site-branding {
+  padding-right: 70px;
+}
+
+/* Adjust for smaller devices */
+@media (max-width: 480px) {
+  .ttm-menu-toggle {
+    top: 14px;
+    right: 12px;
+  }
+  .site-branding {
+    padding-right: 90px;
+  }
+    #logo-img {
+    max-width: 130px;
+  }
+ 
+}
+@media (max-width: 390px) {
+    .site-branding img {
+        max-height: 70px;
+        float: left;
+        margin-right: 0;
+        margin-left: 10px;
+    }
+}

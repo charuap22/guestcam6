@@ -37,14 +37,13 @@ import {
   AiOutlineDelete,
 } from "react-icons/ai";
 import { ChevronDownIcon } from "@chakra-ui/icons";
-import { SRLWrapper } from "simple-react-lightbox";
 
 import VideoCard, { downloadVideo } from "./VideoCard";
 
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import firebase from "firebase/app";
-import { AlertIcon } from "chakra-ui-ionicons";
+import { AlertIcon } from "@chakra-ui/icons";
 import { downloadFolderAsZip } from "../utils/downloads";
 
 const VideoGrid = ({ videos, eventId, userId, userType }) => {
@@ -251,7 +250,7 @@ const VideoGrid = ({ videos, eventId, userId, userType }) => {
         )}
       </Box>
 
-      <SRLWrapper>
+      
         <Box
           padding={4}
           w="100%"
@@ -304,7 +303,7 @@ const VideoGrid = ({ videos, eventId, userId, userType }) => {
             </GridItem>
           ))}
         </Grid>*/}
-      </SRLWrapper>
+      
 
       {/* <Box
         as={motion.div}

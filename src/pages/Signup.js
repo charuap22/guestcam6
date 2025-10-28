@@ -26,7 +26,7 @@ import {
   Checkbox,
 } from "@chakra-ui/react";
 import background from "../assets/party_slide2.jpeg";
-import { AddCircleIcon } from "chakra-ui-ionicons";
+import { IoAddCircleOutline } from "react-icons/io5";
 import { useState, useRef } from "react";
 
 import { NavLink } from "react-router-dom";
@@ -221,7 +221,7 @@ export default function Signup() {
                 >
                   {/* <BiPencil color="black" fontSize="20px" /> */}
                   {/* <Image src="https://raw.githubusercontent.com/chakra-ui/chakra-ui/develop/logo/logomark-colored%402x.png" /> */}
-                  <AddCircleIcon w={8} h={8} color="yellow.500" />
+                  <IoAddCircleOutline w={8} h={8} color="yellow.500" />
                 </AvatarBadge>
               </Avatar>
               <Input
