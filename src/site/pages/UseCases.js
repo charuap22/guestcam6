@@ -16,9 +16,11 @@ import {
   useColorModeValue,
   chakra,
   Flex,
-  keyframes,
+ 
   Divider,
 } from "@chakra-ui/react";
+import { keyframes } from "@emotion/react";
+
 import Footer from "../components/footer/Footer";
 import { CheckIcon } from "@chakra-ui/icons";
 import Header from "../components/header/Header";

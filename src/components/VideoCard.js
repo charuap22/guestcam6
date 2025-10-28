@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import moment from "moment";
 import formatDistanceToNow from "date-fns/formatDistanceToNow";
 
-import { DownloadIcon } from "chakra-ui-ionicons";
+import { DownloadIcon } from "@chakra-ui/icons";
 import { CheckCircleIcon, CheckIcon, DeleteIcon } from "@chakra-ui/icons";
 import ReactPlayer from "react-player";
 

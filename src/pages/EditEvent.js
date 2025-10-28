@@ -24,7 +24,7 @@ import {
   AlertIcon,
   Divider,
 } from "@chakra-ui/react";
-import { AddCircleIcon } from "chakra-ui-ionicons";
+import { IoAddCircleOutline } from "react-icons/io5";
 import { Select } from "@chakra-ui/react";
 import { usePlan } from "../context/PlanContext";
 import { useFirestore } from "../hooks/useFirestore";
@@ -197,7 +197,7 @@ const EditEvent = () => {
                         bg="yellow.100"
                         onClick={() => hiddenFileInput.current.click()}
                       >
-                        <AddCircleIcon w={8} h={8} color="yellow.500" />
+                        <IoAddCircleOutline w={8} h={8} color="yellow.500" />
                       </AvatarBadge>
                     </Avatar>
                     <Input

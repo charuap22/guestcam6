@@ -82,7 +82,7 @@ const Menu = () => {
                         <NavLink to="/pricing">Pricing</NavLink>
                       </li>
 
-                      {/* <li>
+                      <li>
                         {!isPending && user && UserInfo.role === "Admin" && (
                           <>
                             <NavLink to="/dashboard">Dashboard</NavLink>
@@ -103,7 +103,7 @@ const Menu = () => {
                           </>
                         )}
                         {!user && <NavLink to="/login">Login</NavLink>}
-                      </li> */}
+                      </li>
                     </ul>
                   </nav>
                 </div>

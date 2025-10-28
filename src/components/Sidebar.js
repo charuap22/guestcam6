@@ -58,7 +58,8 @@ import { useHistory, Link } from "react-router-dom";
 import { useEvent } from "../hooks/useEvent";
 import { useUserInfo } from "../hooks/useUserInfo";
 import { AvatarInfo_Mobile } from "./AvatarInfo_Mobile";
-import { HomeIcon } from "chakra-ui-ionicons";
+import { IoHomeOutline } from "react-icons/io5";
+
 
 const LinkItems = [
   { name: "Home", icon: FiHome, url: "/dashboard" },
@@ -328,7 +329,7 @@ const MobileNav = ({ role, eventId, onOpen, ...rest }) => {
             onClick={() => {
               history.push(`/dashboard`);
             }}
-            icon={<HomeIcon />}
+            icon={<IoHomeOutline />}
           />
           {/* <Button
             px={2}

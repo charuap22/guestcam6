@@ -31,7 +31,8 @@ import {
   Divider,
   useToast,
 } from "@chakra-ui/react";
-import { AddCircleIcon } from "chakra-ui-ionicons";
+import { IoAddCircleOutline } from "react-icons/io5";
+
 
 import GetPackageInfo from "../components/GetPackageInfo";
 import { useFirestore } from "../hooks/useFirestore";
@@ -467,7 +468,7 @@ const CreateEvent = () => {
                         >
                           {/* <BiPencil color="black" fontSize="20px" /> */}
                           {/* <Image src="https://raw.githubusercontent.com/chakra-ui/chakra-ui/develop/logo/logomark-colored%402x.png" /> */}
-                          <AddCircleIcon w={8} h={8} color="yellow.500" />
+                          <IoAddCircleOutline w={8} h={8} color="yellow.500" />
                         </AvatarBadge>
                       </Avatar>
                       <Input

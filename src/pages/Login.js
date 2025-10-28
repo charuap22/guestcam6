@@ -29,7 +29,7 @@ import {
   AbsoluteCenter,
 } from "@chakra-ui/react";
 import background from "../assets/party_slide2.jpeg";
-import { AddCircleIcon } from "chakra-ui-ionicons";
+import { IoAddCircleOutline } from "react-icons/io5";
 import { useState, useRef } from "react";
 import { useLogin } from "../hooks/useLogin";
 
