@@ -88,6 +88,7 @@ const textGold = "#d4af37";
       bg="white"
       rounded="lg"
       boxShadow="lg"
+      mt={20}
     >
       <SimpleGrid
         columns={{ base: 1, lg: 2 }}
@@ -129,25 +130,25 @@ const textGold = "#d4af37";
               />
             </Box>
 
-         <VStack spacing={4} align="stretch" mb={4}>
-                    <Box textAlign="center">
-                      <Text fontSize="sm" color="gray.500">
-                        {document.eventPageHeader}
-                      </Text>
-                      <Heading
-                        as="h2"
-                        fontSize={{ base: "2xl", md: "3xl" }}
-                        mt={2}
-                        color={textGold}
-                      >
-                        {document.eventName}
-                      </Heading>
-                      <Text fontSize="sm" color="gray.500" mt={2}>
-                        {document.welcomeMessage}
-                      </Text>
-                    </Box>
-                  </VStack>
-        
+            <VStack spacing={4} align="stretch" mb={4}>
+              <Box textAlign="center">
+                <Text fontSize="sm" color="gray.500">
+                  {document.eventPageHeader}
+                </Text>
+                <Heading
+                  as="h2"
+                  fontSize={{ base: "2xl", md: "3xl" }}
+                  mt={2}
+                  color={textGold}
+                >
+                  {document.eventName}
+                </Heading>
+                <Text fontSize="sm" color="gray.500" mt={2}>
+                  {document.welcomeMessage}
+                </Text>
+              </Box>
+            </VStack>
+
             <Text fontSize={"md"}>GUESTPOV</Text>
           </Box>
         </VStack>
@@ -245,7 +246,7 @@ const textGold = "#d4af37";
                   onClick={() => {
                     //changeEvent(document.id);
 
-                    history.push(`/gallery/${UserInfo.role}/${document.id}`);
+                    history.push(`/admin/gallery/${UserInfo.role}/${document.id}`);
                   }}
                 >
                   Photos

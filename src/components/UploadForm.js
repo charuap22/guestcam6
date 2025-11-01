@@ -1,128 +1,288 @@
-// src/components/UploadForm.js
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import {
   Box,
   VStack,
+  HStack,
   Text,
   Alert,
   AlertIcon,
   Wrap,
   WrapItem,
-  Progress,
   Image,
   Center,
-  Button,
   Icon,
+  Heading,
+  Divider,
+  IconButton,
+  useToast,
+  Button,
 } from "@chakra-ui/react";
-import { AddIcon } from "@chakra-ui/icons";
+import { AddIcon, SmallCloseIcon } from "@chakra-ui/icons";
 import { ProgressBar } from "./ProgressBar";
 
 const gold = "#d4af37";
+const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
-const UploadForm = ({ user, onUploadComplete }) => {
+const humanFileSize = (size) => {
+  if (size === 0) return "0 B";
+  const i = Math.floor(Math.log(size) / Math.log(1024));
+  return `${(size / Math.pow(1024, i)).toFixed(i ? 1 : 0)} ${
+    ["B", "KB", "MB", "GB"][i]
+  }`;
+};
+
+const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
+
+const UploadForm = ({ user, onUploadComplete, onClose }) => {
   const hiddenFileInput = useRef(null);
   const [error, setError] = useState(null);
-  const [files, setFiles] = useState([]);
-  const types = [
-    "image/png",
-    "image/jpeg",
-    "image/jpg",
-    "video/mp4",
-    "video/quicktime",
-  ];
+  const [files, setFiles] = useState([]); // { file, previewUrl, id }
+  const toast = useToast();
+
+  // cleanup previews
+  useEffect(() => {
+    return () => {
+      files.forEach((f) => f.previewUrl && URL.revokeObjectURL(f.previewUrl));
+    };
+  }, [files]);
+
+  // handle file selection
+  const validateAndAdd = useCallback((selectedFiles) => {
+    setError(null);
+    const toAdd = [];
+
+    for (const file of selectedFiles) {
+      if (!allowedTypes.includes(file.type)) {
+        setError("Only JPG, JPEG, PNG, and WEBP files are allowed.");
+        return;
+      }
+      if (file.size > MAX_FILE_SIZE) {
+        setError(
+          `"${file.name}" is too large. Max allowed is ${humanFileSize(
+            MAX_FILE_SIZE
+          )}.`
+        );
+        return;
+      }
+      const previewUrl = URL.createObjectURL(file);
+      toAdd.push({
+        id: `${file.name}-${file.size}-${Date.now()}`,
+        file,
+        previewUrl,
+      });
+    }
+
+    if (toAdd.length > 0) {
+      setFiles((prev) => [...prev, ...toAdd]);
+    }
+  }, []);
 
   const changeHandler = (e) => {
-    setError(null);
     const selected = Array.from(e.target.files || []);
     if (!selected.length) return;
-    const invalid = selected.find((f) => !types.includes(f.type));
-    if (invalid) {
-      setError("Unsupported file type. Use JPG/PNG or MP4/MOV.");
-      return;
-    }
-    setFiles((prev) => [...prev, ...selected]);
+    validateAndAdd(selected);
     e.target.value = null;
   };
 
-  // called by ProgressBar (pass original file)
+  // drag & drop
+  const onDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const dropped = Array.from(e.dataTransfer.files || []);
+    if (!dropped.length) return;
+    validateAndAdd(dropped);
+  };
+
+  const onDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const removeFile = (id) => {
+    setFiles((prev) => {
+      const toKeep = prev.filter((p) => p.id !== id);
+      const removed = prev.find((p) => p.id === id);
+      if (removed && removed.previewUrl)
+        URL.revokeObjectURL(removed.previewUrl);
+      return toKeep;
+    });
+  };
+
+  // called when ProgressBar finishes
   const onFileDone = (meta, originalFile) => {
-    setFiles((prev) => prev.filter((f) => f !== originalFile));
+    setFiles((prev) => {
+      const remaining = prev.filter((p) => p.file !== originalFile);
+      const finished = prev.find((p) => p.file === originalFile);
+      if (finished && finished.previewUrl)
+        URL.revokeObjectURL(finished.previewUrl);
+      return remaining;
+    });
+
     if (onUploadComplete) onUploadComplete(meta);
+    toast({
+      title: "Photo uploaded",
+      description: `${meta?.name || "Photo"} added successfully.`,
+      status: "success",
+      duration: 2000,
+      isClosable: true,
+      position: "bottom-right",
+    });
   };
 
   return (
     <Box>
-      <VStack spacing={4}>
-        {/* Compact click area (no big header button here) */}
+      <VStack spacing={6} align="stretch">
+        {/* Header */}
+        <Box>
+          <Heading size="md">Add photos</Heading>
+          <Text fontSize="sm" color="gray.500" mt={1}>
+            Upload your favorite photos. Supported formats: JPG, PNG, WEBP. Max
+            size {humanFileSize(MAX_FILE_SIZE)} each.
+          </Text>
+        </Box>
+
+        <Divider />
+
+        {/* Upload area */}
         <Center>
-          <Button
-            leftIcon={<Icon as={AddIcon} color={gold} />}
-            variant="ghost"
+          <Box
+            onDrop={onDrop}
+            onDragOver={onDragOver}
             onClick={() => hiddenFileInput.current?.click()}
-            border="1px dashed rgba(0,0,0,0.08)"
+            cursor="pointer"
             px={6}
-            py={4}
+            py={8}
             borderRadius="lg"
-            _hover={{ bg: "gray.50" }}
+            border="2px dashed"
+            borderColor="gray.200"
+            bg="transparent"
+            transition="all 0.2s"
+            _hover={{ bg: "gray.50", borderColor: gold }}
+            width={{ base: "100%", sm: "640px" }}
           >
-            Select photos or videos
-          </Button>
+            <VStack spacing={3}>
+              <Box
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                borderRadius="12px"
+                bg="linear-gradient(180deg, rgba(99,102,241,0.08), rgba(124,58,237,0.06))"
+                p={3}
+              >
+                <AddIcon boxSize={6} color={gold} />
+              </Box>
+              <Text fontWeight="600">
+                Drag & drop photos here or click to browse
+              </Text>
+              <Text fontSize="sm" color="gray.500">
+                You can select multiple photos at once.
+              </Text>
+            </VStack>
+          </Box>
         </Center>
 
+        {/* Hidden input */}
         <input
           ref={hiddenFileInput}
           type="file"
-          accept="image/*,video/*"
+          accept="image/*"
           multiple
           onChange={changeHandler}
           style={{ display: "none" }}
         />
 
         {error && (
-          <Alert status="error" rounded="md" width="full">
+          <Alert status="error" rounded="md">
             <AlertIcon />
             {error}
           </Alert>
         )}
 
-        {/* small previews + progress */}
+        {/* Thumbnails + progress */}
         {files.length > 0 && (
-          <Wrap spacing={4} justify="center" w="full">
-            {files.map((file, i) => (
-              <WrapItem key={`${file.name}-${file.size}-${i}`}>
-                <Box
-                  w="160px"
-                  borderRadius="md"
-                  overflow="hidden"
-                  boxShadow="sm"
-                  bg="white"
-                >
-                  <Image
-                    src={URL.createObjectURL(file)}
-                    alt={file.name}
-                    objectFit="cover"
-                    h="100px"
-                    w="160px"
-                  />
-                  <Box p={2}>
-                    <Text fontSize="sm" noOfLines={1}>
-                      {file.name}
-                    </Text>
-                    <ProgressBar
-                      file={file}
-                      fileurl={URL.createObjectURL(file)}
-                      user={user}
-                      fileType={
-                        file.type.includes("image") ? "gallery" : "videos"
-                      }
-                      onDone={(meta) => onFileDone(meta, file)}
-                    />
+          <Box>
+            <HStack justify="space-between" mb={3}>
+              <Text fontSize="sm" fontWeight="600">
+                {files.length} photo{files.length > 1 ? "s" : ""}
+              </Text>
+            </HStack>
+
+            <Wrap spacing={4}>
+              {files.map((entry) => (
+                <WrapItem key={entry.id}>
+                  <Box
+                    w="180px"
+                    borderRadius="md"
+                    overflow="hidden"
+                    boxShadow="sm"
+                    bg="white"
+                    border="1px solid"
+                    borderColor="gray.100"
+                  >
+                    <Box position="relative" h="120px" bg="gray.50">
+                      <Image
+                        src={entry.previewUrl}
+                        alt={entry.file.name}
+                        objectFit="cover"
+                        w="100%"
+                        h="100%"
+                      />
+
+                      <IconButton
+                        aria-label="remove file"
+                        icon={<SmallCloseIcon />}
+                        size="sm"
+                        position="absolute"
+                        top={2}
+                        right={2}
+                        bg="rgba(0,0,0,0.45)"
+                        color="white"
+                        onClick={() => removeFile(entry.id)}
+                      />
+                    </Box>
+
+                    <Box p={3}>
+                      <Text fontSize="sm" noOfLines={1} fontWeight="600">
+                        {entry.file.name}
+                      </Text>
+                      <Text fontSize="xs" color="gray.500">
+                        {humanFileSize(entry.file.size)}
+                      </Text>
+
+                      <Box mt={3}>
+                        <ProgressBar
+                          file={entry.file}
+                          fileurl={entry.previewUrl}
+                          user={user}
+                          fileType="gallery"
+                          onDone={(meta) => onFileDone(meta, entry.file)}
+                        />
+                      </Box>
+                    </Box>
                   </Box>
-                </Box>
-              </WrapItem>
-            ))}
-          </Wrap>
+                </WrapItem>
+              ))}
+            </Wrap>
+          </Box>
         )}
+
+        {/* Centered Close Button */}
+        <Center>
+          <Button
+            mt={6}
+            size="lg"
+            borderRadius="full"
+            px={10}
+            py={6}
+            colorScheme="yellow"
+            bg={gold}
+            color="white"
+            _hover={{ bg: "#e0b94d" }}
+            onClick={() => onClose && onClose()}
+          >
+            Close
+          </Button>
+        </Center>
       </VStack>
     </Box>
   );

@@ -208,7 +208,7 @@ const CreateEvent = () => {
           isClosable: true,
         });
         setTimeout(() => {
-          history.push("/dashboard");
+          history.push("/admin/dashboard");
         }, 1500); // ✅ Redirect after a short delay
 
       } else {
@@ -311,9 +311,9 @@ const CreateEvent = () => {
   };
 
   return (
-    <Flex direction="column" align="center" bg="gray.50" minH="100vh" p={6}>
+    <Flex direction="column" align="center"   minH="100vh" p={6} mt={20}>
       {/* Plan Info & Upgrade Section */}
-      <Flex
+      {/* <Flex
         w="full"
         align="center"
         justify="space-between"
@@ -347,7 +347,7 @@ const CreateEvent = () => {
           </Button>
         </HStack>
       </Flex>
-      <Divider my={6} />
+      <Divider my={6} /> */}
       <Box rounded="lg" bg="white" boxShadow="lg" p={8} width="full">
         <Stack spacing={0}>
           <Heading fontSize={"xl"} mb={0} pb={0}>

@@ -16,14 +16,13 @@ ReactDOM.render(
   <React.StrictMode>
     <AuthContextProvider>
       <ChakraProvider>
-          <PlanProvider>
-            <EventProvider>
-              <UserInfoProvider>
-                <App />
-              </UserInfoProvider>
-            </EventProvider>
-          </PlanProvider>
-        
+        <PlanProvider>
+          <EventProvider>
+            <UserInfoProvider>
+              <App />
+            </UserInfoProvider>
+          </EventProvider>
+        </PlanProvider>
       </ChakraProvider>
     </AuthContextProvider>
   </React.StrictMode>,
