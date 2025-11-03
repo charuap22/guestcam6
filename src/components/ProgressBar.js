@@ -1,4 +1,4 @@
-// components/ProgressBar.js
+// src/components/ProgressBar.js
 import React, { useEffect, useState } from "react";
 import {
   Box,
@@ -9,8 +9,29 @@ import {
 } from "@chakra-ui/react";
 import useGalleryUpload from "../hooks/useGalleryUpload";
 
-export const ProgressBar = ({ file, fileurl, user, fileType, onDone }) => {
-  const { progress, url } = useGalleryUpload(file, user, fileType);
+/**
+ * ProgressBar props:
+ *  - file: File object
+ *  - fileurl: preview URL for display
+ *  - user: firebase user object
+ *  - fileType: 'gallery' or 'videos'
+ *  - eventId: event id string (required)
+ *  - onDone: callback({ file, url, fileType })
+ */
+export const ProgressBar = ({
+  file,
+  fileurl,
+  user,
+  fileType = "gallery",
+  eventId,
+  onDone,
+}) => {
+  const { progress, url, error } = useGalleryUpload(
+    file,
+    user,
+    fileType,
+    eventId
+  );
   const [uploadDone, setUploadDone] = useState(false);
 
   useEffect(() => {
@@ -79,6 +100,14 @@ export const ProgressBar = ({ file, fileurl, user, fileType, onDone }) => {
               Uploaded ✓
             </Text>
           </Center>
+        </Box>
+      )}
+
+      {error && (
+        <Box mt={2}>
+          <Text color="red.400" fontSize="sm">
+            Upload failed: {error.message || String(error)}
+          </Text>
         </Box>
       )}
     </>

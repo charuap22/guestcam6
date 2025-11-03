@@ -18,17 +18,10 @@ import {
   AspectRatio,
 } from "@chakra-ui/react";
 import { AddIcon, SmallCloseIcon } from "@chakra-ui/icons";
-import { ProgressBar } from "./ProgressBar"; // your existing upload helper
+import { ProgressBar } from "./ProgressBar"; // same ProgressBar but fileType='videos'
 
 const gold = "#d4af37";
 const MAX_FILE_SIZE = 200 * 1024 * 1024;
-const allowedTypes = [
-  "video/mp4",
-  "video/quicktime",
-  "video/x-m4v",
-  "video/webm",
-  "video/ogg",
-];
 
 const humanFileSize = (size) => {
   if (size === 0) return "0 B";
@@ -38,64 +31,18 @@ const humanFileSize = (size) => {
   }`;
 };
 
-// helper: capture a thumbnail (dataURL) from a video previewURL
-async function captureThumbnailFromVideo(previewUrl, seekTo = 0.5) {
-  return new Promise((resolve, reject) => {
-    try {
-      const video = document.createElement("video");
-      video.src = previewUrl;
-      video.crossOrigin = "anonymous";
-      // load metadata to know duration
-      video.addEventListener(
-        "loadedmetadata",
-        () => {
-          // seek to a point (fraction of duration)
-          const duration = video.duration || 1;
-          const time = Math.min(Math.max(seekTo * duration, 0), duration - 0.1);
-          const handleSeeked = () => {
-            try {
-              const canvas = document.createElement("canvas");
-              // set resolution reasonably small for thumbnails
-              const w = Math.min(640, video.videoWidth || 640);
-              const h = Math.round(
-                (w * (video.videoHeight || w)) / (video.videoWidth || w)
-              );
-              canvas.width = w;
-              canvas.height = h;
-              const ctx = canvas.getContext("2d");
-              ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-              const dataUrl = canvas.toDataURL("image/jpeg", 0.75);
-              // cleanup
-              video.removeEventListener("seeked", handleSeeked);
-              resolve(dataUrl);
-            } catch (err) {
-              video.removeEventListener("seeked", handleSeeked);
-              resolve(null); // don't fail whole flow, just return null
-            }
-          };
-          video.addEventListener("seeked", handleSeeked);
-          // some browsers need small timeout before setting currentTime
-          try {
-            video.currentTime = time;
-          } catch (err) {
-            // fallback: try after a small delay
-            setTimeout(() => (video.currentTime = time), 200);
-          }
-        },
-        { once: true }
-      );
-      // safety: if video can't load, resolve null after timeout
-      setTimeout(() => resolve(null), 4000);
-    } catch (err) {
-      resolve(null);
-    }
-  });
-}
+const allowedTypes = [
+  "video/mp4",
+  "video/quicktime",
+  "video/x-m4v",
+  "video/webm",
+  "video/ogg",
+];
 
-const VideoUploadForm = ({ user, onUploadComplete, onClose }) => {
+const VideoUploadForm = ({ user, eventId, onUploadComplete, onClose }) => {
   const hiddenFileInput = useRef(null);
   const [error, setError] = useState(null);
-  const [files, setFiles] = useState([]); // entries: { id, file, previewUrl, name, size, thumbnailDataUrl }
+  const [files, setFiles] = useState([]);
   const toast = useToast();
 
   useEffect(() => {
@@ -104,7 +51,7 @@ const VideoUploadForm = ({ user, onUploadComplete, onClose }) => {
     };
   }, [files]);
 
-  const validateAndAdd = useCallback(async (selectedFiles) => {
+  const validateAndAdd = useCallback((selectedFiles) => {
     setError(null);
     const toAdd = [];
 
@@ -122,19 +69,12 @@ const VideoUploadForm = ({ user, onUploadComplete, onClose }) => {
         return;
       }
       const previewUrl = URL.createObjectURL(file);
-      const id = `${file.name}-${file.size}-${Date.now()}`;
-
-      // generate thumbnail (best-effort; non-blocking UI)
-      // we await here so the thumbnail is ready when we render previews
-      const thumbnailDataUrl = await captureThumbnailFromVideo(previewUrl, 0.2);
-
       toAdd.push({
-        id,
+        id: `${file.name}-${file.size}-${Date.now()}`,
         file,
         previewUrl,
         name: file.name,
         size: file.size,
-        thumbnailDataUrl, // may be null if capture fails
       });
     }
 
@@ -171,13 +111,7 @@ const VideoUploadForm = ({ user, onUploadComplete, onClose }) => {
     });
   };
 
-  // called by ProgressBar when one file upload completes
-  // now we include the thumbnailDataUrl in the callback
   const onFileDone = (meta, originalFile) => {
-    // find entry to pick thumbnail
-    const entry = files.find((p) => p.file === originalFile);
-    const thumb = entry?.thumbnailDataUrl || null;
-
     setFiles((prev) => {
       const remaining = prev.filter((p) => p.file !== originalFile);
       const finished = prev.find((p) => p.file === originalFile);
@@ -186,19 +120,11 @@ const VideoUploadForm = ({ user, onUploadComplete, onClose }) => {
       return remaining;
     });
 
-    if (onUploadComplete) {
-      // meta should contain uploaded video url (depends on your ProgressBar implementation)
-      // we pass thumbnailDataUrl separately so caller can upload the thumbnail or save dataURL to Firestore
-      onUploadComplete(meta, {
-        thumbnailDataUrl: thumb,
-        name: originalFile.name,
-        size: originalFile.size,
-      });
-    }
+    if (onUploadComplete) onUploadComplete(meta);
 
     toast({
       title: "Video uploaded",
-      description: `${meta?.name || originalFile.name} uploaded successfully.`,
+      description: `${meta?.name || "Video"} uploaded successfully.`,
       status: "success",
       duration: 2500,
       isClosable: true,
@@ -335,6 +261,7 @@ const VideoUploadForm = ({ user, onUploadComplete, onClose }) => {
                           fileurl={entry.previewUrl}
                           user={user}
                           fileType="videos"
+                          eventId={eventId}
                           onDone={(meta) => onFileDone(meta, entry.file)}
                         />
                       </Box>

@@ -33,6 +33,7 @@ import PricingPage from "./site/pages/PricingPage";
 import HorizonWrapper from "./components/HorizonWrapper";
 import HorizonDashboard from "./pages/HorizonDashboard";
 import AdminLayout from "./layouts/admin";
+import Guest_Gallery from "./pages/Guest_Gallery";
 
 function App() {
   const { authIsReady, user } = useAuthContext();
@@ -123,14 +124,29 @@ function App() {
                 </HorizonWrapper>
               )}
             </Route>
-            <Route path="/admin/gallery/:userType/:id">
+            {/* Owner / paid gallery */}
+            <Route path="/admin/gallery/owner/:id">
+              <HorizonWrapper>
+                <Gallery />
+              </HorizonWrapper>
+            </Route>
+
+            {/* Public guest gallery link */}
+            <Route path="/admin/gallery/guest/:id">
+              <HorizonWrapper>
+                <Guest_Gallery />
+              </HorizonWrapper>
+            </Route>
+            
+
+            {/* <Route path="/admin/gallery/:userType/:id">
               {!user && <Redirect to="/login" />}
               {user && (
                 <HorizonWrapper>
                   <Gallery />
                 </HorizonWrapper>
               )}
-            </Route>
+            </Route> */}
             <Route path="/admin/videos/:userType/:id">
               {!user && <Redirect to="/login" />}
               {user && (
@@ -147,7 +163,7 @@ function App() {
                 </HorizonWrapper>
               )}
             </Route>
-            <Route path="/gallery_guest/:id">
+            {/* <Route path="/gallery_guest/:id">
               {!user && <Redirect to="/login_Guest" />}
               {user && (
                 <HorizonWrapper>
@@ -156,7 +172,7 @@ function App() {
                   </Sidebar_Guest>
                 </HorizonWrapper>
               )}
-            </Route>
+            </Route> */}
             <Route path="/Guest/Dashboard/:id">
               {/* {!user && <Redirect to="/login_Guest" />}
               {user && ( */}
@@ -167,16 +183,16 @@ function App() {
               </HorizonWrapper>
               {/* )}  */}
             </Route>
-            <Route path="/Guest/Gallery/:id">
+            {/* <Route path="/Guest/Gallery/:id">
               {/* {!user && <Redirect to="/login_Guest" />}
-              {user && ( */}
-              <HorizonWrapper>
-                <Sidebar_Guest>
-                  <Gallery />
-                </Sidebar_Guest>
-              </HorizonWrapper>
-              {/* )}  */}
-            </Route>
+              {user && (  
+            <HorizonWrapper>
+              <Sidebar_Guest>
+                <Gallery />
+              </Sidebar_Guest>
+            </HorizonWrapper>
+            {/* )} 
+            </Route> */}
             <Route path="/Guest/Videos/:id">
               {/* {!user && <Redirect to="/login_Guest" />}
               {user && ( */}

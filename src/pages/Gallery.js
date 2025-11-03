@@ -1,5 +1,5 @@
 // src/pages/Gallery.js
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useAuthContext } from "../hooks/useAuthContext";
 import { useCollection } from "../hooks/useCollection";
@@ -10,8 +10,6 @@ import { useFirestore } from "../hooks/useFirestore";
 import {
   Box,
   Flex,
-  VStack,
-  Heading,
   Text,
   Spinner,
   Button,
@@ -19,7 +17,6 @@ import {
   Modal,
   ModalOverlay,
   ModalContent,
-  ModalHeader,
   ModalBody,
   ModalCloseButton,
   useDisclosure,
@@ -36,6 +33,7 @@ import {
   Tooltip,
   Center,
   Fade,
+  Checkbox,
 } from "@chakra-ui/react";
 
 import { AddIcon } from "@chakra-ui/icons";
@@ -51,79 +49,76 @@ import {
 import UploadForm from "../components/UploadForm";
 import ImageCardSkeleton from "../components/ImageCardSkeleton";
 
-const Viewer = ({ isOpen, onClose, images, startIndex, onDelete }) => {
+import {
+  downloadImage,
+  downloadUrlsAsZip,
+  downloadFolderAsZip,
+} from "../utils/downloads";
+
+/* ------------------ Utilities ------------------ */
+function timeAgoFromTimestamp(ts) {
+  if (!ts) return "";
+  const t = ts?.toDate ? ts.toDate().getTime() : new Date(ts).getTime();
+  const seconds = Math.floor((Date.now() - t) / 1000);
+  if (seconds < 60) return "just now";
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+  return `${Math.floor(seconds / 86400)}d ago`;
+}
+
+function getUploaderUid(img) {
+  if (!img) return null;
+  return img.uploaderUid || img.userId || img.uploader_id || null;
+}
+
+function canUserDeleteImage(user, img, isAdmin = false) {
+  if (!img) return false;
+  if (isAdmin) return true;
+  if (!user) return false;
+  const uploaderId = getUploaderUid(img);
+  return uploaderId && uploaderId === user.uid;
+}
+
+/* ------------------ Viewer Modal ------------------ */
+const Viewer = ({
+  isOpen,
+  onClose,
+  images,
+  startIndex,
+  onDelete,
+  currentUserId,
+  isAdmin,
+}) => {
   const [index, setIndex] = useState(startIndex || 0);
-  const [touchStartX, setTouchStartX] = useState(null);
-  const [touchEndX, setTouchEndX] = useState(null);
-  const containerRef = useRef(null);
 
   useEffect(() => {
     setIndex(startIndex || 0);
   }, [startIndex, isOpen]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    const onKey = (e) => {
-      if (e.key === "ArrowLeft") prev();
-      else if (e.key === "ArrowRight") next();
-      else if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, index, images]);
+  if (!images || images.length === 0) return null;
 
-  const prev = () => setIndex((i) => (i - 1 + images.length) % images.length);
-  const next = () => setIndex((i) => (i + 1) % images.length);
-
-  const handleTouchStart = (e) => setTouchStartX(e.touches?.[0]?.clientX);
-  const handleTouchMove = (e) => setTouchEndX(e.touches?.[0]?.clientX);
-  const handleTouchEnd = () => {
-    if (touchStartX == null || touchEndX == null) return;
-    const dx = touchEndX - touchStartX;
-    if (dx > 50) prev();
-    else if (dx < -50) next();
-    setTouchStartX(null);
-    setTouchEndX(null);
-  };
+  const currentImage = images[index];
+  const canDelete = canUserDeleteImage(
+    currentUserId ? { uid: currentUserId } : null,
+    currentImage,
+    isAdmin
+  );
 
   const handleDownload = (url) => {
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "photo";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+    downloadImage(url, currentImage.filename || "photo");
   };
 
   const handleDeleteClick = async () => {
-    const img = images[index];
-    await onDelete(img);
-    if (index >= images.length - 1) {
-      setIndex(Math.max(0, images.length - 2));
-    }
+    await onDelete(currentImage);
+    if (index >= images.length - 1) setIndex(Math.max(0, images.length - 2));
   };
 
-  if (!images || images.length === 0) return null;
-
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      size="full"
-      isCentered
-      motionPreset="none"
-    >
+    <Modal isOpen={isOpen} onClose={onClose} size="full" isCentered>
       <ModalOverlay bg="blackAlpha.800" />
-      <ModalContent
-        maxW="100vw"
-        w="100vw"
-        h="100vh"
-        bg="transparent"
-        boxShadow="none"
-        overflow="hidden"
-      >
-        <ModalBody p={0} h="100vh" display="flex" flexDirection="column">
+      <ModalContent bg="transparent" boxShadow="none">
+        <ModalBody p={0} display="flex" flexDirection="column" h="100vh">
+          {/* Top bar */}
           <Flex
             position="absolute"
             top={3}
@@ -151,34 +146,31 @@ const Viewer = ({ isOpen, onClose, images, startIndex, onDelete }) => {
                 <IconButton
                   aria-label="download"
                   icon={<FiDownload />}
-                  onClick={() => handleDownload(images[index].url)}
+                  onClick={() => handleDownload(currentImage.url)}
                   bg="rgba(0,0,0,0.45)"
                   color="white"
                   size="sm"
                 />
               </Tooltip>
-              <Tooltip label="Delete">
-                <IconButton
-                  aria-label="delete"
-                  icon={<FiTrash2 />}
-                  onClick={handleDeleteClick}
-                  bg="rgba(0,0,0,0.45)"
-                  color="white"
-                  size="sm"
-                />
-              </Tooltip>
+
+              {canDelete && (
+                <Tooltip label="Delete">
+                  <IconButton
+                    aria-label="delete"
+                    icon={<FiTrash2 />}
+                    onClick={handleDeleteClick}
+                    bg="rgba(0,0,0,0.45)"
+                    color="white"
+                    size="sm"
+                  />
+                </Tooltip>
+              )}
             </HStack>
           </Flex>
 
-          <Center
-            flex="1"
-            position="relative"
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-            ref={containerRef}
-          >
-            <Fade in={isOpen} key={images[index].url}>
+          {/* Image */}
+          <Center flex="1">
+            <Fade in={isOpen} key={currentImage.url}>
               <Box
                 maxW="100vw"
                 maxH="100vh"
@@ -194,13 +186,15 @@ const Viewer = ({ isOpen, onClose, images, startIndex, onDelete }) => {
                   top="50%"
                   transform="translateY(-50%)"
                   zIndex={30}
-                  onClick={prev}
+                  onClick={() =>
+                    setIndex((i) => (i - 1 + images.length) % images.length)
+                  }
                   bg="rgba(0,0,0,0.35)"
                   color="white"
                   size="sm"
                 />
                 <Image
-                  src={images[index].url}
+                  src={currentImage.url}
                   maxH="86vh"
                   maxW="92vw"
                   objectFit="contain"
@@ -214,7 +208,7 @@ const Viewer = ({ isOpen, onClose, images, startIndex, onDelete }) => {
                   top="50%"
                   transform="translateY(-50%)"
                   zIndex={30}
-                  onClick={next}
+                  onClick={() => setIndex((i) => (i + 1) % images.length)}
                   bg="rgba(0,0,0,0.35)"
                   color="white"
                   size="sm"
@@ -223,6 +217,7 @@ const Viewer = ({ isOpen, onClose, images, startIndex, onDelete }) => {
             </Fade>
           </Center>
 
+          {/* Bottom bar */}
           <Box
             px={{ base: 3, md: 8 }}
             py={3}
@@ -231,16 +226,10 @@ const Viewer = ({ isOpen, onClose, images, startIndex, onDelete }) => {
           >
             <Flex align="center" justify="space-between">
               <Box>
-                <Text fontSize={{ base: "sm", md: "md" }} fontWeight="600">
-                  {images[index]?.filename || "Photo"}
-                </Text>
+                <Text fontWeight="600">{currentImage.filename || "Photo"}</Text>
                 <Text fontSize="xs" color="whiteAlpha.700">
-                  {images[index]?.createdAt
-                    ? new Date(
-                        images[index].createdAt.toDate
-                          ? images[index].createdAt.toDate()
-                          : images[index].createdAt
-                      ).toLocaleString()
+                  {currentImage.createdAt
+                    ? timeAgoFromTimestamp(currentImage.createdAt)
                     : ""}
                 </Text>
               </Box>
@@ -249,19 +238,21 @@ const Viewer = ({ isOpen, onClose, images, startIndex, onDelete }) => {
                 <Button
                   variant="ghost"
                   color="white"
-                  onClick={() => handleDownload(images[index].url)}
+                  onClick={() => handleDownload(currentImage.url)}
                   size="sm"
                 >
                   Download
                 </Button>
-                <Button
-                  colorScheme="red"
-                  variant="outline"
-                  onClick={handleDeleteClick}
-                  size="sm"
-                >
-                  Delete
-                </Button>
+                {canDelete && (
+                  <Button
+                    colorScheme="red"
+                    variant="outline"
+                    onClick={handleDeleteClick}
+                    size="sm"
+                  >
+                    Delete
+                  </Button>
+                )}
                 <Button onClick={onClose} size="sm">
                   Close
                 </Button>
@@ -274,52 +265,104 @@ const Viewer = ({ isOpen, onClose, images, startIndex, onDelete }) => {
   );
 };
 
-const Gallery = () => {
-  // theme & hooks
-  const bg = useColorModeValue("gray.50", "gray.900");
-  const gold = "#d4af37";
+/* ------------------ Gallery Page ------------------ */
 
-  // color-mode values
+const Gallery = ({ guestMode = false, allowUpload = true }) => {
+  const bg = useColorModeValue("gray.50", "gray.900");
   const tileBg = useColorModeValue("white", "gray.800");
   const tileShadow = useColorModeValue(
     "0 8px 30px rgba(15, 23, 42, 0.06)",
     "0 6px 20px rgba(0,0,0,0.3)"
   );
-  const addCardBg = useColorModeValue("white", "gray.800");
 
-  const { id, userType } = useParams();
+  const { id } = useParams();
+
   const { user } = useAuthContext();
   const { changeEvent } = useEvent();
+  const { deleteDocument } = useFirestore("gallery");
 
   const {
     documents: images,
     error,
     isPending,
   } = useCollection("gallery", ["eventId", "==", id], ["createdAt", "desc"]);
+
   const { document: eventDoc, error: eventError } = useDocument("events", id);
-  const { deleteDocument } = useFirestore("gallery");
 
   useEffect(() => {
     if (id) changeEvent(id);
   }, [id, changeEvent]);
 
-  const safeImages = images || [];
-
-  // use default names for useDisclosure so Chakra's focus manager is stable
   const {
     isOpen: uploadOpen,
     onOpen: openUpload,
     onClose: closeUpload,
   } = useDisclosure();
+
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
 
   const openViewerAt = (idx) => {
     setViewerIndex(idx);
     setViewerOpen(true);
-    // ensure upload modal is closed if open
-    if (uploadOpen) closeUpload();
   };
+
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => {
+    if (!user || !eventDoc) {
+      setIsAdmin(false);
+      return;
+    }
+
+    const uid = user.uid;
+    let ownerMatch = false;
+
+    const candidates = [
+      "createdBy",
+      "createdByUid",
+      "createdById",
+      "ownerId",
+      "ownerUid",
+      "owner",
+      "uid",
+      "userId",
+      "createdByUser",
+    ];
+
+    for (const key of candidates) {
+      if (Object.prototype.hasOwnProperty.call(eventDoc, key)) {
+        const v = eventDoc[key];
+        if (typeof v === "string" && v === uid) {
+          ownerMatch = true;
+          break;
+        }
+        if (v && typeof v === "object") {
+          if (v.uid === uid || v.id === uid || v.userId === uid) {
+            ownerMatch = true;
+            break;
+          }
+        }
+      }
+    }
+
+    if (!ownerMatch) {
+      const values = Object.values(eventDoc);
+      for (const v of values) {
+        if (typeof v === "string" && v === uid) {
+          ownerMatch = true;
+          break;
+        }
+        if (v && typeof v === "object") {
+          if (v.uid === uid || v.id === uid || v.userId === uid) {
+            ownerMatch = true;
+            break;
+          }
+        }
+      }
+    }
+
+    setIsAdmin(ownerMatch);
+  }, [user, eventDoc]);
 
   const handleDelete = async (img) => {
     if (!window.confirm("Delete this photo? This action cannot be undone."))
@@ -332,15 +375,114 @@ const Gallery = () => {
     }
   };
 
-  const handleDownload = (url) => {
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "photo";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+  // ---------------- SELECT / BATCH ACTIONS ----------------
+  const [selected, setSelected] = useState(() => new Set());
+  const [selectMode, setSelectMode] = useState(false);
+  const [zipProcessing, setZipProcessing] = useState(false);
+
+  useEffect(() => {
+    // clear selection if images changed/removed
+    setSelected((prev) => {
+      const next = new Set(
+        [...prev].filter((id) => (images || []).some((im) => im.id === id))
+      );
+      return next;
+    });
+  }, [images]);
+
+  const toggleSelect = (id) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   };
 
+  const selectAll = () => setSelected(new Set((images || []).map((i) => i.id)));
+  const clearSelection = () => {
+    setSelected(new Set());
+    setSelectMode(false);
+  };
+
+  const downloadSelected = () => {
+    if (selected.size === 0) return alert("No images selected");
+    for (const id of selected) {
+      const img = (images || []).find((i) => i.id === id);
+      if (img) downloadImage(img.url, img.filename || img.id);
+    }
+    clearSelection();
+  };
+
+  const deleteSelected = async () => {
+    if (selected.size === 0) return alert("No images selected");
+    for (const id of Array.from(selected)) {
+      const img = (images || []).find((i) => i.id === id);
+      if (!img) continue;
+      if (!canUserDeleteImage(user, img, isAdmin)) {
+        alert("You can only delete your own uploads");
+        continue;
+      }
+      try {
+        await deleteDocument(img.id);
+      } catch (e) {
+        console.error("Batch delete failed:", e);
+      }
+    }
+    clearSelection();
+  };
+
+  // Download selected urls as zip
+  const downloadSelectedAsZip = async () => {
+    if (selected.size === 0) return alert("No images selected");
+    setZipProcessing(true);
+    try {
+      const imgs = (images || []).filter((i) => selected.has(i.id));
+      const items = imgs.map((i) => ({
+        url: i.url,
+        filename: i.filename || `${i.id}.jpg`,
+      }));
+      await downloadUrlsAsZip(items, {
+        concurrency: 4,
+        zipFilename: `photos-selected-${Date.now()}.zip`,
+      });
+      clearSelection();
+      setSelectMode(false);
+    } catch (err) {
+      console.error("downloadSelectedAsZip failed:", err);
+      alert("ZIP download failed: " + (err.message || err));
+    } finally {
+      setZipProcessing(false);
+    }
+  };
+
+  const downloadAllAsZip = async () => {
+    const imgs = images || [];
+    if (imgs.length === 0) return alert("No images to download");
+    setZipProcessing(true);
+    try {
+      // Use folder-based zip if you prefer:
+      // await downloadFolderAsZip(`gallery/${id}`);
+      // Or build from urls:
+      const items = imgs.map((i) => ({
+        url: i.url,
+        filename: i.filename || `${i.id}.jpg`,
+      }));
+      await downloadUrlsAsZip(items, {
+        concurrency: 4,
+        zipFilename: `photos-all-${Date.now()}.zip`,
+      });
+      setSelectMode(false);
+      setSelected(new Set());
+    } catch (e) {
+      console.error(e);
+      alert("ZIP failed: " + (e.message || e));
+    } finally {
+      setZipProcessing(false);
+    }
+  };
+
+  // ---------------- UI ----------------
   if (error || eventError) {
     return (
       <Flex minH="80vh" align="center" justify="center" direction="column">
@@ -354,55 +496,188 @@ const Gallery = () => {
   if (!eventDoc) {
     return (
       <Flex minH="80vh" align="center" justify="center">
-        <Spinner size="xl" color={gold} />
+        <Spinner size="xl" color="#d4af37" />
         <Text ml={3}>Loading photos...</Text>
       </Flex>
     );
   }
 
- 
+  const safeImages = images || [];
+
+  const displayUploaderName = (img) => {
+    if (img?.uploaderName && img.uploaderName !== "Guest")
+      return img.uploaderName;
+    if (img?.createdByName && img.createdByName !== "Guest")
+      return img.createdByName;
+    return "Guest";
+  };
+
   return (
     <Box
       minH="100vh"
       bg={bg}
       py={{ base: 10, md: 10 }}
-      mt={{ base: 20, md: 10 }} // ✅ No top margin on mobile, only on desktop
+      mt={{ base: 20, md: 10 }}
     >
-      {/* Upload Modal moved to top so it layers above viewer properly */}
-      <Modal
-        isOpen={uploadOpen}
-        onClose={closeUpload}
-        size="lg"
-        isCentered
-        motionPreset="slideInBottom"
-      >
-        <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(6px)" />
-        <ModalContent borderRadius="2xl" p={4}>
-          <ModalCloseButton />
-          <ModalBody>
-            <UploadForm
-              user={user}
-              // onUploadComplete={() => {
-              //   closeUpload();
-              // }}
-              onClose={closeUpload}
-            />
-          </ModalBody>
-        </ModalContent>
-      </Modal>
-
-      {/* Gallery container - full width on mobile */}
-      <Box
+      {/* Top row */}
+      <Flex
         px={{ base: 3, md: 8 }}
-        py={{ base: 4, md: 10 }}
-        mx="auto"
-        w="100%"
-        maxW="100%"
+        justify="space-between"
+        mb={4}
+        align="center"
       >
+        <HStack spacing={3}>
+          {isAdmin && (
+            <Tag colorScheme="yellow" borderRadius="full" px={3} py={1}>
+              Owner
+            </Tag>
+          )}
+        </HStack>
+
+        <HStack spacing={3}>
+          <Button
+            size="sm"
+            onClick={() => setSelectMode((s) => !s)}
+            variant={selectMode ? "solid" : "outline"}
+            colorScheme={selectMode ? "purple" : undefined}
+          >
+            {selectMode ? "Exit select" : "Select images"}
+          </Button>
+
+          <Menu>
+            <MenuButton
+              as={Button}
+              size="sm"
+              bgGradient="linear(to-r, #b58e0a, #d4af37)"
+              color="black"
+              leftIcon={<FiDownload />}
+              borderRadius="full"
+              px={4}
+              py={2}
+            >
+              Actions
+            </MenuButton>
+            <MenuList>
+              <MenuItem onClick={downloadSelected}>Download Selected</MenuItem>
+              <MenuItem onClick={deleteSelected}>Delete Selected</MenuItem>
+              <MenuItem
+                onClick={downloadSelectedAsZip}
+                isDisabled={selected.size === 0}
+              >
+                Download Selected (ZIP)
+              </MenuItem>
+              <MenuItem onClick={downloadAllAsZip}>Download All (ZIP)</MenuItem>
+            </MenuList>
+          </Menu>
+        </HStack>
+      </Flex>
+
+      {/* Select-mode toolbar */}
+      {selectMode && (
+        <Fade in={selectMode}>
+          <Flex
+            px={{ base: 3, md: 8 }}
+            py={3}
+            mb={4}
+            align="center"
+            justify="flex-start"
+            bg="rgba(212,175,55,0.06)"
+            borderRadius="xl"
+            boxShadow="sm"
+            flexWrap="wrap"
+            gap={2}
+            overflowX="auto"
+            css={{
+              "&::-webkit-scrollbar": { display: "none" },
+              "-ms-overflow-style": "none",
+              "scrollbar-width": "none",
+            }}
+          >
+            <HStack
+              spacing={2}
+              flexWrap="wrap"
+              align="center"
+              justify="flex-start"
+              w="full"
+            >
+              <Button
+                size="sm"
+                variant="solid"
+                colorScheme="purple"
+                onClick={selectAll}
+              >
+                Select All
+              </Button>
+
+              <Button
+                size="sm"
+                bg="#d4af37"
+                color="black"
+                leftIcon={<FiDownload />}
+                onClick={downloadSelected}
+              >
+                Download Selected
+              </Button>
+
+              <Button
+                size="sm"
+                variant="outline"
+                borderColor="red.400"
+                color="red.400"
+                leftIcon={<FiTrash2 />}
+                onClick={deleteSelected}
+              >
+                Delete Selected
+              </Button>
+
+              <Button
+                size="sm"
+                variant="solid"
+                colorScheme="yellow"
+                leftIcon={<FiDownload />}
+                isLoading={zipProcessing}
+                onClick={downloadAllAsZip}
+              >
+                Download All (ZIP)
+              </Button>
+
+              <Button size="sm" variant="outline" onClick={clearSelection}>
+                Clear
+              </Button>
+            </HStack>
+
+            <Text
+              fontSize="sm"
+              color="gray.600"
+              ml="auto"
+              mt={{ base: 2, md: 0 }}
+              whiteSpace="nowrap"
+            >
+              {selected.size} selected
+            </Text>
+          </Flex>
+        </Fade>
+      )}
+
+      {/* Upload Modal */}
+      {allowUpload && (
+        <Modal isOpen={uploadOpen} onClose={closeUpload} size="lg" isCentered>
+          <ModalOverlay bg="blackAlpha.600" />
+          <ModalContent borderRadius="2xl" p={4}>
+            <ModalCloseButton />
+            <ModalBody>
+              <UploadForm user={user} eventId={id} onClose={closeUpload} />
+            </ModalBody>
+          </ModalContent>
+        </Modal>
+      )}
+
+      {/* Gallery Grid */}
+      <Box px={{ base: 3, md: 8 }} py={{ base: 4, md: 10 }} mx="auto" w="100%">
         {isPending ? (
           <Flex wrap="wrap" justify="center" gap={{ base: 3, md: 6 }}>
-            {[1, 2, 3, 4, 5, 6].map((k) => (
-              <ImageCardSkeleton key={k} />
+            {[...Array(6)].map((_, i) => (
+              <ImageCardSkeleton key={i} />
             ))}
           </Flex>
         ) : (
@@ -414,158 +689,187 @@ const Gallery = () => {
             }}
             gap={{ base: 3, md: 4 }}
           >
-            {/* Add card - same responsive tile sizing */}
-            <GridItem>
-              <Box
-                role="button"
-                onClick={openUpload}
-                cursor="pointer"
-                borderRadius={{ base: "16px", md: "24px" }}
-                bg={addCardBg}
-                boxShadow={tileShadow}
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-                flexDirection="column"
-                h={{ base: "160px", md: "220px" }}
-                transition="all .18s ease"
-                _hover={{ transform: "translateY(-6px)" }}
-              >
+            {/* Add card */}
+            {allowUpload && (
+              <GridItem>
                 <Box
-                  w={{ base: "52px", md: "64px" }}
-                  h={{ base: "52px", md: "64px" }}
-                  borderRadius="12px"
+                  role="button"
+                  onClick={openUpload}
+                  cursor="pointer"
+                  borderRadius="24px"
+                  bg={tileBg}
+                  boxShadow={tileShadow}
+                  h={{ base: "160px", md: "220px" }}
                   display="flex"
                   alignItems="center"
                   justifyContent="center"
-                  bgGradient="linear(to-b,#6b46ff,#805ad5)"
-                  boxShadow="0 8px 24px rgba(99,102,241,0.14)"
+                  flexDirection="column"
                 >
-                  <AddIcon boxSize={{ base: 5, md: 7 }} color="white" />
-                </Box>
-                <VStack spacing={1} mt={3}>
-                  <Text fontWeight="700" fontSize={{ base: "sm", md: "md" }}>
+                  <AddIcon boxSize={6} color="#6b46ff" />
+                  <Text fontWeight="600" mt={2}>
                     Add Photos
                   </Text>
-                  <Text fontSize="xs" color="gray.500">
-                    {safeImages.length} photo
-                    {safeImages.length === 1 ? "" : "s"}
-                  </Text>
-                </VStack>
-              </Box>
-            </GridItem>
+                </Box>
+              </GridItem>
+            )}
 
-            {/* Image tiles */}
-            {safeImages.length > 0 ? (
-              safeImages.map((img, idx) => (
+            {safeImages.map((img, idx) => {
+              const canDelete = canUserDeleteImage(user, img, isAdmin);
+
+              return (
                 <GridItem key={img.id}>
                   <Box
-                    borderRadius={{ base: "16px", md: "24px" }}
+                    borderRadius="24px"
                     overflow="hidden"
                     bg={tileBg}
                     boxShadow={tileShadow}
-                    h={{ base: "160px", md: "220px" }}
                     position="relative"
-                    transition="transform .18s ease"
-                    _hover={{ transform: "translateY(-6px)" }}
+                    cursor={selectMode ? "default" : "pointer"}
+                    h={{ base: "160px", md: "220px" }}
+                    onClick={() =>
+                      selectMode ? toggleSelect(img.id) : openViewerAt(idx)
+                    }
                   >
-                    <Box
-                      onClick={() => openViewerAt(idx)}
-                      cursor="pointer"
-                      h="100%"
-                    >
-                      <Image
-                        src={img.url}
-                        alt={img.filename || "photo"}
-                        objectFit="cover"
-                        w="100%"
-                        h="100%"
-                      />
-                    </Box>
+                    {/* selection checkbox - only visible in selectMode, clickable area stops propagation */}
+                    {selectMode && (
+                      <Box
+                        position="absolute"
+                        top={3}
+                        left={3}
+                        zIndex={30}
+                        onClick={(e) => e.stopPropagation()}
+                        role="button"
+                        aria-label={`Toggle select ${img.filename || "photo"}`}
+                      >
+                        <Checkbox
+                          isChecked={selected.has(img.id)}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            toggleSelect(img.id);
+                          }}
+                          size="lg"
+                          aria-label={`Select ${img.filename || "photo"}`}
+                          bg="rgba(255,255,255,0.95)"
+                          borderRadius="md"
+                        />
+                      </Box>
+                    )}
 
-                    {/* top-right menu */}
-                    <Box position="absolute" top={2} right={2} zIndex={3}>
+                    <Image
+                      src={img.url}
+                      alt={img.filename || "photo"}
+                      objectFit="cover"
+                      w="100%"
+                      h="100%"
+                    />
+
+                    <Box position="absolute" top={2} right={2} zIndex={15}>
                       <Menu>
                         <MenuButton
                           as={IconButton}
-                          aria-label="Options"
                           icon={<FiMoreHorizontal />}
                           size="sm"
-                          variant="ghost"
-                          bg="rgba(255,255,255,0.06)"
+                          onClick={(e) => e.stopPropagation()}
                         />
                         <MenuList>
                           <MenuItem
                             icon={<FiDownload />}
-                            onClick={() => handleDownload(img.url)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              downloadImage(img.url, img.filename || "photo");
+                            }}
                           >
                             Download
                           </MenuItem>
-                          <MenuItem
-                            icon={<FiTrash2 />}
-                            onClick={() => handleDelete(img)}
-                          >
-                            Delete
-                          </MenuItem>
+
+                          {canDelete && (
+                            <MenuItem
+                              icon={<FiTrash2 />}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(img);
+                              }}
+                            >
+                              Delete
+                            </MenuItem>
+                          )}
                         </MenuList>
                       </Menu>
                     </Box>
 
-                    {/* bottom-left badge: author + timeAgo */}
                     <Box
                       position="absolute"
                       bottom={3}
                       left={3}
-                      zIndex={2}
                       bg="rgba(0,0,0,0.45)"
                       px={3}
                       py={1}
                       borderRadius="full"
                     >
                       <Text fontSize="xs" color="gray.200">
-                        {img.createdByName || "Guest"}{" "}
+                        {displayUploaderName(img)}{" "}
                         {img.createdAt
-                          ? `• ${(() => {
-                              const seconds = Math.floor(
-                                (Date.now() -
-                                  (img.createdAt?.toDate
-                                    ? img.createdAt.toDate().getTime()
-                                    : new Date(img.createdAt).getTime())) /
-                                  1000
-                              );
-                              if (seconds < 60) return "just now";
-                              if (seconds < 3600)
-                                return `${Math.floor(seconds / 60)}m ago`;
-                              if (seconds < 86400)
-                                return `${Math.floor(seconds / 3600)}h ago`;
-                              return `${Math.floor(seconds / 86400)}d ago`;
-                            })()}`
+                          ? `• ${timeAgoFromTimestamp(img.createdAt)}`
                           : ""}
                       </Text>
                     </Box>
                   </Box>
                 </GridItem>
-              ))
-            ) : (
-              <GridItem colSpan={{ base: 2, md: 4 }}>
-                <Flex direction="column" align="center" py={14}>
-                  <Text color="gray.500">
-                    No photos yet — be the first to upload a memory ✨
-                  </Text>
-                </Flex>
-              </GridItem>
-            )}
+              );
+            })}
           </Grid>
         )}
       </Box>
 
-      {/* Viewer modal */}
+      {/* Footer selection bar */}
+      {selectMode && selected.size > 0 && (
+        <Flex
+          mt={4}
+          p={3}
+          borderRadius="md"
+          bg="rgba(212,175,55,0.06)"
+          align="center"
+          justify="space-between"
+        >
+          <Text fontSize="sm" color="gray.700">
+            {selected.size} selected
+          </Text>
+          <HStack>
+            <Button
+              size="sm"
+              bg="#d4af37"
+              color="black"
+              onClick={downloadSelected}
+            >
+              <FiDownload style={{ marginRight: 6 }} />
+              Download
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              borderColor="red.400"
+              color="red.400"
+              onClick={deleteSelected}
+            >
+              <FiTrash2 style={{ marginRight: 6 }} />
+              Delete
+            </Button>
+            <Button size="sm" onClick={clearSelection}>
+              Clear
+            </Button>
+          </HStack>
+        </Flex>
+      )}
+
+      {/* Viewer */}
       <Viewer
         isOpen={viewerOpen}
         onClose={() => setViewerOpen(false)}
         images={safeImages}
         startIndex={viewerIndex}
         onDelete={handleDelete}
+        currentUserId={user?.uid}
+        isAdmin={isAdmin}
       />
     </Box>
   );

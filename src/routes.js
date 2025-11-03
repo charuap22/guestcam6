@@ -13,8 +13,6 @@ import Event from "./pages/Event";
 import Gallery from "./pages/Gallery";
 import Videos from "./pages/Videos";
 import Guestbook from "./pages/Guestbook";
-import Guest_Dashboard from "./pages/Guest_Dashboard";
-import Guest_Gallery from "./pages/Guest_Gallery";
 
 const routes = [
   {
@@ -73,33 +71,34 @@ const routes = [
     icon: <Icon as={MdEvent} w="20px" h="20px" color="inherit" />,
     component: <CreateEvent />,
   },
+
   {
-    name: "Guest Dashboard",
+    name: "Gallery",
     layout: "/admin",
-    path: "/gallery/:userType/:id", // final URL = /admin/create-event
+    path: "/gallery/owner/:id", // final URL = /admin/create-event
     icon: <Icon as={MdEvent} w="20px" h="20px" color="inherit" />,
-    component: <Guest_Dashboard />,
+    component: <Gallery />,
   },
   {
-    name: "Guest Gallery",
-    layout: "/admin",
-    path: "/gallery/:userType/:id", // final URL = /admin/create-event
-    icon: <Icon as={MdEvent} w="20px" h="20px" color="inherit" />,
-    component: <Guest_Gallery />,
-  },
-  {
-    name: "Guest Videos",
+    name: "Videos",
     layout: "/admin",
     path: "/videos/:userType/:id", // final URL = /admin/create-event
     icon: <Icon as={MdEvent} w="20px" h="20px" color="inherit" />,
-    component: <Guest_Videos />,
+    component: <Videos />,
   },
   {
-    name: "Guest Guestbook",
+    name: "Guestbook",
     layout: "/admin",
     path: "/guestbook/:userType/:id", // final URL = /admin/create-event
     icon: <Icon as={MdEvent} w="20px" h="20px" color="inherit" />,
     component: <Guestbook />,
+  },
+  {
+    name: "GuestGallery",
+    layout: "/admin",
+    path: "/gallery/guest/:id", // final URL = /admin/create-event
+    icon: <Icon as={MdEvent} w="20px" h="20px" color="inherit" />,
+    component: <Gallery />,
   },
 ];
 

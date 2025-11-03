@@ -315,6 +315,7 @@ const Videos = () => {
             {/* Use a video-upload form that uploads to 'videos' collection */}
             <VideoUploadForm
               user={user}
+              eventId={id}
               // onUploadComplete={
               //   () => closeUpload()
               //   } // optional: close after each upload or handle differently
@@ -326,12 +327,12 @@ const Videos = () => {
 
       {/* Grid */}
       <Box
-             px={{ base: 3, md: 8 }}
-             py={{ base: 4, md: 10 }}
-             mx="auto"
-             w="100%"
-             maxW="100%"
-           >
+        px={{ base: 3, md: 8 }}
+        py={{ base: 4, md: 10 }}
+        mx="auto"
+        w="100%"
+        maxW="100%"
+      >
         {isPending ? (
           <Flex wrap="wrap" justify="center" gap={{ base: 3, md: 6 }}>
             {[1, 2, 3, 4, 5, 6].map((k) => (

@@ -1,3 +1,4 @@
+// src/components/UploadForm.js
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import {
   Box,
@@ -33,20 +34,18 @@ const humanFileSize = (size) => {
 
 const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
 
-const UploadForm = ({ user, onUploadComplete, onClose }) => {
+const UploadForm = ({ user, eventId, onUploadComplete, onClose }) => {
   const hiddenFileInput = useRef(null);
   const [error, setError] = useState(null);
   const [files, setFiles] = useState([]); // { file, previewUrl, id }
   const toast = useToast();
 
-  // cleanup previews
   useEffect(() => {
     return () => {
       files.forEach((f) => f.previewUrl && URL.revokeObjectURL(f.previewUrl));
     };
   }, [files]);
 
-  // handle file selection
   const validateAndAdd = useCallback((selectedFiles) => {
     setError(null);
     const toAdd = [];
@@ -84,7 +83,6 @@ const UploadForm = ({ user, onUploadComplete, onClose }) => {
     e.target.value = null;
   };
 
-  // drag & drop
   const onDrop = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -108,7 +106,6 @@ const UploadForm = ({ user, onUploadComplete, onClose }) => {
     });
   };
 
-  // called when ProgressBar finishes
   const onFileDone = (meta, originalFile) => {
     setFiles((prev) => {
       const remaining = prev.filter((p) => p.file !== originalFile);
@@ -132,18 +129,15 @@ const UploadForm = ({ user, onUploadComplete, onClose }) => {
   return (
     <Box>
       <VStack spacing={6} align="stretch">
-        {/* Header */}
         <Box>
           <Heading size="md">Add photos</Heading>
           <Text fontSize="sm" color="gray.500" mt={1}>
-            Upload your favorite photos. Supported formats: JPG, PNG, WEBP. Max
-            size {humanFileSize(MAX_FILE_SIZE)} each.
+            Upload JPG, PNG, WEBP. Max size {humanFileSize(MAX_FILE_SIZE)} each.
           </Text>
         </Box>
 
         <Divider />
 
-        {/* Upload area */}
         <Center>
           <Box
             onDrop={onDrop}
@@ -181,7 +175,6 @@ const UploadForm = ({ user, onUploadComplete, onClose }) => {
           </Box>
         </Center>
 
-        {/* Hidden input */}
         <input
           ref={hiddenFileInput}
           type="file"
@@ -198,7 +191,6 @@ const UploadForm = ({ user, onUploadComplete, onClose }) => {
           </Alert>
         )}
 
-        {/* Thumbnails + progress */}
         {files.length > 0 && (
           <Box>
             <HStack justify="space-between" mb={3}>
@@ -227,7 +219,6 @@ const UploadForm = ({ user, onUploadComplete, onClose }) => {
                         w="100%"
                         h="100%"
                       />
-
                       <IconButton
                         aria-label="remove file"
                         icon={<SmallCloseIcon />}
@@ -255,6 +246,7 @@ const UploadForm = ({ user, onUploadComplete, onClose }) => {
                           fileurl={entry.previewUrl}
                           user={user}
                           fileType="gallery"
+                          eventId={eventId}
                           onDone={(meta) => onFileDone(meta, entry.file)}
                         />
                       </Box>
@@ -266,7 +258,6 @@ const UploadForm = ({ user, onUploadComplete, onClose }) => {
           </Box>
         )}
 
-        {/* Centered Close Button */}
         <Center>
           <Button
             mt={6}
