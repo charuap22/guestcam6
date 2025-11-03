@@ -19,7 +19,7 @@ export default function HorizonWrapper({ children }) {
         // document.head.removeChild(link);
       };
     }
-  }, []);
+  }, []); 
 
   return <ChakraProvider theme={theme}>{children}</ChakraProvider>;
 }

@@ -13,6 +13,7 @@ import Event from "./pages/Event";
 import Gallery from "./pages/Gallery";
 import Videos from "./pages/Videos";
 import Guestbook from "./pages/Guestbook";
+import GuestVideos from "./pages/GuestVideos";
 
 const routes = [
   {
@@ -50,13 +51,20 @@ const routes = [
     icon: <Icon as={MdEvent} w="20px" h="20px" color="inherit" />,
     component: <Gallery />,
   },
+  // routes.js (example entries - add to your routes array)
   {
-    name: "Videos",
+    path: "/videos/owner/:id",
+    name: "Owner Videos",
     layout: "/admin",
-    path: "/videos/:userType/:id", // final URL = /admin/create-event
-    icon: <Icon as={MdEvent} w="20px" h="20px" color="inherit" />,
-    component: <Videos />,
+    component: <Videos allowUpload={true} />, // if routes.js accepts component JSX
   },
+  {
+    path: "/videos/guest/:id",
+    name: "Guest Videos",
+    layout: "/admin",
+    component: <GuestVideos />,
+  },
+
   {
     name: "Guestbook",
     layout: "/admin",

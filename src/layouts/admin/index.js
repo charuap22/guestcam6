@@ -1,196 +1,259 @@
-// src/layouts/admin/index.js
-import React, { useState } from "react";
-// Chakra imports
+// src/components/navbar/AdminNavbar.jsx
+import React, { useState, useEffect } from "react";
+import PropTypes from "prop-types";
 import {
-  Portal,
   Box,
-  useDisclosure,
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
   Flex,
-  Spinner,
+  Link,
   Text,
-  ChakraProvider,
+  useColorModeValue,
+  HStack,
+  Button,
+  Tooltip,
+  IconButton,
 } from "@chakra-ui/react";
-
-import Footer from "../../components/footer/FooterAdmin.js";
-// Layout components
-import Navbar from "../../components/navbar/NavbarAdmin.js";
-import Sidebar from "../../components/sidebar/Sidebar.js";
-
-// Context / Provider (note singular "context" folder)
-import { SidebarProvider } from "../../context/SidebarContext";
-
-// React Router v5
-import { Route, Switch, Redirect } from "react-router-dom";
-
-// local routes file
-import routes from "../../routes.js";
-
-// local components and hooks used by admin layout
-import GuestList from "../../components/GuestList";
-import { useCollection } from "../../hooks/useCollection";
-import EventsList from "../../components/EventsList";
-import GetPackageInfo from "../../components/GetPackageInfo";
-import { useAuthContext } from "../../hooks/useAuthContext";
-import { useDocument } from "../../hooks/useDocument";
-import { useHistory } from "react-router-dom";
-import TempTest from "../../pages/_TempTest";
-import Dashboard from "../../pages/Dashboard.js";
-
-import horizonTheme from "../../theme/horizonTheme";
+import AdminNavbarLinks from "../../components/navbar/NavbarLinksAdmin";
 
 
-export default function AdminLayout(props) {
-  const { ...rest } = props;
-  const [fixed] = useState(false);
-  const [toggleSidebar, setToggleSidebar] = useState(false);
+import { FiMenu } from "react-icons/fi";
+import { useHistory, useLocation, useParams } from "react-router-dom";
 
-  // Chakra disclosure for responsive controls
-  const { onOpen } = useDisclosure();
+export default function AdminNavbar(props) {
+  const [scrolled, setScrolled] = useState(false);
+  const {
+    secondary,
+    message,
+    brandText,
+    onOpen,
+    logoText,
+    fixed,
+    sidebarVisible = true, // NEW prop: controls whether sidebar is visible (admins)
+  } = props;
 
-  // local disclosure (if you need it)
-  const { isOpen, onToggle } = useDisclosure();
+  const history = useHistory();
+  const location = useLocation();
+  const params = useParams(); // read :id if present
+  const eventId = params?.id || params?.eventId || null;
 
-  // auth + user doc (guard user with optional chaining)
-  const { user } = useAuthContext();
-  const { document, error: userDocError } = useDocument("users", user?.uid);
+  useEffect(() => {
+    window.addEventListener("scroll", changeNavbar);
+    return () => {
+      window.removeEventListener("scroll", changeNavbar);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  // show loading while user doc or user isn't ready
-  // if (!user || !document) {
-  //   return (
-  //     <Flex minH="80vh" align="center" justify="center">
-  //       <Spinner size="xl" color="blue.500" />
-  //       <Text ml={3} fontSize="lg" fontWeight="bold" color="gray.600">
-  //         Loading your dashboard...
-  //       </Text>
-  //     </Flex>
-  //   );
-  // }
-
-  // helper that returns the active route name (unchanged)
-  const getActiveRoute = (routesArray) => {
-    let activeRoute = "Default Brand Text";
-    for (let i = 0; i < routesArray.length; i++) {
-      const r = routesArray[i];
-      if (r.collapse) {
-        const collapseActiveRoute = getActiveRoute(r.items);
-        if (collapseActiveRoute !== activeRoute) return collapseActiveRoute;
-      } else if (r.category) {
-        const categoryActiveRoute = getActiveRoute(r.items);
-        if (categoryActiveRoute !== activeRoute) return categoryActiveRoute;
-      } else {
-        if (window.location.href.indexOf(r.layout + r.path) !== -1) {
-          return r.name;
-        }
-      }
-    }
-    return activeRoute;
+  const changeNavbar = () => {
+    if (window.scrollY > 1) setScrolled(true);
+    else setScrolled(false);
   };
 
-  const getActiveNavbar = (routesArray) => {
-    let activeNavbar = false;
-    for (let i = 0; i < routesArray.length; i++) {
-      const r = routesArray[i];
-      if (r.collapse) {
-        const collapseActiveNavbar = getActiveNavbar(r.items);
-        if (collapseActiveNavbar !== activeNavbar) return collapseActiveNavbar;
-      } else if (r.category) {
-        const categoryActiveNavbar = getActiveNavbar(r.items);
-        if (categoryActiveNavbar !== activeNavbar) return categoryActiveNavbar;
-      } else {
-        if (window.location.href.indexOf(r.layout + r.path) !== -1) {
-          return r.secondary;
-        }
-      }
-    }
-    return activeNavbar;
+  // color tokens
+  const mainText = useColorModeValue("navy.700", "white");
+  const secondaryText = useColorModeValue("gray.700", "white");
+  const navbarBg = useColorModeValue(
+    "rgba(244, 247, 254, 0.2)",
+    "rgba(11,20,55,0.5)"
+  );
+
+  // helper to navigate links. If eventId exists, include it.
+  const buildPath = (base) => (eventId ? `/${base}/${eventId}` : `/${base}`);
+  const goTo = (path) => history.push(path);
+
+  // improved isActive: true when current path includes base or base + eventId
+  const isActive = (base) => {
+    const basePath = `/${base}`;
+    if (location.pathname.startsWith(basePath)) return true;
+    // also match cases like /gallery/123 (startsWith covers it), but keep logic explicit
+    return false;
   };
 
-  const getActiveNavbarText = (routesArray) => {
-    let activeNavbar = false;
-    for (let i = 0; i < routesArray.length; i++) {
-      const r = routesArray[i];
-      if (r.collapse) {
-        const collapseActiveNavbar = getActiveNavbarText(r.items);
-        if (collapseActiveNavbar !== activeNavbar) return collapseActiveNavbar;
-      } else if (r.category) {
-        const categoryActiveNavbar = getActiveNavbarText(r.items);
-        if (categoryActiveNavbar !== activeNavbar) return categoryActiveNavbar;
-      } else {
-        if (window.location.href.indexOf(r.layout + r.path) !== -1) {
-          return r.messageNavbar;
-        }
-      }
-    }
-    return activeNavbar;
-  };
+  // compute breadcrumb links: Pages > CurrentSection (links to event-scoped page when eventId present)
+  const currentSection = (() => {
+    if (location.pathname.includes("/gallery")) return "Photos";
+    if (location.pathname.includes("/videos")) return "Videos";
+    if (location.pathname.includes("/guestbook")) return "Guestbook";
+    return brandText || "Pages";
+  })();
 
-  // create Route components for React Router v5 (use full path: layout + path)
-  const getRoutes = (routesArray) =>
-    routesArray.map((route, key) => {
-      if (route.layout === "/admin") {
-        return (
-          <Route
-            exact
-            path={route.layout + route.path}
-            key={key}
-            // render the component node so route.component (JSX) is shown
-            render={() => route.component}
-          />
-        );
-      }
-      if (route.collapse) return getRoutes(route.items);
-      return null;
-    });
-
-  // whether to show route contents (unchanged)
-  const getRoute = () => window.location.pathname !== "/admin/full-screen-maps";
+  const currentSectionPath = (() => {
+    if (location.pathname.includes("/gallery")) return buildPath("gallery");
+    if (location.pathname.includes("/videos")) return buildPath("videos");
+    if (location.pathname.includes("/guestbook")) return buildPath("guestbook");
+    return "#";
+  })();
 
   return (
-    <ChakraProvider theme={horizonTheme}>
-      <Box>
-        <SidebarProvider>
-          <Sidebar routes={routes} display="none" {...rest} />
-          <Box
-            float="right"
-            minHeight="100vh"
-            height="100%"
-            overflow="auto"
-            position="relative"
-            maxHeight="100%"
-            w={{ base: "100%", xl: "calc( 100% - 290px )" }}
-          >
-            <Portal>
-              <Box>
-                <Navbar
-                  onOpen={onOpen}
-                  logoText={"GuestPov Dashboard"}
-                  brandText={getActiveRoute(routes)}
-                  secondary={getActiveNavbar(routes)}
-                  message={getActiveNavbarText(routes)}
-                  fixed={fixed}
-                  {...rest}
-                />
-              </Box>
-            </Portal>
+    <Box
+      position="fixed"
+      boxShadow="none"
+      bg={navbarBg}
+      borderRadius="16px"
+      borderWidth="1.5px"
+      borderStyle="solid"
+      filter="none"
+      backdropFilter="blur(20px)"
+      transition="box-shadow .25s linear, background-color .25s linear"
+      alignItems={{ xl: "center" }}
+      display={secondary ? "block" : "flex"}
+      minH="75px"
+      justifyContent={{ xl: "center" }}
+      lineHeight="25.6px"
+      mx="auto"
+      pb="8px"
+      right={{ base: "12px", md: "30px", lg: "30px", xl: "30px" }}
+      px={{ sm: "15px", md: "10px" }}
+      ps={{ xl: "12px" }}
+      pt="8px"
+      top={{ base: "12px", md: "16px", lg: "20px", xl: "20px" }}
+      w={{
+        base: "calc(100vw - 6%)",
+        md: "calc(100vw - 8%)",
+        lg: "calc(100vw - 6%)",
+        xl: sidebarVisible ? "calc(100vw - 350px)" : "calc(100vw - 40px)",
+        "2xl": sidebarVisible ? "calc(100vw - 365px)" : "calc(100vw - 40px)",
+      }}
+    >
+      <Flex
+        w="100%"
+        flexDirection={{ base: "column", md: "row" }}
+        alignItems={{ base: "flex-start", md: "center" }}
+        justify={{ base: "center", md: "space-between" }}
+        gap={{ base: 4, md: 0 }}
+      >
+        {/* LEFT: breadcrumb + brand + optional hamburger */}
+        <Box
+          w={{ base: "100%", md: "auto" }}
+          display="flex"
+          alignItems="center"
+          gap={3}
+        >
+          {/* show hamburger only when sidebarVisible === true */}
+          {sidebarVisible && (
+            <Tooltip label="Open Sidebar">
+              <IconButton
+                aria-label="Open Sidebar"
+                icon={<FiMenu />}
+                onClick={onOpen}
+                variant="ghost"
+                display={{ base: "inline-flex", xl: "none" }}
+                fontSize="20px"
+              />
+            </Tooltip>
+          )}
 
-            {getRoute() ? (
-              <Box
-                mx="auto"
-                p={{ base: "20px", md: "30px" }}
-                pe="20px"
-                minH="100vh"
-                pt="50px"
-              >
-                <Dashboard />
-              </Box>
-            ) : null}
+          <Box>
+            <Breadcrumb>
+              <BreadcrumbItem color={secondaryText} fontSize="sm" mb="5px">
+                <BreadcrumbLink href="#" color={secondaryText}>
+                  Pages
+                </BreadcrumbLink>
+              </BreadcrumbItem>
 
-            <Box>
-              <Footer />
-            </Box>
+              <BreadcrumbItem color={secondaryText} fontSize="sm" mb="5px">
+                <BreadcrumbLink
+                  href={currentSectionPath !== "#" ? currentSectionPath : "#"}
+                  color={secondaryText}
+                >
+                  {currentSection}
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+            </Breadcrumb>
+
+            <Link
+              color={mainText}
+              href="#"
+              bg="inherit"
+              borderRadius="inherit"
+              fontWeight="bold"
+              fontSize="34px"
+              _hover={{ color: mainText }}
+              _active={{
+                bg: "inherit",
+                transform: "none",
+                borderColor: "transparent",
+              }}
+              _focus={{
+                boxShadow: "none",
+              }}
+            >
+              {brandText}
+            </Link>
           </Box>
-        </SidebarProvider>
-      </Box>
-    </ChakraProvider>
+        </Box>
+
+        {/* CENTER: photos / videos / guestbook links (always visible) */}
+        <HStack
+          spacing={{ base: 2, md: 4 }}
+          justify="center"
+          flex="1"
+          w="full"
+          // sticky-like behavior (navbar is fixed; this keeps layout stable)
+          style={{ position: "relative" }}
+        >
+          <Button
+            variant={isActive("gallery") ? "solid" : "ghost"}
+            colorScheme={isActive("gallery") ? "yellow" : "gray"}
+            size="sm"
+            onClick={() => goTo(buildPath("gallery"))}
+            fontWeight={isActive("gallery") ? "600" : "500"}
+          >
+            Photos
+          </Button>
+
+          <Button
+            variant={isActive("videos") ? "solid" : "ghost"}
+            colorScheme={isActive("videos") ? "yellow" : "gray"}
+            size="sm"
+            onClick={() => goTo(buildPath("videos"))}
+            fontWeight={isActive("videos") ? "600" : "500"}
+          >
+            Videos
+          </Button>
+
+          <Button
+            variant={isActive("guestbook") ? "solid" : "ghost"}
+            colorScheme={isActive("guestbook") ? "yellow" : "gray"}
+            size="sm"
+            onClick={() => goTo(buildPath("guestbook"))}
+            fontWeight={isActive("guestbook") ? "600" : "500"}
+          >
+            Guestbook
+          </Button>
+        </HStack>
+
+        {/* RIGHT: admin links only when sidebarVisible */}
+        <Box
+          w={{ base: "100%", md: "auto" }}
+          ms={{ base: 0, md: "auto" }}
+          display="flex"
+          justifyContent={{ base: "center", md: "flex-end" }}
+        >
+          {sidebarVisible ? (
+            <AdminNavbarLinks
+              onOpen={props.onOpen}
+              logoText={props.logoText}
+              secondary={props.secondary}
+              fixed={props.fixed}
+              scrolled={scrolled}
+            />
+          ) : null}
+        </Box>
+      </Flex>
+
+      {secondary ? <Text color="white">{message}</Text> : null}
+    </Box>
   );
 }
+
+AdminNavbar.propTypes = {
+  brandText: PropTypes.string,
+  variant: PropTypes.string,
+  secondary: PropTypes.bool,
+  fixed: PropTypes.bool,
+  onOpen: PropTypes.func,
+  sidebarVisible: PropTypes.bool,
+};

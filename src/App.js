@@ -125,11 +125,11 @@ function App() {
               )}
             </Route>
             {/* Owner / paid gallery */}
-            <Route path="/admin/gallery/owner/:id">
+            {/* <Route path="/admin/gallery/owner/:id">
               <HorizonWrapper>
                 <Gallery />
               </HorizonWrapper>
-            </Route>
+            </Route> */}
 
             {/* Public guest gallery link */}
             <Route path="/admin/gallery/guest/:id">
