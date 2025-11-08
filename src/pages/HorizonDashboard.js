@@ -10,7 +10,7 @@ import Footer from "../components/footer/FooterAdmin";
 import Navbar from "../components/navbar/NavbarAdmin";
 import Sidebar from "../components/sidebar/Sidebar";
 import { SidebarProvider, SidebarContext } from "../context/SidebarContext";
-import { Switch, Route, Redirect } from "react-router-dom";
+import { Switch, Route, Redirect, useLocation } from "react-router-dom";
 import routes from "../routes";
 
 export default function HorizonDashboard(props) {
@@ -18,9 +18,23 @@ export default function HorizonDashboard(props) {
   const [fixed] = useState(false);
   const [toggleSidebar, setToggleSidebar] = useState(false);
   const { onOpen } = useDisclosure();
+  const location = useLocation();
 
   // ✅ Hide sidebar completely on mobile (do not render)
   const showSidebar = useBreakpointValue({ base: false, xl: true });
+
+  // --- NEW: detect guest routes and hide the sidebar for them ---
+  // Adjust the patterns below if you add more guest routes
+  const guestPatterns = [
+    "/admin/guest-dashboard", // /admin/guest-dashboard/:id
+    "/admin/gallery/guest",
+    "/admin/videos/guest",
+    "/admin/guestbook/guest",
+    // add more if needed: "/some-other-guest-path"
+  ];
+
+  const pathname = location.pathname || "";
+  const isGuestRoute = guestPatterns.some((p) => pathname.includes(p));
 
   const getRoutes = (routesArray) =>
     routesArray.map((route, key) => {
@@ -28,7 +42,7 @@ export default function HorizonDashboard(props) {
         return (
           <Route
             exact
-            path={route.layout + route.path}
+            path={route.layout + (route.path || "")}
             key={key}
             render={() => route.component}
           />
@@ -42,8 +56,10 @@ export default function HorizonDashboard(props) {
   return (
     <Provider value={{ toggleSidebar, setToggleSidebar }}>
       <Box>
-        {/* ✅ Sidebar only renders on desktop */}
-        {showSidebar && <Sidebar routes={routes} display="block" {...rest} />}
+        {/* Sidebar only renders on desktop AND when NOT on guest pages */}
+        {showSidebar && !isGuestRoute && (
+          <Sidebar routes={routes} display="block" {...rest} />
+        )}
 
         <Box
           float="right"
@@ -51,12 +67,12 @@ export default function HorizonDashboard(props) {
           height="100%"
           overflow="auto"
           position="relative"
-          w={{ base: "100%", xl: "calc(100% - 290px)" }}
+          w={{ base: "100%", xl: isGuestRoute ? "100%" : "calc(100% - 290px)" }}
           transition="all 0.3s ease"
         >
           <Portal>
             <Navbar
-              onOpen={() => setToggleSidebar(true)} // 🔹 link to sidebar toggle
+              onOpen={() => setToggleSidebar(true)}
               logoText="GUESTPOV"
               brandText="Dashboard"
               fixed={fixed}
@@ -70,9 +86,6 @@ export default function HorizonDashboard(props) {
               <Redirect exact from="/admin" to="/admin/default" />
             </Switch>
           </Box>
-
-          
-          
         </Box>
       </Box>
     </Provider>

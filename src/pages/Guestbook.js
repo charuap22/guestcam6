@@ -1,9 +1,7 @@
-// src/pages/Guestbook.js
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Box,
   Flex,
-  chakra,
   Button,
   Stack,
   Textarea,
@@ -20,59 +18,106 @@ import {
   ModalContent,
   ModalBody,
   ModalCloseButton,
-  Badge,
   Spinner,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  HStack,
+  Tag,
+  Checkbox,
 } from "@chakra-ui/react";
 import { AddIcon } from "@chakra-ui/icons";
-import { FiTrash2 } from "react-icons/fi";
+import {
+  FiTrash2,
+  FiDownload,
+  FiMoreHorizontal,
+  FiCheckSquare,
+} from "react-icons/fi";
 import { useParams } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
 import { timestamp } from "../firebase/config";
 import { useAuthContext } from "../hooks/useAuthContext";
 import { useDocument } from "../hooks/useDocument";
 import { useFirestore } from "../hooks/useFirestore";
-
 import VideoUploadForm from "../components/VideoUploadForm";
+import { downloadUrlsAsZip } from "../utils/downloads";
 
-const PAGE_SIZE_VIDEOS = 12;
-const PAGE_SIZE_TEXT = 20;
+import HeaderSpacer from "../components/HeaderSpacer";
 
-const Guestbook = () => {
-  const { id, userType } = useParams();
+/* ---------------- UTILITIES ---------------- */
+function timeAgoFrom(createdAt) {
+  if (!createdAt) return "";
+  const ms = createdAt?.toDate
+    ? createdAt.toDate().getTime()
+    : new Date(createdAt).getTime();
+  const s = Math.floor((Date.now() - ms) / 1000);
+  if (s < 60) return "just now";
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+  return `${Math.floor(s / 86400)}d ago`;
+}
+
+function canUserDeleteEntry(user, entry, isAdmin = false) {
+  if (isAdmin) return true;
+  if (!user) return false;
+  if (entry?.userId && entry.userId === user.uid) return true;
+  if (!entry.userId && entry.displayName && user.displayName) {
+    return entry.displayName.trim() === user.displayName.trim();
+  }
+  return false;
+}
+
+/* ---------------- MAIN COMPONENT ---------------- */
+const Guestbook = ({ guestMode = false, allowUpload = true }) => {
+  const { id } = useParams();
   const { user } = useAuthContext();
   const { document: eventDoc, error: docError } = useDocument("events", id);
   const { updateDocument, response } = useFirestore("events");
   const toast = useToast();
 
   const [newComment, setNewComment] = useState("");
-  const [videoCount, setVideoCount] = useState(PAGE_SIZE_VIDEOS);
-  const [textCount, setTextCount] = useState(PAGE_SIZE_TEXT);
-  const [currentVideoUrl, setCurrentVideoUrl] = useState(null);
+  const [videoCount, setVideoCount] = useState(12);
+  const [selectedVideos, setSelectedVideos] = useState(new Set());
+  const [isSelecting, setIsSelecting] = useState(false);
 
   const {
     isOpen: videoUploadOpen,
     onOpen: openVideoUpload,
     onClose: closeVideoUpload,
   } = useDisclosure();
-  const {
-    isOpen: videoViewerOpen,
-    onOpen: openVideoViewer,
-    onClose: closeVideoViewer,
-  } = useDisclosure();
 
-  const isAdmin =
-    (typeof userType === "string" && userType.toLowerCase() === "admin") ||
-    false;
+  /* ---------- Admin detection ---------- */
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => {
+    if (!user || !eventDoc) {
+      setIsAdmin(false);
+      return;
+    }
 
+    const uid = user.uid;
+    const checkValue = (val) => {
+      if (!val) return false;
+      if (typeof val === "string") return val === uid;
+      if (typeof val === "object") {
+        return Object.values(val).some((nested) => checkValue(nested));
+      }
+      return false;
+    };
+
+    const ownerMatch = checkValue(eventDoc);
+    setIsAdmin(ownerMatch);
+  }, [user, eventDoc]);
+
+  /* ---------- Guestbook data ---------- */
   const guestBookSafe =
     eventDoc && Array.isArray(eventDoc.guestBook) ? eventDoc.guestBook : [];
 
   const { textEntriesAll, videoEntriesAll } = useMemo(() => {
-    const texts = [];
-    const vids = [];
+    const texts = [],
+      vids = [];
     for (const e of guestBookSafe) {
-      if (e?.type === "video" && (e.videoUrl || e.videoURL || e.url))
-        vids.push(e);
+      if (e?.type === "video") vids.push(e);
       else texts.push(e);
     }
     const sortNewest = (arr) =>
@@ -90,32 +135,7 @@ const Guestbook = () => {
     return { textEntriesAll: texts, videoEntriesAll: vids };
   }, [guestBookSafe]);
 
-  const videoEntries = videoEntriesAll;
-  const textEntries = textEntriesAll;
-
-  const visibleVideos = videoEntries.slice(0, videoCount);
-  const visibleText = textEntries.slice(0, textCount);
-
-  const timeAgoFrom = (createdAt) => {
-    if (!createdAt) return "";
-    const ms = createdAt?.toDate
-      ? createdAt.toDate().getTime()
-      : new Date(createdAt).getTime();
-    const s = Math.floor((Date.now() - ms) / 1000);
-    if (s < 60) return "just now";
-    if (s < 3600) return `${Math.floor(s / 60)}m ago`;
-    if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
-    return `${Math.floor(s / 86400)}d ago`;
-  };
-
-  if (docError) return <div>Error loading event: {docError}</div>;
-  if (!eventDoc)
-    return (
-      <Flex minH="50vh" align="center" justify="center">
-        <Spinner />
-      </Flex>
-    );
-
+  /* ---------- Add text message ---------- */
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!newComment.trim()) return;
@@ -130,35 +150,19 @@ const Guestbook = () => {
       createdAt: timestamp.fromDate(new Date()),
     };
 
-    try {
-      await updateDocument(eventDoc.id, {
-        guestBook: [...(eventDoc.guestBook || []), newEntry],
-      });
-      if (!response.error) {
-        setNewComment("");
-        toast({
-          title: "Message Sent!",
-          description: "Your message has been added to the guestbook.",
-          status: "success",
-          duration: 2000,
-          isClosable: true,
-        });
-      }
-    } catch (err) {
-      toast({
-        title: "Error",
-        description: "Could not send message — please try again.",
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
+    await updateDocument(eventDoc.id, {
+      guestBook: [...(eventDoc.guestBook || []), newEntry],
+    });
+    if (!response.error) {
+      setNewComment("");
+      toast({ title: "Message added", status: "success" });
     }
   };
 
+  /* ---------- Video upload ---------- */
   const handleVideoUploadComplete = async (meta = {}, extra = {}) => {
-    const videoUrl = meta?.url || meta?.downloadURL || meta?.filePath || null;
+    const videoUrl = meta?.url || meta?.downloadURL;
     if (!videoUrl) return;
-
     const entry = {
       id: uuidv4(),
       displayName: user?.displayName || "Guest",
@@ -170,359 +174,398 @@ const Guestbook = () => {
       content: extra?.caption || "",
       createdAt: timestamp.fromDate(new Date()),
     };
-
     await updateDocument(eventDoc.id, {
       guestBook: [...(eventDoc.guestBook || []), entry],
     });
     closeVideoUpload();
-    toast({
-      title: "Video added",
-      status: "success",
-      duration: 2500,
-      isClosable: true,
+    toast({ title: "Video uploaded", status: "success" });
+  };
+
+  /* ---------- Delete entry ---------- */
+  const deleteEntry = async (entry) => {
+    const canDelete = canUserDeleteEntry(
+      user,
+      entry,
+      guestMode ? false : isAdmin
+    );
+    if (!canDelete) {
+      toast({
+        title: "Not allowed",
+        description: "You can delete only your own messages.",
+        status: "error",
+      });
+      return;
+    }
+    if (!window.confirm("Delete this entry?")) return;
+    const updated = (eventDoc.guestBook || []).filter((e) => e.id !== entry.id);
+    await updateDocument(eventDoc.id, { guestBook: updated });
+    toast({ title: "Deleted", status: "info" });
+  };
+
+  /* ---------- Downloads (Owner only) ---------- */
+  const downloadAllText = () => {
+    const allText = textEntriesAll
+      .map(
+        (t) =>
+          `${t.displayName || "Guest"} (${timeAgoFrom(t.createdAt)}): ${
+            t.content
+          }`
+      )
+      .join("\n\n");
+    const blob = new Blob([allText], { type: "text/plain" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `guestbook-text-${Date.now()}.txt`;
+    a.click();
+  };
+
+  const downloadAllCSV = () => {
+    const header = "Name,Message,Time\n";
+    const rows = textEntriesAll
+      .map(
+        (t) =>
+          `"${t.displayName || "Guest"}","${(t.content || "").replace(
+            /"/g,
+            '""'
+          )}","${timeAgoFrom(t.createdAt)}"`
+      )
+      .join("\n");
+    const blob = new Blob([header + rows], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `guestbook-messages-${Date.now()}.csv`;
+    a.click();
+  };
+
+  const downloadAllJSON = () => {
+    const jsonData = JSON.stringify(textEntriesAll, null, 2);
+    const blob = new Blob([jsonData], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `guestbook-messages-${Date.now()}.json`;
+    a.click();
+  };
+
+  const downloadAllVideosAsZip = async () => {
+    const items = videoEntriesAll.map((v, i) => ({
+      url: v.videoUrl,
+      filename: `${v.displayName || "video"}-${i + 1}.mp4`,
+    }));
+    await downloadUrlsAsZip(items, {
+      zipFilename: `guestbook-videos-${Date.now()}.zip`,
     });
   };
 
-  const deleteEntry = async (entryId) => {
-    if (!isAdmin) return;
-    if (!window.confirm("Delete this guestbook entry?")) return;
-    const updated = (eventDoc.guestBook || []).filter((e) => e.id !== entryId);
-    await updateDocument(eventDoc.id, { guestBook: updated });
-    toast({ title: "Deleted", status: "info", duration: 1500 });
+  const downloadSelectedVideosAsZip = async () => {
+    if (selectedVideos.size === 0) {
+      toast({ title: "No videos selected", status: "warning" });
+      return;
+    }
+    const items = videoEntriesAll
+      .filter((v) => selectedVideos.has(v.id))
+      .map((v, i) => ({
+        url: v.videoUrl,
+        filename: `${v.displayName || "video"}-${i + 1}.mp4`,
+      }));
+    await downloadUrlsAsZip(items, {
+      zipFilename: `guestbook-selected-videos-${Date.now()}.zip`,
+    });
+    setIsSelecting(false);
+    setSelectedVideos(new Set());
   };
 
-  const openVideo = (url) => {
-    setCurrentVideoUrl(url);
-    openVideoViewer();
-  };
-
-  const loadMoreVideos = () => setVideoCount((c) => c + PAGE_SIZE_VIDEOS);
-  const loadMoreText = () => setTextCount((c) => c + PAGE_SIZE_TEXT);
+  /* ---------- UI ---------- */
+  if (docError)
+    return (
+      <Center>
+        <Text color="red.500">{docError}</Text>
+      </Center>
+    );
+  if (!eventDoc)
+    return (
+      <Center minH="50vh">
+        <Spinner />
+      </Center>
+    );
 
   return (
-    <Box
-      minH="100vh"
-      py={{ base: 10, md: 10 }}
-      mt={{ base: 20, md: 10 }}
-      bgImage="linear-gradient(180deg,#f7f8fb 0%, #ffffff 100%)"
-    >
-      <VStack
+    <Box minH="100vh" bg="gray.50" pb={{ base: 10, md: 12 }}>
+      <HeaderSpacer />
+      {/* Top Bar */}
+      {/* Top Bar (Responsive for mobile) */}
+      <Flex
         px={{ base: 3, md: 8 }}
-        py={{ base: 4, md: 10 }}
-        mx="auto"
-        w="100%"
-        maxW="100%"
-        spacing={8}
-        align="stretch"
+        mb={4}
+        align="center"
+        justify={{ base: "flex-start", md: "space-between" }}
+        flexWrap="nowrap"
+        overflowX="auto"
+        whiteSpace="nowrap"
+        gap={3}
+        sx={{
+          "&::-webkit-scrollbar": { display: "none" },
+          "-ms-overflow-style": "none",
+          "scrollbar-width": "none",
+        }}
       >
-        {/* Video Messages */}
-        <Box>
-          <Flex
-            direction={{ base: "column", sm: "row" }}
-            align={{ base: "flex-start", sm: "center" }}
-            justify={{ base: "flex-start", sm: "space-between" }}
-            gap={{ base: 3, sm: 0 }}
-            mb={4}
+        {/* Owner tag */}
+        {!guestMode && isAdmin && (
+          <Tag
+            bg="yellow.100"
+            color="brown"
+            borderRadius="full"
+            px={3}
+            py={1}
+            fontWeight="600"
+            flexShrink={0}
           >
-            <Text fontSize="lg" fontWeight="700" color="gray.700">
+            Owner
+          </Tag>
+        )}
+
+        {/* Select button */}
+        {isAdmin && (
+          <Button
+            size="sm"
+            variant={isSelecting ? "solid" : "outline"}
+            colorScheme={isSelecting ? "purple" : "gray"}
+            leftIcon={<FiCheckSquare />}
+            onClick={() => setIsSelecting(!isSelecting)}
+            flexShrink={0}
+          >
+            {isSelecting ? "Cancel Selection" : "Select Videos"}
+          </Button>
+        )}
+
+        {/* Actions menu */}
+        {!guestMode && isAdmin && (
+          <Menu placement="bottom-end">
+            <MenuButton
+              as={Button}
+              size="sm"
+              colorScheme="purple"
+              leftIcon={<FiMoreHorizontal />}
+              flexShrink={0}
+            >
+              Actions
+            </MenuButton>
+            <MenuList zIndex={50}>
+              <MenuItem icon={<FiDownload />} onClick={downloadAllText}>
+                Download All Messages (TXT)
+              </MenuItem>
+              <MenuItem icon={<FiDownload />} onClick={downloadAllCSV}>
+                Download All Messages (CSV)
+              </MenuItem>
+              <MenuItem icon={<FiDownload />} onClick={downloadAllJSON}>
+                Download All Messages (JSON)
+              </MenuItem>
+              <MenuItem icon={<FiDownload />} onClick={downloadAllVideosAsZip}>
+                Download All Videos (ZIP)
+              </MenuItem>
+              <MenuItem
+                icon={<FiDownload />}
+                onClick={downloadSelectedVideosAsZip}
+              >
+                Download Selected Videos (ZIP)
+              </MenuItem>
+            </MenuList>
+          </Menu>
+        )}
+      </Flex>
+
+      <VStack spacing={8} px={{ base: 3, md: 8 }}>
+        {/* --- Video Messages --- */}
+        <Box w="full">
+          <Flex justify="space-between" align="center" mb={4}>
+            <Text fontWeight="bold" fontSize="lg">
               Video Messages
             </Text>
-
-            <Button
-              leftIcon={<AddIcon />}
-              colorScheme="purple"
-              size="sm"
-              onClick={openVideoUpload}
-              alignSelf={{ base: "flex-start", sm: "auto" }}
-            >
-              Add Video Message
-            </Button>
+            {allowUpload && (
+              <Button
+                size="sm"
+                colorScheme="purple"
+                leftIcon={<AddIcon />}
+                onClick={openVideoUpload}
+              >
+                Add Video
+              </Button>
+            )}
           </Flex>
 
-          <Box
-            sx={{
-              columnCount: { base: 1, sm: 2, md: 3, lg: 4 },
-              columnGap: "1rem",
-            }}
-          >
-            {visibleVideos.length === 0 ? (
-              <Center py={8} color="gray.500">
-                No video messages yet.
-              </Center>
-            ) : (
-              visibleVideos.map((v) => (
-                <Box key={v.id} display="inline-block" width="100%" mb="1rem">
-                  <Box
-                    bg="white"
-                    borderRadius="12px"
-                    boxShadow="sm"
-                    overflow="hidden"
-                  >
-                    <Box position="relative">
-                      {v.thumbnailDataUrl ? (
-                        <AspectRatio ratio={16 / 9}>
-                          <img
-                            src={v.thumbnailDataUrl}
-                            alt={v.displayName}
-                            style={{
-                              width: "100%",
-                              height: "100%",
-                              objectFit: "cover",
-                            }}
-                          />
-                        </AspectRatio>
-                      ) : (
-                        <AspectRatio ratio={16 / 9}>
-                          <video
-                            src={v.videoUrl}
-                            playsInline
-                            muted
-                            preload="metadata"
-                            style={{
-                              width: "100%",
-                              height: "100%",
-                              objectFit: "cover",
-                            }}
-                          />
-                        </AspectRatio>
-                      )}
+          {videoEntriesAll.length === 0 ? (
+            <Center py={8} color="gray.500">
+              No video messages yet.
+            </Center>
+          ) : (
+            <Flex wrap="wrap" gap={4}>
+              {videoEntriesAll.map((v) => {
+                const canDelete = canUserDeleteEntry(
+                  user,
+                  v,
+                  guestMode ? false : isAdmin
+                );
+                const selected = selectedVideos.has(v.id);
 
-                      {isAdmin && (
+                return (
+                  <Box
+                    key={v.id}
+                    bg="white"
+                    borderRadius="xl"
+                    boxShadow="sm"
+                    p={3}
+                    w={{ base: "100%", sm: "45%", md: "30%" }}
+                    position="relative"
+                  >
+                    {isSelecting && (
+                      <Checkbox
+                        isChecked={selected}
+                        onChange={() => {
+                          const newSet = new Set(selectedVideos);
+                          newSet.has(v.id)
+                            ? newSet.delete(v.id)
+                            : newSet.add(v.id);
+                          setSelectedVideos(newSet);
+                        }}
+                        position="absolute"
+                        top="6px"
+                        left="6px"
+                        bg="whiteAlpha.800"
+                        borderRadius="md"
+                        zIndex={10}
+                      />
+                    )}
+
+                    <AspectRatio ratio={16 / 9} mb={2}>
+                      <video
+                        src={v.videoUrl}
+                        controls
+                        style={{ width: "100%", borderRadius: "md" }}
+                      />
+                    </AspectRatio>
+
+                    <Flex align="center" justify="space-between">
+                      <Text fontSize="sm" fontWeight="600">
+                        {v.displayName}
+                      </Text>
+                      {canDelete && (
                         <IconButton
-                          aria-label="delete"
                           icon={<FiTrash2 />}
                           size="sm"
                           colorScheme="red"
-                          position="absolute"
-                          top="6px"
-                          right="6px"
-                          onClick={() => deleteEntry(v.id)}
+                          onClick={() => deleteEntry(v)}
                         />
                       )}
-                    </Box>
-
-                    <Box p={3}>
-                      <Flex align="center" justify="space-between">
-                        <Flex align="center">
-                          <Avatar
-                            name={v.displayName}
-                            src={v.photoURL}
-                            size="sm"
-                            mr={3}
-                          />
-                          <Box>
-                            <Text fontWeight="600" fontSize="sm">
-                              {v.displayName || "Guest"}
-                            </Text>
-                            <Text fontSize="xs" color="gray.500">
-                              {timeAgoFrom(v.createdAt)}
-                            </Text>
-                          </Box>
-                        </Flex>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => openVideo(v.videoUrl)}
-                        >
-                          Play
-                        </Button>
-                      </Flex>
-                      {v.content && (
-                        <Text mt={2} fontSize="sm" color="gray.600">
-                          {v.content}
-                        </Text>
-                      )}
-                    </Box>
+                    </Flex>
+                    <Text fontSize="xs" color="gray.500">
+                      {timeAgoFrom(v.createdAt)}
+                    </Text>
                   </Box>
-                </Box>
-              ))
-            )}
-          </Box>
-
-          {videoEntries.length > visibleVideos.length && (
-            <Center mt={6}>
-              <Button onClick={loadMoreVideos}>Load more videos</Button>
-            </Center>
+                );
+              })}
+            </Flex>
           )}
         </Box>
 
-        {/* Text Messages (multi-column masonry) */}
-        <Box>
-          <Text fontSize="lg" fontWeight="700" color="gray.700" mb={4}>
+        {/* --- Text Messages --- */}
+        <Box w="full">
+          <Text fontWeight="bold" fontSize="lg" mb={3}>
             Messages
           </Text>
-          {/* Message Input */}
-          <Flex
-            align="center"
-            justify="center"
-            bg="white"
-            p={6}
-            borderRadius="2xl"
-            boxShadow="lg"
-          >
-            <form onSubmit={handleSendMessage} style={{ width: "100%" }}>
+
+          {allowUpload && (
+            <form onSubmit={handleSendMessage}>
               <Stack
                 direction={{ base: "column", md: "row" }}
-                spacing={4}
-                w="100%"
+                spacing={3}
+                mb={6}
               >
                 <Textarea
                   required
-                  placeholder="Write a message..."
-                  border="1px solid"
-                  borderColor="gray.200"
-                  borderRadius="xl"
-                  _focus={{
-                    borderColor: "purple.400",
-                    boxShadow: "0 0 0 1px rgba(124,58,237,0.16)",
-                  }}
+                  placeholder="Write your message..."
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
                 />
-                <Button
-                  colorScheme="purple"
-                  px={8}
-                  py={6}
-                  borderRadius="xl"
-                  type="submit"
-                >
+                <Button colorScheme="purple" type="submit">
                   Send
                 </Button>
               </Stack>
             </form>
-          </Flex>
+          )}
 
-          <Box
-            sx={{
-              columnCount: { base: 1, sm: 2, md: 3, lg: 4 },
-              columnGap: "1rem",
-            }}
-            mt={10}
-          >
-            {visibleText.length === 0 ? (
-              <Center py={8} color="gray.500">
-                No messages yet — be the first ✨
-              </Center>
-            ) : (
-              visibleText.map((entry) => (
-                <Box
-                  key={entry.id}
-                  display="inline-block"
-                  width="100%"
-                  mb="1rem"
-                >
+          {textEntriesAll.length === 0 ? (
+            <Center py={8} color="gray.500">
+              No messages yet.
+            </Center>
+          ) : (
+            <Flex wrap="wrap" gap={4}>
+              {textEntriesAll.map((t) => {
+                const canDelete = canUserDeleteEntry(
+                  user,
+                  t,
+                  guestMode ? false : isAdmin
+                );
+                return (
                   <Box
+                    key={t.id}
                     bg="white"
-                    p={{ base: 4, md: 5 }}
-                    borderRadius="2xl"
-                    boxShadow="0 4px 20px rgba(15,23,42,0.06)"
+                    p={4}
+                    borderRadius="xl"
+                    boxShadow="sm"
                     position="relative"
+                    w={{ base: "100%", sm: "45%", md: "30%" }}
                   >
-                    {isAdmin && (
+                    {canDelete && (
                       <IconButton
-                        aria-label="delete"
                         icon={<FiTrash2 />}
-                        size="sm"
+                        size="xs"
                         colorScheme="red"
                         position="absolute"
                         top="6px"
                         right="6px"
-                        onClick={() => deleteEntry(entry.id)}
+                        onClick={() => deleteEntry(t)}
                       />
                     )}
-                    <Flex align="center" mb={3}>
+                    <Flex align="center" mb={2}>
                       <Avatar
-                        name={entry.displayName}
-                        src={entry.photoURL}
+                        name={t.displayName}
+                        src={t.photoURL}
                         size="sm"
                         mr={3}
                       />
                       <Box>
                         <Text fontWeight="600" fontSize="sm">
-                          {entry.displayName || "Guest"}
+                          {t.displayName}
                         </Text>
                         <Text fontSize="xs" color="gray.500">
-                          {timeAgoFrom(entry.createdAt)}
+                          {timeAgoFrom(t.createdAt)}
                         </Text>
                       </Box>
                     </Flex>
                     <Text fontSize="sm" color="gray.600">
-                      {entry.content}
+                      {t.content}
                     </Text>
                   </Box>
-                </Box>
-              ))
-            )}
-          </Box>
-
-          {textEntries.length > visibleText.length && (
-            <Center mt={6}>
-              <Button onClick={loadMoreText}>Load more messages</Button>
-            </Center>
+                );
+              })}
+            </Flex>
           )}
         </Box>
       </VStack>
 
       {/* Video Upload Modal */}
-      <Modal
-        isOpen={videoUploadOpen}
-        onClose={closeVideoUpload}
-        size="lg"
-        isCentered
-      >
-        <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(4px)" />
-        <ModalContent borderRadius="lg">
+      <Modal isOpen={videoUploadOpen} onClose={closeVideoUpload} isCentered>
+        <ModalOverlay bg="blackAlpha.600" />
+        <ModalContent borderRadius="xl" p={4}>
           <ModalCloseButton />
-          <ModalBody p={6}>
+          <ModalBody>
             <VideoUploadForm
               user={user}
-              onUploadComplete={(meta, extra) =>
-                handleVideoUploadComplete(meta, extra)
-              }
+              onUploadComplete={handleVideoUploadComplete}
               onClose={closeVideoUpload}
             />
           </ModalBody>
         </ModalContent>
       </Modal>
-
-      {/* Video Viewer Modal */}
-      <Modal
-        isOpen={videoViewerOpen}
-        onClose={() => {
-          setCurrentVideoUrl(null);
-          closeVideoViewer();
-        }}
-        size="xl"
-        isCentered
-      >
-        <ModalOverlay bg="blackAlpha.800" />
-        <ModalContent bg="transparent" boxShadow="none" maxW="90vw">
-          <ModalBody p={0}>
-            <Box borderRadius="md" overflow="hidden">
-              <AspectRatio ratio={16 / 9}>
-                <video
-                  src={currentVideoUrl}
-                  controls
-                  style={{ width: "100%" }}
-                />
-              </AspectRatio>
-            </Box>
-          </ModalBody>
-        </ModalContent>
-      </Modal>
-
-      {/* Floating Add-Video Button */}
-      {/* <IconButton
-        aria-label="Add video"
-        icon={<AddIcon />}
-        colorScheme="purple"
-        position="fixed"
-        right={{ base: 4, md: 12 }}
-        bottom={{ base: 4, md: 12 }}
-        zIndex={50}
-        borderRadius="full"
-        onClick={openVideoUpload}
-      /> */}
     </Box>
   );
 };
