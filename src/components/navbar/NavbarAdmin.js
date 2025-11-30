@@ -1,4 +1,4 @@
-// Chakra Imports
+// src/components/navbar/AdminNavbar.jsx
 import {
   Box,
   Breadcrumb,
@@ -10,140 +10,111 @@ import {
   useColorModeValue,
 } from "@chakra-ui/react";
 import PropTypes from "prop-types";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import { useLocation } from "react-router-dom";
 import AdminNavbarLinks from "../navbar/NavbarLinksAdmin";
 
 export default function AdminNavbar(props) {
   const [scrolled, setScrolled] = useState(false);
+  const location = useLocation();
 
   useEffect(() => {
     window.addEventListener("scroll", changeNavbar);
+    return () => window.removeEventListener("scroll", changeNavbar);
+  }, []);
 
-    return () => {
-      window.removeEventListener("scroll", changeNavbar);
-    };
-  });
+  const { secondary, message, brandText: propBrandText } = props;
 
-  const { secondary, message, brandText } = props;
+  const mainText = useColorModeValue("navy.700", "white");
+  const secondaryText = useColorModeValue("gray.700", "white");
 
-  // Here are all the props that may change depending on navbar's type or state.(secondary, variant, scrolled)
-  let mainText = useColorModeValue("navy.700", "white");
-  let secondaryText = useColorModeValue("gray.700", "white");
-  let navbarPosition = "fixed";
-  let navbarFilter = "none";
-  let navbarBackdrop = "blur(20px)";
-  let navbarShadow = "none";
-  let navbarBg = useColorModeValue(
-    "rgba(244, 247, 254, 0.2)",
-    "rgba(11,20,55,0.5)"
-  );
-  let navbarBorder = "transparent";
-  let secondaryMargin = "0px";
-  let paddingX = "15px";
-  let gap = "0px";
-  const changeNavbar = () => {
-    if (window.scrollY > 1) {
-      setScrolled(true);
-    } else {
-      setScrolled(false);
+  const changeNavbar = () => setScrolled(window.scrollY > 1);
+
+  // Derive brand text from the URL path (case-insensitive)
+  const brandText = useMemo(() => {
+    if (!location || !location.pathname) return propBrandText || "Pages";
+    const path = location.pathname.toLowerCase();
+
+    if (
+      path.includes("/dashboard") ||
+      path === "/admin" ||
+      path === "/admin/"
+    ) {
+      return "Dashboard";
     }
-  };
+    if (path.includes("/gallery")) return "Gallery";
+    if (path.includes("/videos")) return "Videos";
+    if (path.includes("/guestbook")) return "Guestbook";
+
+    if (
+      path.includes("/edit-event") ||
+      path.includes("/create-event") ||
+      path.includes("/event")
+    ) {
+      return "Event";
+    }
+
+    return propBrandText || "Pages";
+  }, [location, propBrandText]);
 
   return (
     <Box
-      position={navbarPosition}
-      boxShadow={navbarShadow}
-      bg={navbarBg}
-      borderColor={navbarBorder}
-      filter={navbarFilter}
-      backdropFilter={navbarBackdrop}
-      backgroundPosition="center"
-      backgroundSize="cover"
+      position="fixed"
+      top={{ base: "12px", md: "16px", lg: "20px", xl: "20px" }}
+      /* CENTER NAVBAR PILL ON MOBILE */
+      left={{ base: "50%", md: "30px" }}
+      right={{ base: "auto", md: "30px" }}
+      transform={{ base: "translateX(-50%)", md: "none" }}
+      /* WIDTH BEHAVIOR */
+      w={{ base: "auto", md: "calc(100% - 60px)" }}
+      maxW={{ base: "560px", md: "none" }}
+      mx="0"
+      minH="75px"
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+      /* Transparent bg */
+      bg={useColorModeValue("rgba(244,247,254,0.2)", "rgba(11,20,55,0.5)")}
       borderRadius="16px"
       borderWidth="1.5px"
       borderStyle="solid"
-      transitionDelay="0s, 0s, 0s, 0s"
-      transitionDuration=" 0.25s, 0.25s, 0.25s, 0s"
-      transition-property="box-shadow, background-color, filter, border"
-      transitionTimingFunction="linear, linear, linear, linear"
-      alignItems={{ xl: "center" }}
-      display={secondary ? "block" : "flex"}
-      minH="75px"
-      justifyContent={{ xl: "center" }}
-      lineHeight="25.6px"
-      mx="auto"
-      mt={secondaryMargin}
-      pb="8px"
-      right={{ base: "12px", md: "30px", lg: "30px", xl: "30px" }}
-      px={{
-        sm: paddingX,
-        md: "10px",
-      }}
-      ps={{
-        xl: "12px",
-      }}
-      pt="8px"
-      top={{ base: "12px", md: "16px", lg: "20px", xl: "20px" }}
-      w={{
-        base: "calc(100vw - 6%)",
-        md: "calc(100vw - 8%)",
-        lg: "calc(100vw - 6%)",
-        xl: "calc(100vw - 350px)",
-        "2xl": "calc(100vw - 365px)",
-      }}
+      borderColor="transparent"
+      boxShadow="none"
+      p={{ base: "10px 14px", md: "8px" }}
+      zIndex="overlay"
     >
       <Flex
         w="100%"
-        flexDirection={{ base: "column", md: "row" }} // stack on mobile, row on md+
-        alignItems={{ base: "flex-start", md: "center" }} // align left when stacked
-        justify={{ base: "center", md: "space-between" }} // spaced apart on md+
-        mb={gap}
-        gap={{ base: 4, md: 0 }} // add spacing between the two boxes on mobile
+        flexDirection={{ base: "column", md: "row" }}
+        alignItems={{ base: "center", md: "center" }}
+        justify={{ base: "center", md: "space-between" }}
+        gap={{ base: 4, md: 0 }}
       >
-        <Box w={{ base: "100%", md: "auto" }}>
-          <Breadcrumb>
-            <BreadcrumbItem color={secondaryText} fontSize="sm" mb="5px">
-              <BreadcrumbLink href="#" color={secondaryText}>
-                Pages
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-
-            <BreadcrumbItem color={secondaryText} fontSize="sm" mb="5px">
-              <BreadcrumbLink href="#" color={secondaryText}>
-                {brandText}
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-          </Breadcrumb>
-          {/* Here we create navbar brand, based on route name */}
+        {/* LEFT SIDE (Brand Title) */}
+        <Box
+          w={{ base: "100%", md: "auto" }}
+          textAlign={{ base: "center", md: "left" }}
+          flex="0 0 auto"
+        >
           <Link
             color={mainText}
-            href="#"
-            bg="inherit"
-            borderRadius="inherit"
             fontWeight="bold"
             fontSize="34px"
-            _hover={{ color: { mainText } }}
-            _active={{
-              bg: "inherit",
-              transform: "none",
-              borderColor: "transparent",
-            }}
-            _focus={{
-              boxShadow: "none",
-            }}
+            display="inline-block"
+            _hover={{ color: mainText }}
           >
             {brandText}
           </Link>
         </Box>
 
-        {/* This box contains the search + icons / hamburger.
-      On base we let it stretch/center; on md+ it sits on the right. */}
-
+        {/* RIGHT SIDE (Icons + Avatar) */}
         <Box
-          w={{ base: "100%", md: "auto" }}
-          ms={{ base: 0, md: "auto" }}
+          w={{ base: "auto", md: "auto" }}
+          ml={{ base: 0, md: "auto" }}
           display="flex"
           justifyContent={{ base: "center", md: "flex-end" }}
+          alignItems="center"
+          flex="0 0 auto"
         >
           <AdminNavbarLinks
             onOpen={props.onOpen}
@@ -154,6 +125,7 @@ export default function AdminNavbar(props) {
           />
         </Box>
       </Flex>
+
       {secondary ? <Text color="white">{message}</Text> : null}
     </Box>
   );

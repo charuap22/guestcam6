@@ -6,10 +6,16 @@ import { useLogout } from "../../hooks/useLogout";
 import { Text } from "@chakra-ui/react";
 import { useUserInfo } from "../../hooks/useUserInfo";
 import { AvatarInfo } from "../../components/AvatarInfo";
+
 const Menu = () => {
   const { authIsReady, user } = useAuthContext();
   const { logout, isPending } = useLogout();
   const { UserInfo } = useUserInfo();
+
+  // helper: decide if we should show a login link
+  const shouldShowLogin =
+    !user || user.isAnonymous || UserInfo?.role === "guest";
+
   return (
     <>
       {/* <!-- ttm-header-wrap --> */}
@@ -82,26 +88,33 @@ const Menu = () => {
                         <NavLink to="/pricing">Pricing</NavLink>
                       </li>
 
+                      {/* Admin-only links */}
                       <li>
-                        {!isPending && user && UserInfo.role === "Admin" && (
-                          <>
-                            <NavLink to="/dashboard">Dashboard</NavLink>
-                          </>
+                        {!isPending && user && UserInfo?.role === "Admin" && (
+                          <NavLink to="/dashboard">Dashboard</NavLink>
                         )}
                       </li>
                       <li>
-                        {!isPending && user && UserInfo.role === "Admin" && (
+                        {!isPending && user && UserInfo?.role === "Admin" && (
                           <>{user.displayName + ","}</>
                         )}
                       </li>
+
+                      {/* Login / Logout */}
                       <li>
-                        {!isPending && user && UserInfo.role === "Admin" && (
-                          <>
-                            <NavLink to="#" onClick={logout}>
-                              Logout
-                            </NavLink>
-                          </>
+                        {/* Show Logout for signed-in Admins */}
+                        {!isPending && user && UserInfo?.role === "Admin" && (
+                          <NavLink to="#" onClick={logout}>
+                            Logout
+                          </NavLink>
                         )}
+
+                        {/* Show Login for visitors, anonymous guests, or users with role 'guest' */}
+                        {shouldShowLogin && (
+                          <NavLink to="/login">Login</NavLink>
+                        )}
+
+                        {/* If not logged in at all, still show Login */}
                         {!user && <NavLink to="/login">Login</NavLink>}
                       </li>
                     </ul>

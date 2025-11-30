@@ -52,7 +52,7 @@ export const useSignup_Guest = () => {
       dispatch({ type: "LOGIN", payload: res.user });
 
       // ✅ Step 6: Redirect to Guest Dashboard
-      history.push(`/Guest/Dashboard/${eventId}`);
+      history.push(`/admin/guest-dashboard/${eventId}`);
 
       if (isActive) {
         setIsPending(false);

@@ -281,13 +281,25 @@ const Gallery = ({ guestMode = false, allowUpload = true }) => {
   const { changeEvent } = useEvent();
   const { deleteDocument } = useFirestore("gallery");
 
+  // -- NOTE: some useDocument hooks return an isPending/isLoading flag; try to capture it.
+  const {
+    document: eventDoc,
+    error: eventError,
+    isPending: eventLoadingRaw,
+  } = useDocument("events", id);
+
+  // normalize event loading flag: if hook doesn't return isPending, infer it
+  const eventLoading =
+    typeof eventLoadingRaw !== "undefined"
+      ? eventLoadingRaw
+      : !eventDoc && !eventError && !!id;
+
+  // collection can be large; we pass id directly (if id is falsy, the hook may still run — we guard rendering below)
   const {
     documents: images,
     error,
     isPending,
   } = useCollection("gallery", ["eventId", "==", id], ["createdAt", "desc"]);
-
-  const { document: eventDoc, error: eventError } = useDocument("events", id);
 
   useEffect(() => {
     if (id) changeEvent(id);
@@ -461,9 +473,6 @@ const Gallery = ({ guestMode = false, allowUpload = true }) => {
     if (imgs.length === 0) return alert("No images to download");
     setZipProcessing(true);
     try {
-      // Use folder-based zip if you prefer:
-      // await downloadFolderAsZip(`gallery/${id}`);
-      // Or build from urls:
       const items = imgs.map((i) => ({
         url: i.url,
         filename: i.filename || `${i.id}.jpg`,
@@ -483,7 +492,25 @@ const Gallery = ({ guestMode = false, allowUpload = true }) => {
   };
 
   // ---------------- UI ----------------
+
+  // Debug logging - helpful when intermittent "no event" happens
+  useEffect(() => {
+    console.debug("Gallery debug:", {
+      id,
+      eventDocPresent: !!eventDoc,
+      eventError,
+      eventLoading,
+      collectionPending: isPending,
+    });
+  }, [id, eventDoc, eventError, eventLoading, isPending]);
+
   if (error || eventError) {
+    console.error(
+      "Gallery collection error:",
+      error,
+      "Event error:",
+      eventError
+    );
     return (
       <Flex minH="80vh" align="center" justify="center" direction="column">
         <Text color="red.500" fontWeight="bold">
@@ -493,11 +520,34 @@ const Gallery = ({ guestMode = false, allowUpload = true }) => {
     );
   }
 
-  if (!eventDoc) {
+  // handle missing id (router) early — avoid calling hooks that might misbehave with undefined id
+  if (!id) {
     return (
       <Flex minH="80vh" align="center" justify="center">
         <Spinner size="xl" color="#d4af37" />
-        <Text ml={3}>Loading photos...</Text>
+        <Text ml={3}>Preparing gallery...</Text>
+      </Flex>
+    );
+  }
+
+  // show event loading spinner while useDocument is fetching
+  if (eventLoading) {
+    return (
+      <Flex minH="80vh" align="center" justify="center">
+        <Spinner size="xl" color="#d4af37" />
+        <Text ml={3}>Loading event...</Text>
+      </Flex>
+    );
+  }
+
+  // only after loading finished do we treat "no event found" as real absence
+  if (!eventDoc) {
+    return (
+      <Flex minH="80vh" align="center" justify="center" direction="column">
+        <Text fontWeight="bold">No event found</Text>
+        <Text fontSize="sm" color="gray.500">
+          Event id: {id}
+        </Text>
       </Flex>
     );
   }
@@ -511,7 +561,7 @@ const Gallery = ({ guestMode = false, allowUpload = true }) => {
       return img.createdByName;
     return "Guest";
   };
-
+  const pageTitle = "Photos"; // static
   return (
     <Box
       minH="100vh"

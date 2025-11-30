@@ -16,21 +16,30 @@ import GuestVideos from "./pages/GuestVideos";
 import Guestbook from "./pages/Guestbook";
 import LiveSlideshow from "./pages/LiveSlideshow";
 import GuestDashboard from "./pages/GuestDashboard";
+import DashboardSE from "./pages/DashboardSE";
+import CanvaTemplates from "./pages/CanvaTemplates";
 
 const routes = [
+  // {
+  //   name: "Dashboard",
+  //   layout: "/admin",
+  //   path: "/dashboard",
+  //   icon: <Icon as={MdHome} w="20px" h="20px" color="inherit" />,
+  //   component: <Dashboard />,
+  // },
   {
     name: "Dashboard",
     layout: "/admin",
     path: "/dashboard",
     icon: <Icon as={MdHome} w="20px" h="20px" color="inherit" />,
-    component: <Dashboard />,
+    component: <DashboardSE />,
   },
   {
-  path: "/guest-dashboard/:id",
-  name: "Guest Dashboard",
-  layout: "/admin",
-  component: <GuestDashboard />,
-},
+    path: "/guest-dashboard/:id",
+    name: "Guest Dashboard",
+    layout: "/admin",
+    component: <GuestDashboard />,
+  },
   {
     name: "Create Event",
     layout: "/admin",
@@ -59,7 +68,7 @@ const routes = [
     layout: "/admin",
     path: "/gallery/owner/:id",
     icon: <Icon as={MdEvent} w="20px" h="20px" color="inherit" />,
-    component: <Gallery />,
+    component: <Gallery  />,
   },
   {
     name: "Gallery (Guest)",
@@ -115,6 +124,12 @@ const routes = [
     name: "Live Slideshow (Embed)",
     layout: "/admin",
     component: <LiveSlideshow embed />,
+  },
+  {
+    path: "/canvatemplates",
+    name: "Canva Templates",
+    layout: "/admin",
+    component: <CanvaTemplates />,
   },
 ];
 

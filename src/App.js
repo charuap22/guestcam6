@@ -63,9 +63,9 @@ function App() {
             <Route exact path="/howitworks">
               <HowItWorks />
             </Route>
-            <Route exact path="/pricing">
+            {/* <Route exact path="/pricing">
               <PricingPage />
-            </Route>
+            </Route> */}
 
             <Route exact path="/dashboard">
               {!user && <Redirect to="/login" />}
@@ -218,10 +218,10 @@ function App() {
               {!user && <Signup />} */}
               <Signup />
             </Route>
-            {/* <Route path="/pricing">
+            <Route path="/pricing">
               {!user && <Redirect to="/login" />}
               {user && <Pricing />}
-            </Route> */}
+            </Route>
             <Route path="/success">
               {!user && <Redirect to="/login" />}
               {user && <SuccessPage />}

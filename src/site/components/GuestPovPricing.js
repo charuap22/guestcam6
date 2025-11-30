@@ -15,6 +15,7 @@ import {
   useColorModeValue,
 } from "@chakra-ui/react";
 import { CheckIcon } from "@chakra-ui/icons";
+import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 
 export default function GuestPovPricing() {
   // Light/dark support
@@ -180,20 +181,59 @@ export default function GuestPovPricing() {
                     : "For multi-day, large-scale celebrations."}
                 </Text>
 
-                <UnorderedList spacing={3} pl={4} styleType="none">
-                  {plan.features.map((feature, idx) => (
-                    <ListItem
-                      key={idx}
-                      display="flex"
-                      alignItems="center"
-                      gap={3}
-                    >
-                      <Icon as={CheckIcon} color={accentGold} boxSize={4} />
-                      <Text color="gray.700" fontSize="sm">
-                        {feature}
-                      </Text>
-                    </ListItem>
-                  ))}
+                {/* FEATURES: preserve DB order and align icon vertically */}
+                <UnorderedList spacing={3} pl={0} styleType="none" w="100%">
+                  {Object.keys(plan.metadata || {})
+                    .filter((k) => k.startsWith("feature_")) // keep only feature_ keys
+                    .map((featureKey, idx, arr) => {
+                      const value = plan.metadata?.[featureKey];
+                      const label = featureKey
+                        .replace(/^feature_/, "")
+                        .replace(/_/g, " ");
+                      const isLast = idx === arr.length - 1;
+                      return (
+                        <ListItem
+                          key={featureKey}
+                          display="flex"
+                          alignItems="center"
+                          gap={3}
+                          px={2}
+                          py={3}
+                          borderBottom={
+                            isLast ? "none" : "1px solid rgba(0,0,0,0.03)"
+                          }
+                        >
+                          {/* circular halo that keeps icon vertically centered */}
+                          <Box
+                            bg="rgba(197,165,114,0.12)"
+                            p={2}
+                            borderRadius="full"
+                            minW="36px"
+                            minH="36px"
+                            display="flex"
+                            alignItems="center"
+                            justifyContent="center"
+                            flex="0 0 36px"
+                          >
+                            <Icon
+                              as={value === "1" ? FaCheckCircle : FaTimesCircle}
+                              color={value === "1" ? accentGold : "red.500"}
+                              boxSize={4}
+                            />
+                          </Box>
+
+                          {/* feature text aligned to the icon center */}
+                          <Text
+                            fontSize="sm"
+                            color="gray.700"
+                            lineHeight="1.2"
+                            pl={1}
+                          >
+                            {label}
+                          </Text>
+                        </ListItem>
+                      );
+                    })}
                 </UnorderedList>
 
                 <Button
@@ -224,4 +264,4 @@ export default function GuestPovPricing() {
       </Flex>
     </Box>
   );
-}
+} 

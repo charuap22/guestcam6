@@ -182,7 +182,7 @@ const CanvaTemplates = () => {
     <>
       <Flex
         textAlign={"center"}
-        pt={10}
+        mt={20}
         justifyContent={"center"}
         direction={"column"}
         width={"full"}

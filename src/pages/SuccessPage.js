@@ -112,9 +112,9 @@ const SuccessPage = () => {
         updatePlan({
           planId,
           planName,
-          price,
-          NoOfGuests_start: sessionData.metadata.NoOfGuests_start || "0",
-          NoOfGuests_end: sessionData.metadata.NoOfGuests_end || "Unlimited",
+          price
+          // NoOfGuests_start: sessionData.metadata.NoOfGuests_start || "0",
+          // NoOfGuests_end: sessionData.metadata.NoOfGuests_end || "Unlimited",
         });
 
         setUserData({
@@ -131,7 +131,7 @@ const SuccessPage = () => {
 
         // ✅ Redirect to Dashboard after 3 seconds
         setTimeout(() => {
-          // history.push("/dashboard");
+           history.push("/admin/dashboard");
         }, 3000);
       } catch (error) {
         console.error("🔥 Error:", error.message);
@@ -202,7 +202,7 @@ const SuccessPage = () => {
       <p style={{ fontSize: "14px", marginTop: "10px", color: "#999" }}>
         If you are not redirected,{" "}
         <a
-          href="/dashboard"
+          href="/admin/dashboard"
           style={{ color: "#007bff", textDecoration: "none" }}
         >
           click here

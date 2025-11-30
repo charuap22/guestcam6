@@ -147,8 +147,8 @@ export default function AdminLayout(props) {
   return (
     <ChakraProvider theme={horizonTheme}>
       <Box>
-        <SidebarProvider>
-          <Sidebar routes={routes} display="none" {...rest} />
+        {/* <SidebarProvider> */}
+          {/* <Sidebar routes={routes} display="none" {...rest} /> */}
           <Box
             float="right"
             minHeight="100vh"
@@ -188,7 +188,7 @@ export default function AdminLayout(props) {
               <Footer />
             </Box>
           </Box>
-        </SidebarProvider>
+        {/* </SidebarProvider> */}
       </Box>
     </ChakraProvider>
   );

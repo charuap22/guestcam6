@@ -51,7 +51,7 @@ const EditEvent = () => {
   const [category, setCategory] = useState("");
   const [customCategory, setCustomCategory] = useState("");
   const [dateOfEvent, setDateOfEvent] = useState("");
-  const [noOfGuests, setNoOfGuests] = useState("");
+ 
   const [location, setLocation] = useState("");
   const [sharePictures, setSharePictures] = useState(true);
   const [shareGuestbook, setShareGuestbook] = useState(true);
@@ -64,7 +64,7 @@ const EditEvent = () => {
       setFeatureImage(event.featureImage);
       setCategory(event.category);
       setDateOfEvent(event.dateOfEvent.toDate().toISOString().split("T")[0]);
-      setNoOfGuests(event.noOfGuests);
+    
       setLocation(event.location);
       setSharePictures(event.sharePictures);
       setShareGuestbook(event.shareGuestbook);
@@ -99,7 +99,7 @@ const EditEvent = () => {
         featureImage: imageURL,
         category: category === "other" ? customCategory : category,
         dateOfEvent: timestamp.fromDate(new Date(dateOfEvent)),
-        noOfGuests,
+       
         location,
         sharePictures,
         shareGuestbook,
@@ -133,8 +133,8 @@ const EditEvent = () => {
   }
 
   return (
-    <Flex direction="column" align="center" bg="gray.50" minH="100vh" p={6}>
-      <Box rounded="lg" bg="white" boxShadow="lg" p={8} width="full">
+    <Flex direction="column" align="center" bg="gray.50" minH="100vh" p={6} mt={20}>
+      <Box rounded="lg" bg="white" boxShadow="lg" p={8}  mt={3} width="full">
         <Stack spacing={0}>
           <Heading fontSize={"xl"} mb={2}>
             Edit Event
@@ -253,19 +253,7 @@ const EditEvent = () => {
                     />
                   </FormControl>
                 </Box>
-                <Box>
-                  <FormControl>
-                    <FormLabel>Number of Guests</FormLabel>
-                    <Input
-                      type="number"
-                      min={1}
-                      required
-                      onChange={(e) => setNoOfGuests(e.target.value)}
-                      value={noOfGuests}
-                      placeholder="e.g., 100"
-                    />
-                  </FormControl>
-                </Box>
+                
               </SimpleGrid>
               <Button type="submit" bg="yellow.400" color="white" mt={5}>
                 {!isPending ? "Update Event" : "Updating..."}
