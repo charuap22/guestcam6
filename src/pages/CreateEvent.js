@@ -168,7 +168,7 @@ const CreateEvent = () => {
           eventPageHeader,
           featureImage: imageURL,
           location,
-          noOfGuests,
+          // noOfGuests,
           shareGuestbook,
           sharePictures,
           siteCloses: timestamp.fromDate(
@@ -547,7 +547,7 @@ const CreateEvent = () => {
                       />
                     </FormControl>
                   </Box>
-                  <Box>
+                  {/* <Box>
                     <FormControl
                       id="noOfGuests"
                       isInvalid={noOfGuests > currentPlan?.guestEnd}
@@ -570,7 +570,7 @@ const CreateEvent = () => {
                         </Text>
                       )}
                     </FormControl>
-                  </Box>
+                  </Box> */}
                   <Box>
                     <FormControl id="Location">
                       <FormLabel>Location</FormLabel>
@@ -582,7 +582,7 @@ const CreateEvent = () => {
                     </FormControl>
                   </Box>
 
-                  <Box>
+                  {/* <Box>
                     <FormControl display="flex" alignItems="center">
                       <FormLabel htmlFor="share-pictures" mb="0">
                         Share pictures with guests?
@@ -610,7 +610,7 @@ const CreateEvent = () => {
                         isDisabled={false}
                       />
                     </FormControl>
-                  </Box>
+                  </Box> */}
                 </SimpleGrid>
                 <br></br>
                 <Button

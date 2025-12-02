@@ -137,10 +137,20 @@ export default function DashboardSE() {
   }, [userEvents, changeEvent]);
 
   const handleEdit = (id) => history.push(`/admin/edit-event/${id}`);
+  // map role -> URL segment. Admin -> owner, otherwise use lower-cased role (fallback to "guest")
+  const mapRoleForUrl = (role) => {
+    if (!role) return "guest";
+    const r = String(role).trim().toLowerCase();
+    if (r === "admin" || r === "administrator") return "owner";
+    return r;
+  };
+
   const gotoGallery = (role, id) =>
-    history.push(`/admin/gallery/${role}/${id}`);
-  const gotoVideos = (role, id) => history.push(`/videos/${role}/${id}`);
-  const gotoGuestbook = (role, id) => history.push(`/guestbook/${role}/${id}`);
+    history.push(`/admin/gallery/${mapRoleForUrl(role)}/${id}`);
+  const gotoVideos = (role, id) =>
+    history.push(`/videos/${mapRoleForUrl(role)}/${id}`);
+  const gotoGuestbook = (role, id) =>
+    history.push(`/guestbook/${mapRoleForUrl(role)}/${id}`);
 
   const downloadQR = () => {
     const canvas = document.getElementById("qr-canvas");
@@ -761,6 +771,10 @@ export default function DashboardSE() {
                   bgGradient={GRADIENT}
                   color="white"
                   fontWeight={800}
+                  _hover={{
+                    color: "white",
+                    opacity: 0.92,
+                  }}
                 >
                   Photos
                 </Button>
@@ -774,6 +788,10 @@ export default function DashboardSE() {
                   bgGradient={GRADIENT}
                   color="white"
                   fontWeight={800}
+                  _hover={{
+                    color: "white",
+                    opacity: 0.92,
+                  }}
                 >
                   Videos
                 </Button>
@@ -787,6 +805,10 @@ export default function DashboardSE() {
                   bgGradient={GRADIENT}
                   color="white"
                   fontWeight={800}
+                  _hover={{
+                    color: "white",
+                    opacity: 0.92,
+                  }}
                 >
                   Guestbook
                 </Button>
@@ -860,13 +882,13 @@ export default function DashboardSE() {
         <AlertDialogOverlay />
         <AlertDialogContent>
           <AlertDialogHeader fontSize="lg" fontWeight="bold">
-            Open Guest Link in Isolated Mode?
+            Open Guest Link ?
           </AlertDialogHeader>
 
           <AlertDialogBody>
             <strong>
-              You will be logged out of your admin session in the new window and
-              redirected to the guest login page.
+              You will be redirected to the guest login page and after logging
+              in as guest you will be logged out of your admin session.
             </strong>
             <br />
             <br />
@@ -886,11 +908,7 @@ export default function DashboardSE() {
               onClick={() => {
                 setIsTestConfirmOpen(false);
 
-                window.open(
-                  `http://localhost:3000/guest_login/${firstEvent.id}`,
-                  "_blank",
-                  "noopener,noreferrer"
-                );
+                window.location.href = `/guest_login/${firstEvent.id}`;
               }}
             >
               Continue

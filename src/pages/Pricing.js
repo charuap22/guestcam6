@@ -18,15 +18,15 @@ import {
   Tooltip,
   useToast,
 } from "@chakra-ui/react";
-import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 import { projectFirestore, projectAuth } from "../firebase/config";
 import { CheckIcon } from "@chakra-ui/icons";
+import { usePlan } from "../context/PlanContext";
+import { useHistory } from "react-router-dom";
 
 export default function GuestPovPricing() {
   // Light/dark support
   const bg = useColorModeValue("gray.50", "gray.900");
   const cardBg = useColorModeValue("white", "gray.800");
-  // Move hook calls to top-level to keep hook order stable
   const headingColor = useColorModeValue("gray.800", "gray.100");
   const accentGold = "#C5A572"; // warm gold tone
   const borderGold = "rgba(197, 165, 114, 0.4)";
@@ -37,6 +37,16 @@ export default function GuestPovPricing() {
   const [loadingPlan, setLoadingPlan] = useState(null);
   const [currentSubscription, setCurrentSubscription] = useState(null);
   const toast = useToast();
+  const history = useHistory();
+
+  // Plan context (optional) — used to update client state immediately after demo activation
+  let updatePlan = null;
+  try {
+    const planCtx = usePlan();
+    updatePlan = planCtx?.updatePlan || null;
+  } catch (err) {
+    updatePlan = null;
+  }
 
   useEffect(() => {
     const fetchData = async () => {
@@ -44,7 +54,9 @@ export default function GuestPovPricing() {
         const user = projectAuth.currentUser;
 
         // fetch products from Firestore (products collection)
-        const plansSnapshot = await projectFirestore.collection("products").get();
+        const plansSnapshot = await projectFirestore
+          .collection("products")
+          .get();
 
         // fetch latest purchase for current user
         let purchaseSnapshot = null;
@@ -64,9 +76,18 @@ export default function GuestPovPricing() {
             if (!data.active) return null;
 
             const pricesSnap = await doc.ref.collection("prices").get();
-            const prices = pricesSnap.docs.map((p) => ({ id: p.id, ...p.data() }));
+            const prices = pricesSnap.docs.map((p) => ({
+              id: p.id,
+              ...p.data(),
+            }));
 
-            return { id: doc.id, name: data.name, description: data.description, metadata: data.metadata || {}, prices };
+            return {
+              id: doc.id,
+              name: data.name,
+              description: data.description,
+              metadata: data.metadata || {},
+              prices,
+            };
           })
         );
 
@@ -79,7 +100,11 @@ export default function GuestPovPricing() {
         );
       } catch (err) {
         console.error("Error fetching plans:", err);
-        toast({ title: "Error", description: "Failed to load plans.", status: "error" });
+        toast({
+          title: "Error",
+          description: "Failed to load plans.",
+          status: "error",
+        });
       } finally {
         setLoading(false);
       }
@@ -90,7 +115,12 @@ export default function GuestPovPricing() {
 
   const handleCheckout = async (user, priceId, productKey, price) => {
     if (!user || !user.uid) {
-      toast({ title: "Sign in required", description: "Please sign in to purchase.", status: "info", duration: 3000 });
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to purchase.",
+        status: "info",
+        duration: 3000,
+      });
       return;
     }
 
@@ -99,18 +129,28 @@ export default function GuestPovPricing() {
     const currentPlanPrice = parseFloat(currentSubscription?.price || 0);
 
     if (currentSubscription?.planId === productKey) {
-      toast({ title: "Already subscribed", description: "You are already subscribed to this plan.", status: "info" });
+      toast({
+        title: "Already subscribed",
+        description: "You are already subscribed to this plan.",
+        status: "info",
+      });
       return;
     }
 
     if (currentSubscription && newPrice < currentPlanPrice) {
-      toast({ title: "Downgrade not allowed", description: "Downgrades are not supported.", status: "warning" });
+      toast({
+        title: "Downgrade not allowed",
+        description: "Downgrades are not supported.",
+        status: "warning",
+      });
       return;
     }
 
     const extraAmount = (newPrice - currentPlanPrice).toFixed(2);
     if (currentSubscription && currentSubscription.planId) {
-      const confirmUpgrade = window.confirm(`Upgrading: You will be charged an additional $${extraAmount}. Continue?`);
+      const confirmUpgrade = window.confirm(
+        `Upgrading: You will be charged an additional $${extraAmount}. Continue?`
+      );
       if (!confirmUpgrade) return;
     }
 
@@ -134,13 +174,24 @@ export default function GuestPovPricing() {
           {
             price_data: {
               currency: "usd",
-              product_data: { name: currentSubscription ? `Upgrade to ${newPlan.name}` : `${newPlan.name}` },
+              product_data: {
+                name: currentSubscription
+                  ? `Upgrade to ${newPlan.name}`
+                  : `${newPlan.name}`,
+              },
               unit_amount: Math.round(extraAmount * 100),
             },
             quantity: 1,
           },
         ],
-        metadata: { userId: user.uid, planId: productKey, planName: newPlan.name, price, upgrade: currentSubscription ? "true" : "false", oldPlanId: currentSubscription?.planId || "" },
+        metadata: {
+          userId: user.uid,
+          planId: productKey,
+          planName: newPlan.name,
+          price,
+          upgrade: currentSubscription ? "true" : "false",
+          oldPlanId: currentSubscription?.planId || "",
+        },
       });
 
       const checkSessionURL = async () => {
@@ -161,7 +212,114 @@ export default function GuestPovPricing() {
       await checkSessionURL();
     } catch (err) {
       console.error(err);
-      toast({ title: "Error", description: "Failed to start checkout.", status: "error" });
+      toast({
+        title: "Error",
+        description: "Failed to start checkout.",
+        status: "error",
+      });
+    } finally {
+      setLoadingPlan(null);
+    }
+  };
+
+  /**
+   * DEMO FLOW (no charge)
+   * - writes a demo purchase doc in customers/{uid}/purchases
+   * - updates users/{uid} with plan info
+   * - optionally updates client PlanContext if available
+   * - redirects to /admin/dashboard on success
+   */
+  const handleActivateDemo = async (productKey, planName, priceAmount = 0) => {
+    const user = projectAuth.currentUser;
+    if (!user || !user.uid) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to activate a demo plan.",
+        status: "info",
+        duration: 3000,
+      });
+      return;
+    }
+
+    setLoadingPlan(productKey);
+    try {
+      const purchasedAt = new Date();
+      const subscriptionEndDate = new Date(purchasedAt);
+      // Demo duration: 7 days (adjust if needed)
+      subscriptionEndDate.setDate(subscriptionEndDate.getDate() + 7);
+
+      const userRef = projectFirestore.collection("users").doc(user.uid);
+      const purchaseRef = projectFirestore
+        .collection("customers")
+        .doc(user.uid)
+        .collection("purchases")
+        .doc(); // auto ID
+
+      // Update user doc and add purchase doc
+      await userRef.set(
+        {
+          planId: productKey,
+          planName,
+          price: 0,
+          subscribedOn: purchasedAt,
+          subscriptionEndDate,
+          subscriptionStatus: "active",
+          demo: true,
+        },
+        { merge: true }
+      );
+
+      await purchaseRef.set({
+        planId: productKey,
+        planName,
+        price: 0,
+        purchasedAt,
+        subscriptionEndDate,
+        previousPlanId: currentSubscription?.planId || null,
+        status: "demo",
+        demo: true,
+      });
+
+      // Try updating PlanContext if available
+      try {
+        if (updatePlan) {
+          updatePlan({
+            planId: productKey,
+            planName,
+            price: 0,
+            demo: true,
+          });
+        }
+      } catch (err) {
+        console.warn("PlanContext not available or updatePlan failed:", err);
+      }
+
+      toast({
+        title: "Demo activated",
+        description: `Demo for "${planName}" is active for 7 days.`,
+        status: "success",
+        duration: 3000,
+      });
+
+      // Update local state so UI reflects new subscription immediately
+      setCurrentSubscription({
+        planId: productKey,
+        planName,
+        price: 0,
+        purchasedAt,
+        subscriptionEndDate,
+        status: "demo",
+      });
+
+      // Redirect user to dashboard
+      history.push("/admin/dashboard");
+    } catch (err) {
+      console.error("Demo activation failed:", err);
+      toast({
+        title: "Error",
+        description: "Failed to activate demo plan.",
+        status: "error",
+      });
     } finally {
       setLoadingPlan(null);
     }
@@ -172,7 +330,17 @@ export default function GuestPovPricing() {
     return (
       <Flex wrap="wrap" justify="center" width="100%" p={6}>
         {[...Array(3)].map((_, i) => (
-          <Box key={i} borderWidth="1px" borderRadius="lg" p={6} m={4} width={{ base: "100%", md: "320px" }} boxShadow="lg" textAlign="left" bg={cardBg}>
+          <Box
+            key={i}
+            borderWidth="1px"
+            borderRadius="lg"
+            p={6}
+            m={4}
+            width={{ base: "100%", md: "320px" }}
+            boxShadow="lg"
+            textAlign="left"
+            bg={cardBg}
+          >
             <Skeleton height="20px" width="60%" mb={4} />
             <SkeletonText mt="4" noOfLines={4} spacing="4" />
             <Skeleton height="40px" width="100%" mt={4} borderRadius="md" />
@@ -187,32 +355,49 @@ export default function GuestPovPricing() {
       <Flex maxW="1200px" mx="auto" direction="column" gap={6} align="stretch">
         {/* Header */}
         <VStack spacing={3} align="center" mb={6}>
-          <Badge color={textGold} border={`1px solid ${borderGold}`} px={3} py={1} borderRadius="full">
+          <Badge
+            color={textGold}
+            border={`1px solid ${borderGold}`}
+            px={3}
+            py={1}
+            borderRadius="full"
+          >
             GuestPov
           </Badge>
           <Heading as="h2" size="xl" lineHeight={1.05} color={headingColor}>
             Pricing Plans
           </Heading>
           <Text color="gray.600" maxW="720px" textAlign="center">
-            Simple, transparent pricing for events of any size. Create galleries, add albums for separate occasions, and download each album separately.
+            Simple, transparent pricing for events of any size. Create
+            galleries, add albums for separate occasions, and download each
+            album separately.
           </Text>
         </VStack>
 
         {/* Pricing Grid */}
-        <Stack direction={{ base: "column", md: "row" }} spacing={{ base: 6, md: 8 }} align="stretch">
+        <Stack
+          direction={{ base: "column", md: "row" }}
+          spacing={{ base: 6, md: 8 }}
+          align="stretch"
+        >
           {plans.map((plan) => {
             const priceObj = plan.prices?.[0];
-            const amount = priceObj ? (priceObj.unit_amount / 100).toFixed(0) : "N/A";
+            const amount = priceObj
+              ? (priceObj.unit_amount / 100).toFixed(0)
+              : "N/A";
 
-            // extract feature_ keys and strip prefix
             const featureEntries = Object.entries(plan.metadata || {})
               .filter(([k]) => k.startsWith("feature_"))
               .map(([k, v]) => [k.replace(/^feature_/, ""), v]);
 
-            const isCurrentPlan = currentSubscription && currentSubscription.planId === plan.id;
-            const currentPlanPrice = currentSubscription ? parseFloat(currentSubscription.price) : 0;
+            const isCurrentPlan =
+              currentSubscription && currentSubscription.planId === plan.id;
+            const currentPlanPrice = currentSubscription
+              ? parseFloat(currentSubscription.price)
+              : 0;
             const newPlanPrice = priceObj ? priceObj.unit_amount / 100 : 0;
-            const isDowngrade = currentSubscription && newPlanPrice < currentPlanPrice;
+            const isDowngrade =
+              currentSubscription && newPlanPrice < currentPlanPrice;
 
             return (
               <Box
@@ -238,7 +423,8 @@ export default function GuestPovPricing() {
                   boxShadow: "0 30px 45px rgba(0,0,0,0.12)",
                 }}
               >
-                {plan.metadata?.recommended && (
+                {/* Recommended badge — keep it but move to left when current plan also exists */}
+                {plan.metadata?.recommended && !isCurrentPlan && (
                   <Badge
                     position="absolute"
                     top={4}
@@ -251,6 +437,39 @@ export default function GuestPovPricing() {
                     py={1}
                   >
                     Recommended
+                  </Badge>
+                )}
+
+                {plan.metadata?.recommended && isCurrentPlan && (
+                  <Badge
+                    position="absolute"
+                    top={4}
+                    left={4} // shift to left so it doesn't overlap the Current Plan badge
+                    bg={accentGold}
+                    color="white"
+                    fontWeight={700}
+                    borderRadius="full"
+                    px={3}
+                    py={1}
+                  >
+                    Recommended
+                  </Badge>
+                )}
+
+                {/* Current Plan badge at top-right */}
+                {isCurrentPlan && (
+                  <Badge
+                    position="absolute"
+                    top={4}
+                    right={4}
+                    bg="#38A169" // green to distinguish current plan (you can use accentGold if you prefer)
+                    color="white"
+                    fontWeight={700}
+                    borderRadius="full"
+                    px={3}
+                    py={1}
+                  >
+                    Current Plan
                   </Badge>
                 )}
 
@@ -291,14 +510,10 @@ export default function GuestPovPricing() {
                         : "For multi-day, large-scale celebrations.")}
                   </Text>
 
-                  {/* FEATURES: preserve DB order and align icon vertically */}
-                  {/* FEATURES — ONLY feature_ keys, FIXED ORDER, EXACT DB TEXT */}
-                  {/* FEATURES — only feature_ keys, fixed order, tolerant matching, show exact DB text */}
                   <UnorderedList spacing={2} pl={0} styleType="none" w="100%">
                     {(() => {
                       const meta = plan.metadata || {};
 
-                      // canonical order you want (human-friendly labels are only for matching; we display DB values)
                       const canonicalOrder = [
                         "feature_Main Gallery",
                         "feature_Design Themes",
@@ -306,17 +521,15 @@ export default function GuestPovPricing() {
                         "feature_Month Download Window",
                       ];
 
-                      // Normalizer: lower-case, remove feature_ prefix, remove punctuation/underscores/plurals/spaces for tolerant match
                       const normalizeKey = (k) =>
                         String(k || "")
-                          .toLowerCase()  
-                          .replace(/^feature_/, "") // drop prefix
-                          .replace(/[\-_\.]/g, " ") // normalize separators
-                          .replace(/\bmonths?\b/, "month") // months -> month
-                          .replace(/\s+/g, " ") // collapse whitespace
+                          .toLowerCase()
+                          .replace(/^feature_/, "")
+                          .replace(/[\-_\.]/g, " ")
+                          .replace(/\bmonths?\b/, "month")
+                          .replace(/\s+/g, " ")
                           .trim();
 
-                      // Build map of normalized -> original feature_ key for only feature_ keys
                       const featureKeys = Object.keys(meta).filter((k) =>
                         k.startsWith("feature_")
                       );
@@ -325,21 +538,17 @@ export default function GuestPovPricing() {
                         return acc;
                       }, {});
 
-                      // For each canonical slot, try to find a matching normalized key in DB
                       const availableKeysInOrder = canonicalOrder
                         .map((canon) => {
                           const canonNorm = normalizeKey(canon);
-                          // direct match
                           if (canonNorm in normMap) return normMap[canonNorm];
-
-                          // try fuzzy: find any normalized key that includes canonNorm or vice-versa
                           const found = Object.keys(normMap).find(
                             (nk) =>
                               nk.includes(canonNorm) || canonNorm.includes(nk)
                           );
                           return found ? normMap[found] : null;
                         })
-                        .filter(Boolean); // drop not-found
+                        .filter(Boolean);
 
                       return availableKeysInOrder.map((key, index) => (
                         <ListItem
@@ -367,7 +576,6 @@ export default function GuestPovPricing() {
                             <Icon as={CheckIcon} color="white" boxSize={3} />
                           </Box>
 
-                          {/* show EXACT text stored in DB for this feature_* key */}
                           <Text fontSize="md" color="gray.700" pl={1} mt={3}>
                             {meta[key]}
                           </Text>
@@ -376,64 +584,83 @@ export default function GuestPovPricing() {
                     })()}
                   </UnorderedList>
 
-                  {/* Hide Buy button if logged out */}
-                  {/* Hide Buy button when logged out */}
-                  {!projectAuth.currentUser ? (
-                    <Button
-                      mt={3}
-                      size="lg"
-                      width="full"
-                      borderRadius="full"
-                      bg="gray.300"
-                      color="gray.600"
-                      border={`2px solid ${accentGold}`}
-                      cursor="not-allowed"
-                    >
-                      Sign in to continue
-                    </Button>
-                  ) : (
-                    <Tooltip
-                      label={isDowngrade ? "Downgrade is not allowed" : ""}
-                      isDisabled={!isDowngrade}
-                    >
+                  {/* ACTIONS: Buy, Demo */}
+                  <HStack width="100%" spacing={3}>
+                    {!projectAuth.currentUser ? (
                       <Button
                         mt={3}
                         size="lg"
                         width="full"
                         borderRadius="full"
-                        bg={
-                          plan.metadata?.recommended
-                            ? accentGold
-                            : "transparent"
-                        }
-                        color={
-                          plan.metadata?.recommended ? "white" : accentGold
-                        }
+                        bg="gray.300"
+                        color="gray.600"
                         border={`2px solid ${accentGold}`}
-                        _hover={{
-                          bg: plan.metadata?.recommended
-                            ? "#b89350"
-                            : accentGold,
-                          color: "white",
-                        }}
-                        transition="all 0.3s ease"
-                        isDisabled={isCurrentPlan || isDowngrade}
-                        onClick={() =>
-                          handleCheckout(
-                            projectAuth.currentUser,
-                            priceObj?.id,
-                            plan.id,
-                            amount
-                          )
-                        }
-                        isLoading={loadingPlan === plan.id}
+                        cursor="not-allowed"
                       >
-                        {loadingPlan === plan.id
-                          ? "Redirecting..."
-                          : plan.metadata?.cta_text || "Choose"}
+                        Sign in to continue
                       </Button>
-                    </Tooltip>
-                  )}
+                    ) : (
+                      <Tooltip
+                        label={isDowngrade ? "Downgrade is not allowed" : ""}
+                        isDisabled={!isDowngrade}
+                      >
+                        <Button
+                          mt={3}
+                          size="lg"
+                          width="full"
+                          borderRadius="full"
+                          bg={
+                            plan.metadata?.recommended
+                              ? accentGold
+                              : "transparent"
+                          }
+                          color={
+                            plan.metadata?.recommended ? "white" : accentGold
+                          }
+                          border={`2px solid ${accentGold}`}
+                          _hover={{
+                            bg: plan.metadata?.recommended
+                              ? "#b89350"
+                              : accentGold,
+                            color: "white",
+                          }}
+                          transition="all 0.3s ease"
+                          isDisabled={isCurrentPlan || isDowngrade}
+                          onClick={() =>
+                            handleCheckout(
+                              projectAuth.currentUser,
+                              priceObj?.id,
+                              plan.id,
+                              amount
+                            )
+                          }
+                          isLoading={loadingPlan === plan.id}
+                        >
+                          {loadingPlan === plan.id
+                            ? "Redirecting..."
+                            : plan.metadata?.cta_text || "Choose"}
+                        </Button>
+                      </Tooltip>
+                    )}
+                  </HStack>
+
+                  {/* Secondary actions row: Demo */}
+                  <HStack width="100%" spacing={3} mt={2}>
+                    <Button
+                      width="full"
+                      size="sm"
+                      borderRadius="full"
+                      variant="outline"
+                      border={`1px solid ${borderGold}`}
+                      onClick={() =>
+                        handleActivateDemo(plan.id, plan.name, amount)
+                      }
+                      isLoading={loadingPlan === plan.id}
+                      isDisabled={!projectAuth.currentUser || isCurrentPlan}
+                    >
+                      Activate Demo (no charge)
+                    </Button>
+                  </HStack>
                 </VStack>
               </Box>
             );
@@ -441,7 +668,8 @@ export default function GuestPovPricing() {
         </Stack>
 
         <Text fontSize="sm" color="gray.500" mt={6} textAlign="center">
-          Prices shown in USD. All plans include secure storage and downloadable albums for every event.
+          Prices shown in USD. All plans include secure storage and downloadable
+          albums for every event.
         </Text>
       </Flex>
     </Box>

@@ -1,11 +1,10 @@
+// src/components/header/Menu.jsx
 import React from "react";
-import { useHistory, NavLink, Link } from "react-router-dom";
-import { AvatarInfo_Mobile } from "../../components/AvatarInfo_Mobile";
+import { useHistory, NavLink } from "react-router-dom";
 import { useAuthContext } from "../../hooks/useAuthContext";
 import { useLogout } from "../../hooks/useLogout";
 import { Text } from "@chakra-ui/react";
 import { useUserInfo } from "../../hooks/useUserInfo";
-import { AvatarInfo } from "../../components/AvatarInfo";
 
 const Menu = () => {
   const { authIsReady, user } = useAuthContext();
@@ -13,8 +12,9 @@ const Menu = () => {
   const { UserInfo } = useUserInfo();
 
   // helper: decide if we should show a login link
+  // show login when no user, or the user is anonymous, or role === 'guest'
   const shouldShowLogin =
-    !user || user.isAnonymous || UserInfo?.role === "guest";
+    !user || user.isAnonymous || (UserInfo && UserInfo.role === "guest");
 
   return (
     <>
@@ -30,14 +30,14 @@ const Menu = () => {
               <div className="container">
                 {/* <!-- site-branding --> */}
                 <div className="site-branding">
-                  <Link to="/">
+                  <NavLink to="/">
                     <img
                       id="logo-img"
                       className="img-center"
-                      src="images/GuestPOV.svg"
+                      src="/images/GuestPOV.svg"
                       alt="logo-img"
                     />
-                  </Link>
+                  </NavLink>
                 </div>
                 {/* <!-- site-branding end --> */}
 
@@ -54,6 +54,7 @@ const Menu = () => {
                       <span className="toggle-block toggle-blocks-3"></span>
                     </label>
                   </div>
+
                   <nav id="menu" className="menu">
                     <ul className="dropdown">
                       <li className="active">
@@ -100,22 +101,23 @@ const Menu = () => {
                         )}
                       </li>
 
-                      {/* Login / Logout */}
-                      <li>
-                        {/* Show Logout for signed-in Admins */}
-                        {!isPending && user && UserInfo?.role === "Admin" && (
-                          <NavLink to="#" onClick={logout}>
+                      {/* ---------- Right-side actions (Login/Logout) ---------- */}
+                      <li className="menu-right">
+                        {/* If ADMIN is logged in → show Logout */}
+                        {user && UserInfo?.role === "Admin" ? (
+                          <a
+                            href="#"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              logout();
+                            }}
+                          >
                             Logout
-                          </NavLink>
-                        )}
-
-                        {/* Show Login for visitors, anonymous guests, or users with role 'guest' */}
-                        {shouldShowLogin && (
+                          </a>
+                        ) : (
+                          /* Otherwise show Login (visitors, guests, anonymous users) */
                           <NavLink to="/login">Login</NavLink>
                         )}
-
-                        {/* If not logged in at all, still show Login */}
-                        {!user && <NavLink to="/login">Login</NavLink>}
                       </li>
                     </ul>
                   </nav>
