@@ -3,18 +3,53 @@ import React from "react";
 import { useHistory, NavLink } from "react-router-dom";
 import { useAuthContext } from "../../hooks/useAuthContext";
 import { useLogout } from "../../hooks/useLogout";
-import { Text } from "@chakra-ui/react";
+import { Spinner, useToast, Box } from "@chakra-ui/react";
 import { useUserInfo } from "../../hooks/useUserInfo";
 
 const Menu = () => {
   const { authIsReady, user } = useAuthContext();
   const { logout, isPending } = useLogout();
   const { UserInfo } = useUserInfo();
+  const history = useHistory();
+  const toast = useToast();
+
+  // Quick, deterministic display name to avoid layout flicker:
+  const computeDisplayName = () => {
+    if (UserInfo?.displayName) return UserInfo.displayName;
+    if (user?.displayName) return user.displayName;
+    if (user?.email) return user.email.split("@")[0];
+    return "Guest";
+  };
+  const displayNameLocal = computeDisplayName();
 
   // helper: decide if we should show a login link
   // show login when no user, or the user is anonymous, or role === 'guest'
   const shouldShowLogin =
     !user || user.isAnonymous || (UserInfo && UserInfo.role === "guest");
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+
+      toast({
+        title: "Signed out",
+        status: "success",
+        duration: 2500,
+        isClosable: true,
+      });
+
+      // replace so back button doesn't return to a protected page
+      history.replace("/login");
+    } catch (err) {
+      toast({
+        title: "Sign out failed",
+        description: err?.message || "Could not sign out. Try again.",
+        status: "error",
+        duration: 4000,
+        isClosable: true,
+      });
+    }
+  };
 
   return (
     <>
@@ -92,12 +127,20 @@ const Menu = () => {
                       {/* Admin-only links */}
                       <li>
                         {!isPending && user && UserInfo?.role === "Admin" && (
-                          <NavLink to="/dashboard">Dashboard</NavLink>
+                          <NavLink to="/admin/dashboard">Dashboard</NavLink>
                         )}
                       </li>
                       <li>
                         {!isPending && user && UserInfo?.role === "Admin" && (
-                          <>{user.displayName + ","}</>
+                          // show a reserved space for the name to avoid jumps
+                          <Box
+                            as="span"
+                            className="username"
+                            style={{ minWidth: 120, display: "inline-block" }}
+                          >
+                            {displayNameLocal}
+                            {!authIsReady && <Spinner size="xs" ml={2} />}
+                          </Box>
                         )}
                       </li>
 
@@ -105,15 +148,29 @@ const Menu = () => {
                       <li className="menu-right">
                         {/* If ADMIN is logged in → show Logout */}
                         {user && UserInfo?.role === "Admin" ? (
-                          <a
-                            href="#"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              logout();
+                          <button
+                            type="button"
+                            onClick={handleLogout}
+                            disabled={isPending}
+                            aria-disabled={isPending}
+                            aria-busy={isPending}
+                            style={{
+                              background: "transparent",
+                              border: "none",
+                              padding: 0,
+                              cursor: isPending ? "default" : "pointer",
+                              color: isPending ? "#888" : "inherit",
+                              textDecoration: "underline",
                             }}
                           >
-                            Logout
-                          </a>
+                            {isPending ? (
+                              <>
+                                <Spinner size="xs" mr={2} /> Signing out...
+                              </>
+                            ) : (
+                              "Logout"
+                            )}
+                          </button>
                         ) : (
                           /* Otherwise show Login (visitors, guests, anonymous users) */
                           <NavLink to="/login">Login</NavLink>

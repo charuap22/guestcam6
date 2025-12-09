@@ -22,16 +22,15 @@ import {
   useToast,
   Spinner,
 } from "@chakra-ui/react";
+
+import { useLocation, useHistory, NavLink } from "react-router-dom";
 import background from "../assets/party_slide2.jpeg";
 import { useLogin } from "../hooks/useLogin";
 
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-import { NavLink } from "react-router-dom";
-
 export default function Login() {
-  // start with empty; hook will supply rememberedEmail if present
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -50,25 +49,28 @@ export default function Login() {
   } = useLogin();
 
   const toast = useToast();
+  const location = useLocation();
+  const history = useHistory();
 
-  // Initialize email from remembered email (if any)
+  // Extract redirect path if exists: /login?redirect=/pricing
+  const params = new URLSearchParams(location.search);
+  const redirectTo = params.get("redirect") || "/admin/dashboard";
+
   useEffect(() => {
-    if (rememberedEmail) {
-      setEmail(rememberedEmail);
-    }
+    if (rememberedEmail) setEmail(rememberedEmail);
   }, [rememberedEmail]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // persist or remove remembered email based on hook state
     updateRemember(email);
 
     try {
       await login(email, password);
-      // login will handle navigation; nothing else needed here
+
+      // Redirect after login
+      history.replace(redirectTo);
     } catch (err) {
-      // login errors are handled via hook's error state, but you may show toast too
       toast({
         title: "Login failed",
         description: err.message || "Unable to login",
@@ -79,12 +81,11 @@ export default function Login() {
     }
   };
 
-  const handleForgotPassword = async (e) => {
-    e && e.preventDefault();
+  const handleForgotPassword = async () => {
     if (!email) {
       toast({
         title: "Enter email",
-        description: "Please enter your email in the email field first.",
+        description: "Please enter your email first.",
         status: "warning",
         duration: 4000,
         isClosable: true,
@@ -95,22 +96,18 @@ export default function Login() {
     try {
       await resetPassword(email);
       toast({
-        title: "Password reset sent",
-        description: `A password reset link was sent to ${email}. Check your inbox.`,
+        title: "Password reset email sent",
+        description: `Check your inbox for instructions.`,
         status: "success",
-        duration: 6000,
+        duration: 5000,
         isClosable: true,
       });
     } catch (err) {
-      const msg =
-        err?.code === "auth/user-not-found"
-          ? "No user found with this email."
-          : err?.message || "Could not send password reset email.";
       toast({
         title: "Error",
-        description: msg,
+        description: err?.message || "Could not send password reset email.",
         status: "error",
-        duration: 6000,
+        duration: 5000,
         isClosable: true,
       });
     }
@@ -126,13 +123,33 @@ export default function Login() {
 
   return (
     <>
-      <Stack minH={"100vh"} direction={{ base: "column", md: "row" }}>
-        <Flex p={8} flex={1} align={"center"} justify={"center"}>
-          <Stack spacing={4} w={"full"} maxW={"md"}>
-            <Heading fontSize={"2xl"}>Sign in to your account</Heading>
-            <Text paddingBottom="20px">
-              Don't have an account? <NavLink to="/signup">Signup</NavLink>
+      <Button
+        position="absolute"
+        top="20px"
+        left="20px"
+        zIndex={10}
+        size="sm"
+        bg="whiteAlpha.800"
+        backdropFilter="blur(6px)"
+        color="black"
+        borderRadius="full"
+        px={4}
+        onClick={() => history.push("/")}
+        _hover={{ bg: "white" }}
+      >
+        ← Back
+      </Button>
+
+      <Stack minH="100vh" direction={{ base: "column", md: "row" }}>
+        {/* LEFT SIDE: FORM */}
+        <Flex p={8} flex={1} align="center" justify="center">
+          <Stack spacing={4} w="full" maxW="md">
+            <Heading fontSize="2xl">Sign in to your account</Heading>
+            <Text pb="20px">
+              Don't have an account?{" "}
+              <NavLink to={`/signup?redirect=${redirectTo}`}>Signup</NavLink>
             </Text>
+
             <form onSubmit={handleSubmit}>
               <Stack spacing={4}>
                 {error && (
@@ -141,177 +158,150 @@ export default function Login() {
                     {error}
                   </Alert>
                 )}
-                <FormControl id="email">
+
+                <FormControl>
                   <FormLabel>Email address</FormLabel>
                   <Input
                     required
                     type="email"
                     placeholder="Email"
-                    bg={"gray.100"}
-                    border={0}
-                    color={"gray.500"}
-                    _placeholder={{ color: "gray.500" }}
-                    onChange={(e) => setEmail(e.target.value)}
                     value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    bg="gray.100"
+                    border={0}
                   />
                 </FormControl>
-                <FormControl id="password">
+
+                <FormControl>
                   <FormLabel>Password</FormLabel>
                   <Input
                     required
-                    placeholder="Password"
                     type="password"
-                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Password"
                     value={password}
-                    bg={"gray.100"}
+                    onChange={(e) => setPassword(e.target.value)}
+                    bg="gray.100"
                     border={0}
-                    color={"gray.500"}
-                    _placeholder={{ color: "gray.500" }}
                   />
                 </FormControl>
-                <Stack spacing={6}>
-                  <Stack
-                    direction={{ base: "column", sm: "row" }}
-                    align={"start"}
-                    justify={"space-between"}
-                  >
-                    <Checkbox
-                      isChecked={remember}
-                      onChange={(e) => setRemember(e.target.checked)}
-                    >
-                      Remember me
-                    </Checkbox>
 
-                    <Link
-                      color={"blue.500"}
-                      onClick={handleForgotPassword}
-                      cursor={resetPending ? "not-allowed" : "pointer"}
-                      aria-disabled={resetPending}
-                    >
-                      {resetPending ? (
-                        <span>
-                          <Spinner size="xs" mr={2} />
-                          Sending...
-                        </span>
-                      ) : (
-                        "Forgot password?"
-                      )}
-                    </Link>
-                  </Stack>
+                <Stack
+                  direction={{ base: "column", sm: "row" }}
+                  align="start"
+                  justify="space-between"
+                >
+                  <Checkbox
+                    isChecked={remember}
+                    onChange={(e) => setRemember(e.target.checked)}
+                  >
+                    Remember me
+                  </Checkbox>
+
+                  <Link
+                    color="blue.500"
+                    onClick={handleForgotPassword}
+                    cursor={resetPending ? "not-allowed" : "pointer"}
+                  >
+                    {resetPending ? (
+                      <span>
+                        <Spinner size="xs" mr={2} /> Sending...
+                      </span>
+                    ) : (
+                      "Forgot password?"
+                    )}
+                  </Link>
                 </Stack>
 
+                {/* LOGIN BUTTON */}
                 <Button
                   type="submit"
-                  fontFamily={"heading"}
-                  mt={8}
-                  w={"full"}
-                  bgGradient="linear(to-r, #000, yellow.500)"
-                  color={"white"}
-                  _hover={{
-                    bgGradient: "linear(to-r, #000, yellow.500)",
-                    boxShadow: "xl",
-                  }}
+                  mt={6}
+                  w="full"
+                  bg="black"
+                  color="white"
+                  borderRadius="full"
                   isLoading={isPending}
+                  _hover={{
+                    bg: "black",
+                    color: "white",
+                    boxShadow: "lg",
+                  }}
                 >
                   Continue &gt;
                 </Button>
+
+                {/* GOOGLE LOGIN */}
+                {/* <Button
+                  w="full"
+                  variant="outline"
+                  onClick={async () => {
+                    await Googlelogin();
+                    history.replace(redirectTo);
+                  }}
+                >
+                  Continue with Google
+                </Button> */}
+
+                {/* FACEBOOK LOGIN */}
+                {/* <Button
+                  w="full"
+                  variant="outline"
+                  onClick={async () => {
+                    await Facebooklogin();
+                    history.replace(redirectTo);
+                  }}
+                >
+                  Continue with Facebook
+                </Button> */}
               </Stack>
             </form>
           </Stack>
         </Flex>
 
+        {/* RIGHT SIDE: IMAGE + TEXT */}
         <Flex
           flex={1}
           backgroundImage={`url(${background})`}
-          backgroundSize={["cover", "cover", "cover", "cover"]}
+          backgroundSize="cover"
           backgroundPosition="center"
           p={8}
         >
-          <Flex flexDirection="column">
-            <Heading
-              color="white"
-              lineHeight={1.1}
-              fontSize={{ base: "xl", sm: "xl", md: "xl", lg: "2xl" }}
-            >
-              GUESTPOV
-            </Heading>
+          <Flex direction="column">
+            <Heading color="white">GUESTPOV</Heading>
             <Spacer />
             <VStack align="stretch" spacing={8}>
-              <Heading
-                color="white"
-                lineHeight={1.1}
-                fontSize={{
-                  base: "xl",
-                  sm: "2xl",
-                  md: "3xl",
-                  lg: "3xl",
-                  "2xl": "4xl",
-                }}
-              >
+              <Heading color="white" fontSize={{ base: "2xl", md: "3xl" }}>
                 Share all the photos & videos taken by you and your guests on a
                 LIVE Photo Wall.
               </Heading>
-              <Text
-                fontSize={{ base: "s", sm: "m", md: "l", lg: "xl", xl: "xl" }}
-                color="white"
-              >
-                Create an account and discover the worlds' best photo sharing
-                experience.
+              <Text color="white">
+                Create an account and discover the world’s best event photo
+                sharing experience.
               </Text>
-              <Stack direction={"row"} spacing={4} align={"center"}>
+
+              <Stack direction="row" spacing={4} align="center">
                 <AvatarGroup>
-                  {avatars.map((avatar) => (
+                  {avatars.map((a) => (
                     <Avatar
-                      key={avatar.name}
-                      name={avatar.name}
-                      src={avatar.url}
-                      position={"relative"}
+                      key={a.name}
+                      name={a.name}
+                      src={a.url}
+                      position="relative"
                       zIndex={2}
-                      _before={{
-                        content: '""',
-                        width: "full",
-                        height: "full",
-                        rounded: "full",
-                        transform: "scale(1.125)",
-                        bgGradient: "linear(to-bl, #000, yellow.500)",
-                        position: "absolute",
-                        zIndex: -1,
-                        top: 0,
-                        left: 0,
-                      }}
                     />
                   ))}
                 </AvatarGroup>
-                <Text
-                  fontFamily={"heading"}
-                  color="white"
-                  fontSize={{ base: "4xl", md: "6xl" }}
-                >
+                <Text fontSize="4xl" color="white">
                   +
                 </Text>
                 <Flex
-                  align={"center"}
-                  justify={"center"}
-                  fontFamily={"heading"}
-                  fontSize={{ base: "sm", md: "lg" }}
-                  bg={"gray.800"}
-                  color={"white"}
-                  rounded={"full"}
-                  minWidth={useBreakpointValue({ base: "44px", md: "60px" })}
-                  minHeight={useBreakpointValue({ base: "44px", md: "60px" })}
-                  position={"relative"}
-                  _before={{
-                    content: '""',
-                    width: "full",
-                    height: "full",
-                    rounded: "full",
-                    transform: "scale(1.125)",
-                    bgGradient: "linear(to-bl, orange.400,yellow.400)",
-                    position: "absolute",
-                    zIndex: -1,
-                    top: 0,
-                    left: 0,
-                  }}
+                  align="center"
+                  justify="center"
+                  bg="gray.800"
+                  color="white"
+                  rounded="full"
+                  w="60px"
+                  h="60px"
                 >
                   YOU
                 </Flex>

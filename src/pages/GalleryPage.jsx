@@ -1,4 +1,4 @@
-/ src/pages/Gallery.js
+ 
 import React, { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useAuthContext } from "../hooks/useAuthContext";

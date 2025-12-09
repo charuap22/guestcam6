@@ -219,8 +219,8 @@ function App() {
               <Signup />
             </Route>
             <Route path="/pricing">
-              {!user && <Redirect to="/login" />}
-              {user && <Pricing />}
+             
+               <Pricing />
             </Route>
             <Route path="/success">
               {!user && <Redirect to="/login" />}

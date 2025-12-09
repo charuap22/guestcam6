@@ -1,5 +1,5 @@
 // src/layouts/admin/index.js
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 // Chakra imports
 import {
   Portal,
@@ -22,19 +22,10 @@ import { SidebarProvider } from "../../context/SidebarContext";
 // React Router v5
 import { Route, Switch, Redirect } from "react-router-dom";
 
-// local routes file
+// local routes file (now lazy-loads pages)
 import routes from "../../routes.js";
 
-// local components and hooks used by admin layout
-import GuestList from "../../components/GuestList";
-import { useCollection } from "../../hooks/useCollection";
-import EventsList from "../../components/EventsList";
-import GetPackageInfo from "../../components/GetPackageInfo";
 import { useAuthContext } from "../../hooks/useAuthContext";
-import { useDocument } from "../../hooks/useDocument";
-import { useHistory } from "react-router-dom";
-import TempTest from "../../pages/_TempTest";
-import Dashboard from "../../pages/Dashboard.js";
 
 import horizonTheme from "../../theme/horizonTheme";
 
@@ -51,19 +42,6 @@ export default function AdminLayout(props) {
 
   // auth + user doc (guard user with optional chaining)
   const { user } = useAuthContext();
-  const { document, error: userDocError } = useDocument("users", user?.uid);
-
-  // show loading while user doc or user isn't ready
-  // if (!user || !document) {
-  //   return (
-  //     <Flex minH="80vh" align="center" justify="center">
-  //       <Spinner size="xl" color="blue.500" />
-  //       <Text ml={3} fontSize="lg" fontWeight="bold" color="gray.600">
-  //         Loading your dashboard...
-  //       </Text>
-  //     </Flex>
-  //   );
-  // }
 
   // helper that returns the active route name (unchanged)
   const getActiveRoute = (routesArray) => {
@@ -127,13 +105,31 @@ export default function AdminLayout(props) {
   const getRoutes = (routesArray) =>
     routesArray.map((route, key) => {
       if (route.layout === "/admin") {
+        const Comp = route.component;
         return (
           <Route
             exact
             path={route.layout + route.path}
             key={key}
-            // render the component node so route.component (JSX) is shown
-            render={() => route.component}
+            render={(props) => (
+              <Suspense
+                fallback={
+                  <Flex minH="80vh" align="center" justify="center">
+                    <Spinner size="xl" color="blue.500" />
+                    <Text
+                      ml={3}
+                      fontSize="lg"
+                      fontWeight="bold"
+                      color="gray.600"
+                    >
+                      Loading...
+                    </Text>
+                  </Flex>
+                }
+              >
+                <Comp {...props} />
+              </Suspense>
+            )}
           />
         );
       }
@@ -148,46 +144,50 @@ export default function AdminLayout(props) {
     <ChakraProvider theme={horizonTheme}>
       <Box>
         {/* <SidebarProvider> */}
-          {/* <Sidebar routes={routes} display="none" {...rest} /> */}
-          <Box
-            float="right"
-            minHeight="100vh"
-            height="100%"
-            overflow="auto"
-            position="relative"
-            maxHeight="100%"
-            w={{ base: "100%", xl: "calc( 100% - 290px )" }}
-          >
-            <Portal>
-              <Box>
-                <Navbar
-                  onOpen={onOpen}
-                  logoText={"GuestPov Dashboard"}
-                  brandText={getActiveRoute(routes)}
-                  secondary={getActiveNavbar(routes)}
-                  message={getActiveNavbarText(routes)}
-                  fixed={fixed}
-                  {...rest}
-                />
-              </Box>
-            </Portal>
-
-            {getRoute() ? (
-              <Box
-                mx="auto"
-                p={{ base: "20px", md: "30px" }}
-                pe="20px"
-                minH="100vh"
-                pt="50px"
-              >
-                <Dashboard />
-              </Box>
-            ) : null}
-
+        {/* <Sidebar routes={routes} display="none" {...rest} /> */}
+        <Box
+          float="right"
+          minHeight="100vh"
+          height="100%"
+          overflow="auto"
+          position="relative"
+          maxHeight="100%"
+          w={{ base: "100%", xl: "calc( 100% - 290px )" }}
+        >
+          <Portal>
             <Box>
-              <Footer />
+              <Navbar
+                onOpen={onOpen}
+                logoText={"GuestPov Dashboard"}
+                brandText={getActiveRoute(routes)}
+                secondary={getActiveNavbar(routes)}
+                message={getActiveNavbarText(routes)}
+                fixed={fixed}
+                {...rest}
+              />
             </Box>
+          </Portal>
+
+          {getRoute() ? (
+            <Box
+              mx="auto"
+              p={{ base: "20px", md: "30px" }}
+              pe="20px"
+              minH="100vh"
+              pt="50px"
+            >
+              <Switch>
+                {getRoutes(routes)}
+                {/* optional default redirect */}
+                <Redirect from="/admin" to="/admin/dashboard" />
+              </Switch>
+            </Box>
+          ) : null}
+
+          <Box>
+            <Footer />
           </Box>
+        </Box>
         {/* </SidebarProvider> */}
       </Box>
     </ChakraProvider>

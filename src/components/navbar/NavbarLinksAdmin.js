@@ -21,7 +21,6 @@ import {
   useToast,
   VStack,
   Spacer,
-  Alert,
 } from "@chakra-ui/react";
 import { useHistory, useParams } from "react-router-dom";
 import {
@@ -434,10 +433,38 @@ export default function HeaderLinks(props) {
             <Flex flexDirection="column" p="10px">
               <MenuItem
                 _hover={{ bg: "none", color: "red.500" }}
-                onClick={logout}
+                onClick={async () => {
+                  try {
+                    // ensure logout is called without event arg and awaited
+                    await logout();
+
+                    // show toast and redirect to login (or public landing)
+                    toast({
+                      title: "Signed out",
+                      status: "success",
+                      duration: 3000,
+                    });
+
+                    // replace history so back button doesn't return to protected page
+                    history.replace("/login");
+                  } catch (err) {
+                    // logout hook should set isPending / error, but show toast as well
+                    toast({
+                      title: "Logout failed",
+                      description: err?.message || "Could not log out.",
+                      status: "error",
+                      duration: 5000,
+                    });
+                    // Do not rethrow; swallow to avoid unhandled rejection
+                    // console.error("Logout error:", err);
+                  }
+                }}
+                isDisabled={isPending}
               >
                 <Icon as={FiLogOut} mr={2} />
-                <Text fontSize="sm">Log out</Text>
+                <Text fontSize="sm">
+                  {isPending ? "Signing out..." : "Log out"}
+                </Text>
               </MenuItem>
             </Flex>
           </MenuList>

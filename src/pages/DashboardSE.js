@@ -58,6 +58,7 @@ export default function DashboardSE() {
     ["adminId", "==", user?.uid]
   );
 
+  // keep these for compatibility; we will use direct firebase writes for verification
   const { deleteDocument, updateDocument } = useFirestore("events");
   const { changeEvent } = useEvent();
   const { UserInfo } = useUserInfo();
@@ -164,28 +165,56 @@ export default function DashboardSE() {
     link.click();
   };
 
-  const confirmDelete = async () => {
-    if (!firstEvent) return;
-    setLoadingDelete(true);
-    try {
-      if (typeof updateDocument === "function") {
-        await updateDocument(firstEvent.id, {
-          deleted: true,
-          deletedAt: new Date(),
-          deletedBy: user?.uid || null,
-        });
-      } else {
-        await deleteDocument(firstEvent.id);
-      }
-      toast({ title: "Event archived", status: "success" });
-      history.push("/admin/dashboard");
-    } catch {
-      toast({ title: "Delete failed", status: "error" });
-    } finally {
-      setLoadingDelete(false);
-      setIsDeleteOpen(false);
+  // ---------- ROBUST delete flow ----------
+const confirmDelete = async () => {
+  if (!firstEvent) return;
+
+  setLoadingDelete(true);
+  try {
+    // ALWAYS delete the document fully
+    const result = await deleteDocument(firstEvent.id);
+
+    if (result?.error) {
+      throw new Error(result.error);
     }
-  };
+
+    toast({
+      title: "Event deleted",
+      description: "The event has been permanently removed.",
+      status: "success",
+      duration: 3000,
+      isClosable: true,
+    });
+
+    // update local state so UI shows "No events yet"
+    setFirstEvent(null);
+
+    // clear selected event in global context (optional but recommended)
+    try {
+      changeEvent(null);
+    } catch (e) {
+      // if changeEvent expects a string id, handle accordingly; ignore if not available
+      console.warn("changeEvent clear:", e);
+    }
+
+    setLoadingDelete(false);
+    setIsDeleteOpen(false);
+  } catch (err) {
+    console.error("Delete failed:", err);
+    toast({
+      title: "Delete failed",
+      description: err.message || "Could not delete the event.",
+      status: "error",
+      duration: 3500,
+      isClosable: true,
+    });
+  } finally {
+    setLoadingDelete(false);
+    setIsDeleteOpen(false);
+  }
+};
+
+  // ---------- end delete flow ----------
 
   // ------------------------------
   // Brightness detection & mapping
@@ -602,7 +631,7 @@ export default function DashboardSE() {
                 >
                   <QRCode
                     id="qr-canvas"
-                    value={`https://guestcam3-8cb1f.web.app/guest_login/${firstEvent.id}`}
+                    value={`https://guestpov.ca/guest_login/${firstEvent.id}`}
                     size={qrSize}
                     fgColor="#000"
                     bgColor="#ffffff"

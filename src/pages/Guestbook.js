@@ -560,6 +560,7 @@ const Guestbook = ({ guestMode = false, allowUpload = true }) => {
           <ModalBody>
             <VideoUploadForm
               user={user}
+              eventId={id} // ← pass the event id from the URL
               onUploadComplete={handleVideoUploadComplete}
               onClose={closeVideoUpload}
             />

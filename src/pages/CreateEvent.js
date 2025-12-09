@@ -33,7 +33,6 @@ import {
 } from "@chakra-ui/react";
 import { IoAddCircleOutline } from "react-icons/io5";
 
-
 import GetPackageInfo from "../components/GetPackageInfo";
 import { useFirestore } from "../hooks/useFirestore";
 import { usePlan } from "../context/PlanContext";
@@ -78,14 +77,16 @@ const CreateEvent = () => {
   let start = new Date();
   let end = new Date(start);
   end.setMonth(end.getMonth() + 12);
-  //console.log(documents);
 
-  // Event options categorized
-  const eventOptions = {
-    Wedding: ["Wedding", "Reception", "Engagement", "Bridal Shower"],
-    Corporate: ["Conference", "Seminar", "Product Launch"],
-    Birthday: ["Kids Party", "18th Birthday", "50th Celebration"],
-  };
+  // Event options (flat list as requested)
+  const EVENT_TYPE_OPTIONS = [
+    "Wedding",
+    "Corporate",
+    "Launch",
+    "Birthday",
+    "Private Party",
+    "Other",
+  ];
 
   // ✅ Check if Admin Already Has an Event
   useEffect(() => {
@@ -116,26 +117,28 @@ const CreateEvent = () => {
 
   // ✅ Handle Event Creation
   const handleSubmit = async (e) => {
-
     if (!user) {
       setError("User not logged in.");
       return;
     }
-     e.preventDefault();
-     setIsPending(true);
-     setError(null);
-     
+    e.preventDefault();
+    setIsPending(true);
+    setError(null);
+
+    // Use the selected category; if "Other", require customCategory
+    const finalCategory =
+      category === "Other" ? customCategory.trim() : category;
+
     if (!eventName || !eventPageHeader || !welcomeMessage || !dateOfEvent) {
       setError("Please fill in all required fields.");
       setIsPending(false);
       return;
     }
-    if (category === "other" && !customCategory.trim()) {
+    if (category === "Other" && !customCategory.trim()) {
       setError("Please enter a custom event type.");
       setIsPending(false);
       return;
     }
-   
 
     try {
       if (eventExists) {
@@ -155,14 +158,22 @@ const CreateEvent = () => {
       const guestList = [];
 
       if (thumbnail) {
-        const uploadPath = `featureImages/${user.uid}/${thumbnail.name}`;
-        const img = await projectStorage.ref(uploadPath).put(thumbnail);
+        // keep using user.uid folder (matches rules)
+        const safeName = `${Date.now()}_${thumbnail.name.replace(/\s+/g, "_")}`;
+        const uploadPath = `featureImages/${user.uid}/${safeName}`;
+        const metadata = {
+          contentType: thumbnail.type || "image/jpeg",
+          customMetadata: { userId: user.uid },
+        };
+
+        const img = await projectStorage
+          .ref(uploadPath)
+          .put(thumbnail, metadata);
         const imageURL = await img.ref.getDownloadURL();
 
         // ✅ Create event object
-
         const event = {
-          category: category === "other" ? customCategory : category,
+          category: finalCategory,
           dateOfEvent: timestamp.fromDate(new Date(dateOfEvent)),
           eventName,
           eventPageHeader,
@@ -182,7 +193,7 @@ const CreateEvent = () => {
           plan: currentPlan?.Name || "No Plan",
           amount: currentPlan?.Price || 0,
           guestBook: [],
-          isPublic: true // <-- needed for guest access
+          isPublic: true, // <-- needed for guest access
         };
 
         const response = await addDocument(event);
@@ -210,7 +221,6 @@ const CreateEvent = () => {
         setTimeout(() => {
           history.push("/admin/dashboard");
         }, 1500); // ✅ Redirect after a short delay
-
       } else {
         setError("Please select an event image.");
       }
@@ -293,8 +303,6 @@ const CreateEvent = () => {
     }
 
     try {
-      // const file = selected;
-
       console.log("selected", selected);
 
       setAvatarImg(URL.createObjectURL(selected));
@@ -306,48 +314,10 @@ const CreateEvent = () => {
       setThumbnailError(err);
       return;
     }
-
-    //props.handleFile(fileUploaded);
   };
 
   return (
-    <Flex direction="column" align="center"   minH="100vh" p={6} mt={20}>
-      {/* Plan Info & Upgrade Section */}
-      {/* <Flex
-        w="full"
-        align="center"
-        justify="space-between"
-        px={3} // Reduced padding
-        bg="white"
-        rounded="lg"
-        boxShadow="lg"
-      >
-        <GetPackageInfo />
-        <HStack spacing={2} flexWrap="wrap">
-          <Button
-            leftIcon={<FaArrowUp />}
-            colorScheme="yellow"
-            variant="solid"
-            size="md"
-            px={3} // Reduced padding
-            py={3}
-            onClick={() => history.push("/pricing")}
-          >
-            Upgrade Plan
-          </Button>
-          <Button
-            colorScheme="blue"
-            variant="solid"
-            size="md"
-            px={3} // Reduced padding
-            py={3}
-            onClick={() => history.push("/create-event")}
-          >
-            + Create Event
-          </Button>
-        </HStack>
-      </Flex>
-      <Divider my={6} /> */}
+    <Flex direction="column" align="center" minH="100vh" p={6} mt={20}>
       <Box rounded="lg" bg="white" boxShadow="lg" p={8} width="full">
         <Stack spacing={0}>
           <Heading fontSize={"xl"} mb={0} pb={0}>
@@ -466,8 +436,6 @@ const CreateEvent = () => {
                           bgColor="yellow.100"
                           onClick={handleClick}
                         >
-                          {/* <BiPencil color="black" fontSize="20px" /> */}
-                          {/* <Image src="https://raw.githubusercontent.com/chakra-ui/chakra-ui/develop/logo/logomark-colored%402x.png" /> */}
                           <IoAddCircleOutline w={8} h={8} color="yellow.500" />
                         </AvatarBadge>
                       </Avatar>
@@ -494,32 +462,21 @@ const CreateEvent = () => {
                         placeholder="Select Event Type"
                         onChange={(e) => {
                           const value = e.target.value;
-                          if (value === "other") {
-                            setCategory("other");
-                          } else {
-                            setCategory(value);
-                            setCustomCategory(""); // ✅ Reset custom input when choosing a standard event
-                          }
+                          setCategory(value);
+                          if (value !== "Other") setCustomCategory("");
                         }}
-                        value={category !== "other" ? category : ""}
+                        value={category}
                         required
                       >
-                        {Object.entries(eventOptions).map(
-                          ([category, events]) => (
-                            <optgroup label={category} key={category}>
-                              {events.map((event) => (
-                                <option key={event} value={event}>
-                                  {event}
-                                </option>
-                              ))}
-                            </optgroup>
-                          )
-                        )}
-                        <option value="other">Other</option>
+                        {EVENT_TYPE_OPTIONS.map((opt) => (
+                          <option key={opt} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
                       </Select>
 
                       {/* Show input field if "Other" is selected */}
-                      {category === "other" && (
+                      {category === "Other" && (
                         <Input
                           mt={2}
                           color={"black"}
@@ -541,36 +498,13 @@ const CreateEvent = () => {
                       <Input
                         type="date"
                         required
-                        min={new Date().toISOString().split("T")[0]} // 🔹 Prevent selecting past dates
+                        min={new Date().toISOString().split("T")[0]}
                         onChange={(e) => setDateOfEvent(e.target.value)}
                         value={dateOfEvent}
                       />
                     </FormControl>
                   </Box>
-                  {/* <Box>
-                    <FormControl
-                      id="noOfGuests"
-                      isInvalid={noOfGuests > currentPlan?.guestEnd}
-                    >
-                      <FormLabel>No of Guests</FormLabel>
-                      <Input
-                        type="number"
-                        min="1"
-                        max={currentPlan?.guestEnd || 50} // Default max if plan is undefined
-                        required
-                        onChange={(e) => {
-                          const value = e.target.value.replace(/^0+/, ""); // Remove leading zeros
-                          setNoOfGuests(value ? Number(value) : ""); // Convert to number or empty string
-                        }}
-                        value={noOfGuests}
-                      />
-                      {noOfGuests > currentPlan?.guestEnd && (
-                        <Text color="red.500" fontSize="sm">
-                          Maximum allowed guests: {currentPlan?.guestEnd}
-                        </Text>
-                      )}
-                    </FormControl>
-                  </Box> */}
+
                   <Box>
                     <FormControl id="Location">
                       <FormLabel>Location</FormLabel>
@@ -581,36 +515,6 @@ const CreateEvent = () => {
                       />
                     </FormControl>
                   </Box>
-
-                  {/* <Box>
-                    <FormControl display="flex" alignItems="center">
-                      <FormLabel htmlFor="share-pictures" mb="0">
-                        Share pictures with guests?
-                      </FormLabel>
-                      <Switch
-                        id="share-pictures"
-                        colorScheme="yellow"
-                        onChange={() => setSharePictures(!sharePictures)}
-                        defaultChecked
-                        isDisabled={false}
-                        mt={2}
-                      />
-                    </FormControl>
-
-                    <FormControl display="flex" alignItems="center">
-                      <FormLabel htmlFor="share-guestbook" mb="0">
-                        Share guestbook with guests?
-                      </FormLabel>
-                      <Switch
-                        mt={2}
-                        colorScheme="yellow"
-                        id="share-guestbook"
-                        onChange={() => setShareGuestbook(!shareGuestbook)}
-                        defaultChecked
-                        isDisabled={false}
-                      />
-                    </FormControl>
-                  </Box> */}
                 </SimpleGrid>
                 <br></br>
                 <Button

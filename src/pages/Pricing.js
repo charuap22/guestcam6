@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+// src/pages/GuestPovPricing.js
+import React, { useEffect, useState, useCallback } from "react";
 import {
   Box,
   Flex,
@@ -48,70 +49,85 @@ export default function GuestPovPricing() {
     updatePlan = null;
   }
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const user = projectAuth.currentUser;
+  // fetchData: loads plans and (if signed in) latest purchase for current user
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const user = projectAuth.currentUser;
 
-        // fetch products from Firestore (products collection)
-        const plansSnapshot = await projectFirestore
-          .collection("products")
+      // fetch products from Firestore (products collection)
+      const plansSnapshot = await projectFirestore.collection("products").get();
+
+      // fetch latest purchase for current user (if logged in)
+      let purchaseSnapshot = null;
+      if (user) {
+        purchaseSnapshot = await projectFirestore
+          .collection("customers")
+          .doc(user.uid)
+          .collection("purchases")
+          .orderBy("purchasedAt", "desc")
+          .limit(1)
           .get();
-
-        // fetch latest purchase for current user
-        let purchaseSnapshot = null;
-        if (user) {
-          purchaseSnapshot = await projectFirestore
-            .collection("customers")
-            .doc(user.uid)
-            .collection("purchases")
-            .orderBy("purchasedAt", "desc")
-            .limit(1)
-            .get();
-        }
-
-        const plansData = await Promise.all(
-          plansSnapshot.docs.map(async (doc) => {
-            const data = doc.data();
-            if (!data.active) return null;
-
-            const pricesSnap = await doc.ref.collection("prices").get();
-            const prices = pricesSnap.docs.map((p) => ({
-              id: p.id,
-              ...p.data(),
-            }));
-
-            return {
-              id: doc.id,
-              name: data.name,
-              description: data.description,
-              metadata: data.metadata || {},
-              prices,
-            };
-          })
-        );
-
-        setPlans(plansData.filter(Boolean));
-
-        setCurrentSubscription(
-          purchaseSnapshot && !purchaseSnapshot.empty
-            ? purchaseSnapshot.docs[0].data()
-            : null
-        );
-      } catch (err) {
-        console.error("Error fetching plans:", err);
-        toast({
-          title: "Error",
-          description: "Failed to load plans.",
-          status: "error",
-        });
-      } finally {
-        setLoading(false);
       }
-    };
 
-    fetchData();
+      const plansData = await Promise.all(
+        plansSnapshot.docs.map(async (doc) => {
+          const data = doc.data();
+          if (!data.active) return null;
+
+          const pricesSnap = await doc.ref.collection("prices").get();
+          const prices = pricesSnap.docs.map((p) => ({
+            id: p.id,
+            ...p.data(),
+          }));
+
+          return {
+            id: doc.id,
+            name: data.name,
+            description: data.description,
+            metadata: data.metadata || {},
+            prices,
+          };
+        })
+      );
+
+      setPlans(plansData.filter(Boolean));
+
+      setCurrentSubscription(
+        purchaseSnapshot && !purchaseSnapshot.empty
+          ? purchaseSnapshot.docs[0].data()
+          : null
+      );
+    } catch (err) {
+      console.error("Error fetching plans:", err);
+      toast({
+        title: "Error",
+        description: "Failed to load plans.",
+        status: "error",
+      });
+    } finally {
+      setLoading(false);
+    }
   }, [toast]);
+
+  // initial load
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // keep currentSubscription in sync with auth state.
+  // clear subscription on sign-out and re-fetch data on sign-in
+  useEffect(() => {
+    const unsubscribe = projectAuth.onAuthStateChanged((u) => {
+      if (!u) {
+        setCurrentSubscription(null);
+      } else {
+        // user signed in -> refresh plans + purchases for this user
+        fetchData();
+      }
+    });
+    return () => unsubscribe();
+  }, [fetchData]);
 
   const handleCheckout = async (user, priceId, productKey, price) => {
     if (!user || !user.uid) {
@@ -224,10 +240,6 @@ export default function GuestPovPricing() {
 
   /**
    * DEMO FLOW (no charge)
-   * - writes a demo purchase doc in customers/{uid}/purchases
-   * - updates users/{uid} with plan info
-   * - optionally updates client PlanContext if available
-   * - redirects to /admin/dashboard on success
    */
   const handleActivateDemo = async (productKey, planName, priceAmount = 0) => {
     const user = projectAuth.currentUser;
@@ -245,7 +257,7 @@ export default function GuestPovPricing() {
     try {
       const purchasedAt = new Date();
       const subscriptionEndDate = new Date(purchasedAt);
-      // Demo duration: 7 days (adjust if needed)
+      // Demo duration: 7 days
       subscriptionEndDate.setDate(subscriptionEndDate.getDate() + 7);
 
       const userRef = projectFirestore.collection("users").doc(user.uid);
@@ -255,7 +267,6 @@ export default function GuestPovPricing() {
         .collection("purchases")
         .doc(); // auto ID
 
-      // Update user doc and add purchase doc
       await userRef.set(
         {
           planId: productKey,
@@ -280,7 +291,6 @@ export default function GuestPovPricing() {
         demo: true,
       });
 
-      // Try updating PlanContext if available
       try {
         if (updatePlan) {
           updatePlan({
@@ -301,7 +311,6 @@ export default function GuestPovPricing() {
         duration: 3000,
       });
 
-      // Update local state so UI reflects new subscription immediately
       setCurrentSubscription({
         planId: productKey,
         planName,
@@ -311,7 +320,6 @@ export default function GuestPovPricing() {
         status: "demo",
       });
 
-      // Redirect user to dashboard
       history.push("/admin/dashboard");
     } catch (err) {
       console.error("Demo activation failed:", err);
@@ -351,327 +359,368 @@ export default function GuestPovPricing() {
   }
 
   return (
-    <Box as="section" bg={bg} py={{ base: 10, md: 16 }} px={{ base: 4, md: 8 }}>
-      <Flex maxW="1200px" mx="auto" direction="column" gap={6} align="stretch">
-        {/* Header */}
-        <VStack spacing={3} align="center" mb={6}>
-          <Badge
-            color={textGold}
-            border={`1px solid ${borderGold}`}
-            px={3}
-            py={1}
-            borderRadius="full"
-          >
-            GuestPov
-          </Badge>
-          <Heading as="h2" size="xl" lineHeight={1.05} color={headingColor}>
-            Pricing Plans
-          </Heading>
-          <Text color="gray.600" maxW="720px" textAlign="center">
-            Simple, transparent pricing for events of any size. Create
-            galleries, add albums for separate occasions, and download each
-            album separately.
-          </Text>
-        </VStack>
-
-        {/* Pricing Grid */}
-        <Stack
-          direction={{ base: "column", md: "row" }}
-          spacing={{ base: 6, md: 8 }}
+    <>
+      {" "}
+      <Button
+        position="absolute"
+        top="20px"
+        left="20px"
+        zIndex={10}
+        size="sm"
+        bg="whiteAlpha.800"
+        backdropFilter="blur(6px)"
+        color="black"
+        borderRadius="full"
+        px={4}
+        onClick={() => history.push("/")}
+        _hover={{ bg: "white" }}
+      >
+        ← Back
+      </Button>
+      <Box
+        as="section"
+        bg={bg}
+        py={{ base: 10, md: 16 }}
+        px={{ base: 4, md: 8 }}
+      >
+        <Flex
+          maxW="1200px"
+          mx="auto"
+          direction="column"
+          gap={6}
           align="stretch"
         >
-          {plans.map((plan) => {
-            const priceObj = plan.prices?.[0];
-            const amount = priceObj
-              ? (priceObj.unit_amount / 100).toFixed(0)
-              : "N/A";
+          {/* Header */}
+          <VStack spacing={3} align="center" mb={6}>
+            <Badge
+              color={textGold}
+              border={`1px solid ${borderGold}`}
+              px={3}
+              py={1}
+              borderRadius="full"
+            >
+              GuestPov
+            </Badge>
+            <Heading as="h2" size="xl" lineHeight={1.05} color={headingColor}>
+              Pricing Plans
+            </Heading>
+            <Text color="gray.600" maxW="720px" textAlign="center">
+              Simple, transparent pricing for events of any size. Create
+              galleries, add albums for separate occasions, and download each
+              album separately.
+            </Text>
+          </VStack>
 
-            const featureEntries = Object.entries(plan.metadata || {})
-              .filter(([k]) => k.startsWith("feature_"))
-              .map(([k, v]) => [k.replace(/^feature_/, ""), v]);
+          {/* Pricing Grid */}
+          <Stack
+            direction={{ base: "column", md: "row" }}
+            spacing={{ base: 6, md: 8 }}
+            align="stretch"
+          >
+            {plans.map((plan) => {
+              const priceObj = plan.prices?.[0];
+              const amount = priceObj
+                ? (priceObj.unit_amount / 100).toFixed(0)
+                : "N/A";
 
-            const isCurrentPlan =
-              currentSubscription && currentSubscription.planId === plan.id;
-            const currentPlanPrice = currentSubscription
-              ? parseFloat(currentSubscription.price)
-              : 0;
-            const newPlanPrice = priceObj ? priceObj.unit_amount / 100 : 0;
-            const isDowngrade =
-              currentSubscription && newPlanPrice < currentPlanPrice;
+              const featureEntries = Object.entries(plan.metadata || {})
+                .filter(([k]) => k.startsWith("feature_"))
+                .map(([k, v]) => [k.replace(/^feature_/, ""), v]);
 
-            return (
-              <Box
-                key={plan.id}
-                bg={cardBg}
-                borderRadius="20px"
-                boxShadow={
-                  plan.metadata?.recommended
-                    ? "0 25px 40px rgba(0,0,0,0.1)"
-                    : "0 10px 25px rgba(0,0,0,0.05)"
-                }
-                border={
-                  plan.metadata?.recommended
-                    ? `2px solid ${accentGold}`
-                    : `1px solid ${borderGold}`
-                }
-                flex="1"
-                p={{ base: 6, md: 8 }}
-                position="relative"
-                transition="all 0.3s ease"
-                _hover={{
-                  transform: "translateY(-6px)",
-                  boxShadow: "0 30px 45px rgba(0,0,0,0.12)",
-                }}
-              >
-                {/* Recommended badge — keep it but move to left when current plan also exists */}
-                {plan.metadata?.recommended && !isCurrentPlan && (
-                  <Badge
-                    position="absolute"
-                    top={4}
-                    right={4}
-                    bg={accentGold}
-                    color="white"
-                    fontWeight={700}
-                    borderRadius="full"
-                    px={3}
-                    py={1}
-                  >
-                    Recommended
-                  </Badge>
-                )}
+              // only show current plan badge if user is signed in AND subscription matches
+              const isCurrentPlan =
+                projectAuth.currentUser &&
+                currentSubscription &&
+                currentSubscription.planId === plan.id;
 
-                {plan.metadata?.recommended && isCurrentPlan && (
-                  <Badge
-                    position="absolute"
-                    top={4}
-                    left={4} // shift to left so it doesn't overlap the Current Plan badge
-                    bg={accentGold}
-                    color="white"
-                    fontWeight={700}
-                    borderRadius="full"
-                    px={3}
-                    py={1}
-                  >
-                    Recommended
-                  </Badge>
-                )}
+              const currentPlanPrice = currentSubscription
+                ? parseFloat(currentSubscription.price)
+                : 0;
+              const newPlanPrice = priceObj ? priceObj.unit_amount / 100 : 0;
+              const isDowngrade =
+                currentSubscription && newPlanPrice < currentPlanPrice;
 
-                {/* Current Plan badge at top-right */}
-                {isCurrentPlan && (
-                  <Badge
-                    position="absolute"
-                    top={4}
-                    right={4}
-                    bg="#38A169" // green to distinguish current plan (you can use accentGold if you prefer)
-                    color="white"
-                    fontWeight={700}
-                    borderRadius="full"
-                    px={3}
-                    py={1}
-                  >
-                    Current Plan
-                  </Badge>
-                )}
-
-                <VStack align="start" spacing={5}>
-                  <Heading
-                    as="h3"
-                    fontSize={{ base: "2xl", md: "3xl" }}
-                    color={plan.metadata?.recommended ? textGold : "gray.800"}
-                    fontWeight="800"
-                  >
-                    {plan.name}
-                  </Heading>
-
-                  <HStack align="baseline" spacing={1}>
-                    <Text
-                      fontSize={{ base: "3xl", md: "4xl" }}
-                      fontWeight={900}
-                      color={accentGold}
+              return (
+                <Box
+                  key={plan.id}
+                  bg={cardBg}
+                  borderRadius="20px"
+                  boxShadow={
+                    plan.metadata?.recommended
+                      ? "0 25px 40px rgba(0,0,0,0.1)"
+                      : "0 10px 25px rgba(0,0,0,0.05)"
+                  }
+                  border={
+                    plan.metadata?.recommended
+                      ? `2px solid ${accentGold}`
+                      : `1px solid ${borderGold}`
+                  }
+                  flex="1"
+                  p={{ base: 6, md: 8 }}
+                  position="relative"
+                  transition="all 0.3s ease"
+                  _hover={{
+                    transform: "translateY(-6px)",
+                    boxShadow: "0 30px 45px rgba(0,0,0,0.12)",
+                  }}
+                >
+                  {/* Recommended badge — keep it but move to left when current plan also exists */}
+                  {plan.metadata?.recommended && !isCurrentPlan && (
+                    <Badge
+                      position="absolute"
+                      top={4}
+                      right={4}
+                      bg={accentGold}
+                      color="white"
+                      fontWeight={700}
+                      borderRadius="full"
+                      px={3}
+                      py={1}
                     >
-                      ${amount}
+                      Recommended
+                    </Badge>
+                  )}
+
+                  {plan.metadata?.recommended && isCurrentPlan && (
+                    <Badge
+                      position="absolute"
+                      top={4}
+                      left={4}
+                      bg={accentGold}
+                      color="white"
+                      fontWeight={700}
+                      borderRadius="full"
+                      px={3}
+                      py={1}
+                    >
+                      Recommended
+                    </Badge>
+                  )}
+
+                  {/* Current Plan badge at top-right (only if signed in) */}
+                  {isCurrentPlan && (
+                    <Badge
+                      position="absolute"
+                      top={4}
+                      right={4}
+                      bg="#38A169"
+                      color="white"
+                      fontWeight={700}
+                      borderRadius="full"
+                      px={3}
+                      py={1}
+                    >
+                      Current Plan
+                    </Badge>
+                  )}
+
+                  <VStack align="start" spacing={5}>
+                    <Heading
+                      as="h3"
+                      fontSize={{ base: "2xl", md: "3xl" }}
+                      color={plan.metadata?.recommended ? textGold : "gray.800"}
+                      fontWeight="800"
+                    >
+                      {plan.name}
+                    </Heading>
+
+                    <HStack align="baseline" spacing={1}>
+                      <Text
+                        fontSize={{ base: "3xl", md: "4xl" }}
+                        fontWeight={900}
+                        color={accentGold}
+                      >
+                        ${amount}
+                      </Text>
+                      <Text color="gray.500" fontSize="sm">
+                        USD
+                      </Text>
+                    </HStack>
+
+                    <Text
+                      color="gray.600"
+                      fontSize="lg"
+                      fontWeight="500"
+                      letterSpacing="0.02em"
+                    >
+                      {plan.description ||
+                        (plan.name === "Lite"
+                          ? "Perfect for one special event."
+                          : plan.name === "Flex"
+                          ? "Most popular choice for weddings and family events."
+                          : "For multi-day, large-scale celebrations.")}
                     </Text>
-                    <Text color="gray.500" fontSize="sm">
-                      USD
-                    </Text>
-                  </HStack>
 
-                  <Text
-                    color="gray.600"
-                    fontSize="lg"
-                    fontWeight="500"
-                    letterSpacing="0.02em"
-                  >
-                    {plan.description ||
-                      (plan.name === "Lite"
-                        ? "Perfect for one special event."
-                        : plan.name === "Flex"
-                        ? "Most popular choice for weddings and family events."
-                        : "For multi-day, large-scale celebrations.")}
-                  </Text>
+                    <UnorderedList spacing={2} pl={0} styleType="none" w="100%">
+                      {(() => {
+                        const meta = plan.metadata || {};
 
-                  <UnorderedList spacing={2} pl={0} styleType="none" w="100%">
-                    {(() => {
-                      const meta = plan.metadata || {};
+                        const canonicalOrder = [
+                          "feature_Main Gallery",
+                          "feature_Design Themes",
+                          "feature_Month Upload",
+                          "feature_Month Download Window",
+                        ];
 
-                      const canonicalOrder = [
-                        "feature_Main Gallery",
-                        "feature_Design Themes",
-                        "feature_Month Upload",
-                        "feature_Month Download Window",
-                      ];
+                        const normalizeKey = (k) =>
+                          String(k || "")
+                            .toLowerCase()
+                            .replace(/^feature_/, "")
+                            .replace(/[\-_\.]/g, " ")
+                            .replace(/\bmonths?\b/, "month")
+                            .replace(/\s+/g, " ")
+                            .trim();
 
-                      const normalizeKey = (k) =>
-                        String(k || "")
-                          .toLowerCase()
-                          .replace(/^feature_/, "")
-                          .replace(/[\-_\.]/g, " ")
-                          .replace(/\bmonths?\b/, "month")
-                          .replace(/\s+/g, " ")
-                          .trim();
+                        const featureKeys = Object.keys(meta).filter((k) =>
+                          k.startsWith("feature_")
+                        );
+                        const normMap = featureKeys.reduce((acc, k) => {
+                          acc[normalizeKey(k)] = k;
+                          return acc;
+                        }, {});
 
-                      const featureKeys = Object.keys(meta).filter((k) =>
-                        k.startsWith("feature_")
-                      );
-                      const normMap = featureKeys.reduce((acc, k) => {
-                        acc[normalizeKey(k)] = k;
-                        return acc;
-                      }, {});
+                        const availableKeysInOrder = canonicalOrder
+                          .map((canon) => {
+                            const canonNorm = normalizeKey(canon);
+                            if (canonNorm in normMap) return normMap[canonNorm];
+                            const found = Object.keys(normMap).find(
+                              (nk) =>
+                                nk.includes(canonNorm) || canonNorm.includes(nk)
+                            );
+                            return found ? normMap[found] : null;
+                          })
+                          .filter(Boolean);
 
-                      const availableKeysInOrder = canonicalOrder
-                        .map((canon) => {
-                          const canonNorm = normalizeKey(canon);
-                          if (canonNorm in normMap) return normMap[canonNorm];
-                          const found = Object.keys(normMap).find(
-                            (nk) =>
-                              nk.includes(canonNorm) || canonNorm.includes(nk)
-                          );
-                          return found ? normMap[found] : null;
-                        })
-                        .filter(Boolean);
-
-                      return availableKeysInOrder.map((key, index) => (
-                        <ListItem
-                          key={key}
-                          display="flex"
-                          alignItems="center"
-                          gap={3}
-                          py={0}
-                          borderBottom={
-                            index === availableKeysInOrder.length - 1
-                              ? "none"
-                              : "1px solid rgba(0,0,0,0.05)"
-                          }
-                        >
-                          <Box
-                            bg={accentGold}
-                            w="20px"
-                            h="20px"
-                            borderRadius="full"
+                        return availableKeysInOrder.map((key, index) => (
+                          <ListItem
+                            key={key}
                             display="flex"
                             alignItems="center"
-                            justifyContent="center"
-                            flexShrink={0}
+                            gap={3}
+                            py={0}
+                            borderBottom={
+                              index === availableKeysInOrder.length - 1
+                                ? "none"
+                                : "1px solid rgba(0,0,0,0.05)"
+                            }
                           >
-                            <Icon as={CheckIcon} color="white" boxSize={3} />
-                          </Box>
+                            <Box
+                              bg={accentGold}
+                              w="20px"
+                              h="20px"
+                              borderRadius="full"
+                              display="flex"
+                              alignItems="center"
+                              justifyContent="center"
+                              flexShrink={0}
+                            >
+                              <Icon as={CheckIcon} color="white" boxSize={3} />
+                            </Box>
 
-                          <Text fontSize="md" color="gray.700" pl={1} mt={3}>
-                            {meta[key]}
-                          </Text>
-                        </ListItem>
-                      ));
-                    })()}
-                  </UnorderedList>
+                            <Text fontSize="md" color="gray.700" pl={1} mt={3}>
+                              {meta[key]}
+                            </Text>
+                          </ListItem>
+                        ));
+                      })()}
+                    </UnorderedList>
 
-                  {/* ACTIONS: Buy, Demo */}
-                  <HStack width="100%" spacing={3}>
-                    {!projectAuth.currentUser ? (
-                      <Button
-                        mt={3}
-                        size="lg"
-                        width="full"
-                        borderRadius="full"
-                        bg="gray.300"
-                        color="gray.600"
-                        border={`2px solid ${accentGold}`}
-                        cursor="not-allowed"
-                      >
-                        Sign in to continue
-                      </Button>
-                    ) : (
-                      <Tooltip
-                        label={isDowngrade ? "Downgrade is not allowed" : ""}
-                        isDisabled={!isDowngrade}
-                      >
+                    {/* ACTIONS: Buy, Demo */}
+                    <HStack width="100%" spacing={3}>
+                      {!projectAuth.currentUser ? (
                         <Button
                           mt={3}
                           size="lg"
                           width="full"
                           borderRadius="full"
-                          bg={
-                            plan.metadata?.recommended
-                              ? accentGold
-                              : "transparent"
-                          }
-                          color={
-                            plan.metadata?.recommended ? "white" : accentGold
-                          }
+                          bg="gray.900"
+                          color="white"
                           border={`2px solid ${accentGold}`}
-                          _hover={{
-                            bg: plan.metadata?.recommended
-                              ? "#b89350"
-                              : accentGold,
-                            color: "white",
-                          }}
-                          transition="all 0.3s ease"
-                          isDisabled={isCurrentPlan || isDowngrade}
                           onClick={() =>
-                            handleCheckout(
-                              projectAuth.currentUser,
-                              priceObj?.id,
-                              plan.id,
-                              amount
-                            )
+                            history.push("/login?redirect=/pricing")
                           }
-                          isLoading={loadingPlan === plan.id}
+                          _hover={{
+                            bg: "black", // or darker color
+                            color: "white", // ensure text stays white
+                            transform: "translateY(-2px)",
+                          }}
                         >
-                          {loadingPlan === plan.id
-                            ? "Redirecting..."
-                            : plan.metadata?.cta_text || "Choose"}
+                          Sign in to continue
                         </Button>
-                      </Tooltip>
-                    )}
-                  </HStack>
+                      ) : (
+                        <Tooltip
+                          label={isDowngrade ? "Downgrade is not allowed" : ""}
+                          isDisabled={!isDowngrade}
+                        >
+                          <Button
+                            mt={3}
+                            size="lg"
+                            width="full"
+                            borderRadius="full"
+                            bg={
+                              plan.metadata?.recommended
+                                ? accentGold
+                                : "transparent"
+                            }
+                            color={
+                              plan.metadata?.recommended ? "white" : accentGold
+                            }
+                            border={`2px solid ${accentGold}`}
+                            _hover={{
+                              bg: plan.metadata?.recommended
+                                ? "#b89350"
+                                : accentGold,
+                              color: "white",
+                            }}
+                            transition="all 0.3s ease"
+                            isDisabled={isCurrentPlan || isDowngrade}
+                            onClick={() =>
+                              handleCheckout(
+                                projectAuth.currentUser,
+                                priceObj?.id,
+                                plan.id,
+                                amount
+                              )
+                            }
+                            isLoading={loadingPlan === plan.id}
+                          >
+                            {loadingPlan === plan.id
+                              ? "Redirecting..."
+                              : plan.metadata?.cta_text || "Choose"}
+                          </Button>
+                        </Tooltip>
+                      )}
+                    </HStack>
 
-                  {/* Secondary actions row: Demo */}
-                  <HStack width="100%" spacing={3} mt={2}>
-                    <Button
-                      width="full"
-                      size="sm"
-                      borderRadius="full"
-                      variant="outline"
-                      border={`1px solid ${borderGold}`}
-                      onClick={() =>
-                        handleActivateDemo(plan.id, plan.name, amount)
-                      }
-                      isLoading={loadingPlan === plan.id}
-                      isDisabled={!projectAuth.currentUser || isCurrentPlan}
-                    >
-                      Activate Demo (no charge)
-                    </Button>
-                  </HStack>
-                </VStack>
-              </Box>
-            );
-          })}
-        </Stack>
+                    {/* Secondary actions row: Demo */}
+                    <HStack width="100%" spacing={3} mt={2}>
+                      <Button
+                        width="full"
+                        size="sm"
+                        borderRadius="full"
+                        variant="outline"
+                        border={`1px solid ${borderGold}`}
+                        onClick={() =>
+                          handleActivateDemo(plan.id, plan.name, amount)
+                        }
+                        isLoading={loadingPlan === plan.id}
+                        isDisabled={!projectAuth.currentUser || isCurrentPlan}
+                      >
+                        Activate Demo (no charge)
+                      </Button>
+                    </HStack>
+                  </VStack>
+                </Box>
+              );
+            })}
+          </Stack>
 
-        <Text fontSize="sm" color="gray.500" mt={6} textAlign="center">
-          Prices shown in USD. All plans include secure storage and downloadable
-          albums for every event.
-        </Text>
-      </Flex>
-    </Box>
+          <Text fontSize="sm" color="gray.500" mt={6} textAlign="center">
+            Prices shown in USD. All plans include secure storage and
+            downloadable albums for every event.
+          </Text>
+        </Flex>
+      </Box>
+    </>
   );
 }

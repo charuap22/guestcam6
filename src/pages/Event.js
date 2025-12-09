@@ -45,6 +45,10 @@ import {
   FaEdit,
   FaTrash,
 } from "react-icons/fa";
+import { projectFirestore } from "../firebase/config";
+
+console.log("[DEV CHECK] Event.js loaded at", new Date().toISOString());
+
 
 /* Utility: Download QR Code */
 const downloadQR = (canvasId = "qr-canvas") => {
@@ -78,8 +82,6 @@ export default function EventPage() {
     error: userEventsError,
     isPending: userEventsPending,
   } = useCollection("events", ["adminId", "==", useAuthContext().user?.uid]); // fetch user's events (first event fallback)
-  // NOTE: useAuthContext().user used inside hook argument - this is safe because hooks are top-level.
-  // Alternatively we could get the user above and pass user?.uid, but keep simple.
 
   const { UserInfo } = useUserInfo();
   const { changeEvent } = useEvent();
@@ -110,6 +112,7 @@ export default function EventPage() {
   // delete dialog hooks (top-level)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const cancelRef = useRef();
+  const [isDeleting, setIsDeleting] = useState(false); // <-- NEW
 
   // ---------------------------
   // Layout measurement effect
@@ -380,51 +383,180 @@ export default function EventPage() {
   // Delete/Archive behavior (safe client timestamp used)
   // ---------------------------
   const openDeleteDialog = () => setIsDeleteOpen(true);
-  const closeDeleteDialog = () => setIsDeleteOpen(false);
+  const closeDeleteDialog = () => {
+    if (!isDeleting) setIsDeleteOpen(false);
+  };
 
-  const handleConfirmDelete = async () => {
-    closeDeleteDialog();
-    try {
-      if (typeof updateDocument === "function") {
-        // soft-delete: client timestamp fallback
-        await updateDocument(document.id, {
+const handleConfirmDelete = async () => {
+  // Immediately show deleting state and close dialog
+  setIsDeleting(true);
+  setIsDeleteOpen(false);
+
+  try {
+    if (!document?.id) throw new Error("No event selected to delete.");
+    const eventId = document.id;
+
+    // 1) Try soft-delete first (update)
+    if (typeof updateDocument === "function") {
+      try {
+        const updated = await updateDocument(eventId, {
           deleted: true,
           deletedAt: new Date(),
           deletedBy: user?.uid || null,
         });
-        toast({
-          title: "Event archived",
-          description: "The event was archived (soft-deleted).",
-          status: "success",
-          duration: 3000,
-          isClosable: true,
-          position: "top-right",
-        });
-      } else {
-        // fallback to hard delete
-        await deleteDocument(document.id);
-        toast({
-          title: "Event deleted",
-          description: "The event was removed.",
-          status: "success",
-          duration: 3000,
-          isClosable: true,
-          position: "top-right",
-        });
+
+        // updateDocument is expected to return the updated document object.
+        console.log("updateDocument returned:", updated);
+
+        // 1.a) Read the document directly from Firestore to verify the field was written
+        const snap = await projectFirestore
+          .collection("events")
+          .doc(eventId)
+          .get();
+        if (!snap.exists) {
+          // Document missing after update — treat as success or fallback to deletion
+          console.warn("After update, document no longer exists in Firestore.");
+          toast({
+            title: "Event removed",
+            description: "Event no longer exists after archive attempt.",
+            status: "success",
+            duration: 3000,
+            isClosable: true,
+            position: "top-right",
+          });
+          setIsDeleting(false);
+          history.replace("/admin/dashboard");
+          return;
+        }
+
+        const data = snap.data();
+        console.log("Document after update check:", data);
+
+        if (data && data.deleted === true) {
+          // Verified — soft-delete applied
+          toast({
+            title: "Event archived",
+            description: "The event was archived (soft-deleted).",
+            status: "success",
+            duration: 3000,
+            isClosable: true,
+            position: "top-right",
+          });
+          setIsDeleting(false);
+          history.replace("/admin/dashboard");
+          return;
+        } else {
+          // Update call succeeded (didn't throw) but the field isn't present — possible rules/transpile issue
+          console.warn(
+            "Soft-delete update did not write deleted:true — attempting hard delete fallback."
+          );
+          toast({
+            title: "Archive incomplete",
+            description:
+              "Archiving didn't persist. Attempting permanent delete fallback.",
+            status: "warning",
+            duration: 4000,
+            isClosable: true,
+            position: "top-right",
+          });
+        }
+      } catch (updateErr) {
+        // updateDocument threw — possibly permission issue
+        console.error(
+          "Soft-delete (updateDocument) threw an error:",
+          updateErr
+        );
+        // Surface friendly toast but continue to fallback
+        if (/permission-denied/i.test(String(updateErr?.message || ""))) {
+          toast({
+            title: "Permission denied",
+            description:
+              "You don't have permission to archive this event. Attempting permanent delete fallback (may also fail).",
+            status: "error",
+            duration: 5000,
+            isClosable: true,
+            position: "top-right",
+          });
+        } else {
+          toast({
+            title: "Archive failed",
+            description: "Archiving failed, attempting permanent delete.",
+            status: "warning",
+            duration: 5000,
+            isClosable: true,
+            position: "top-right",
+          });
+        }
+        console.warn("Falling through to hard-delete fallback.");
       }
-      history.replace("/admin/dashboard");
-    } catch (err) {
-      console.error("Delete/Archive failed", err);
-      toast({
-        title: "Delete failed",
-        description: "Could not delete the event. Try again.",
-        status: "error",
-        duration: 4000,
-        isClosable: true,
-        position: "top-right",
-      });
     }
-  };
+
+    // 2) Hard-delete fallback: try to delete the document
+    if (typeof deleteDocument === "function") {
+      try {
+        const res = await deleteDocument(eventId);
+        console.log("deleteDocument returned:", res);
+        if (res && res.success) {
+          toast({
+            title: "Event deleted",
+            description: "The event has been permanently deleted.",
+            status: "success",
+            duration: 3000,
+            isClosable: true,
+            position: "top-right",
+          });
+          setIsDeleting(false);
+          history.replace("/admin/dashboard");
+          return;
+        } else {
+          // deleteDocument returned an error object or falsy result
+          const errMsg = res?.error || "Unknown error during deletion.";
+          throw new Error(errMsg);
+        }
+      } catch (deleteErr) {
+        console.error("Hard delete failed:", deleteErr);
+        if (/permission-denied/i.test(String(deleteErr?.message || ""))) {
+          toast({
+            title: "Permission denied",
+            description:
+              "You don't have permission to delete this event. Check Firestore rules or event ownership.",
+            status: "error",
+            duration: 6000,
+            isClosable: true,
+            position: "top-right",
+          });
+        } else {
+          toast({
+            title: "Delete failed",
+            description:
+              deleteErr?.message ||
+              "Could not delete the event. See console for details.",
+            status: "error",
+            duration: 6000,
+            isClosable: true,
+            position: "top-right",
+          });
+        }
+        setIsDeleting(false);
+        return;
+      }
+    }
+
+    // 3) If no updateDocument/deleteDocument available
+    throw new Error("Delete/Archive functions not available.");
+  } catch (err) {
+    console.error("Delete/Archive flow failed:", err);
+    toast({
+      title: "Delete failed",
+      description: err.message || "Could not delete the event. Try again.",
+      status: "error",
+      duration: 4000,
+      isClosable: true,
+      position: "top-right",
+    });
+    setIsDeleting(false);
+  }
+};
 
   const handleEdit = () => history.push(`/admin/edit-event/${document.id}`);
 
@@ -432,7 +564,9 @@ export default function EventPage() {
   // Render owner UI
   // ---------------------------
   return (
+    
     <Box as="main" w="100%" bg={outerBg} mt="92px" minH="100vh">
+    
       {/* HERO / FEATURE IMAGE */}
       <Box ref={heroRef} position="relative" w="100%" h={heroHeight}>
         <Image
@@ -473,12 +607,12 @@ export default function EventPage() {
                   textAlign="center"
                   fontWeight="700"
                 >
-                  Guest Photos & Digital Guestbook
+                  Guestdd Photos & Digital Guestbook
                 </Heading>
 
                 <QRCode
                   id="qr-canvas"
-                  value={`https://guestcam3-8cb1f.web.app/guest_login/${id}`}
+                  value={`https://guestpov.ca/guest_login/${id}`}
                   size={qrSize}
                   fgColor={COLORS.deepPurple}
                 />
@@ -645,6 +779,87 @@ export default function EventPage() {
                   </Button>
                 </HStack>
               </Grid>
+
+              {/* DEBUG: temporary direct-check buttons (remove later) */}
+              <Box
+                mt={4}
+                p={3}
+                bg="rgba(255,255,255,0.95)"
+                boxShadow="md"
+                borderRadius="md"
+                zIndex={60}
+              >
+                <Text fontSize="sm" mb={2} fontWeight={700}>
+                  DEBUG: direct Firestore checks
+                </Text>
+                <HStack spacing={3}>
+                  <Button
+                    colorScheme="orange"
+                    onClick={async () => {
+                      console.log(
+                        "DEBUG: attempting direct update (soft-delete)..."
+                      );
+                      try {
+                        const eventId = document?.id;
+                        if (!eventId) return console.warn("no document id");
+                        await projectFirestore
+                          .collection("events")
+                          .doc(eventId)
+                          .update({
+                            deleted: true,
+                            deletedAt: new Date(),
+                            deletedBy: user?.uid || null,
+                          });
+                        console.log("DEBUG: update() succeeded");
+                        const snap = await projectFirestore
+                          .collection("events")
+                          .doc(eventId)
+                          .get();
+                        console.log(
+                          "DEBUG: after update check:",
+                          snap.exists ? snap.data() : "doc missing"
+                        );
+                      } catch (err) {
+                        console.error("DEBUG: update() error:", err);
+                      }
+                    }}
+                  >
+                    Debug: try soft-delete
+                  </Button>
+
+                  <Button
+                    colorScheme="red"
+                    onClick={async () => {
+                      console.log(
+                        "DEBUG: attempting direct delete (hard-delete)..."
+                      );
+                      try {
+                        const eventId = document?.id;
+                        if (!eventId) return console.warn("no document id");
+                        await projectFirestore
+                          .collection("events")
+                          .doc(eventId)
+                          .delete();
+                        console.log("DEBUG: delete() succeeded");
+                      } catch (err) {
+                        console.error("DEBUG: delete() error:", err);
+                      }
+                    }}
+                  >
+                    Debug: try hard-delete
+                  </Button>
+
+                  <Button
+                    colorScheme="gray"
+                    onClick={() => {
+                      console.log("DEBUG: document in memory:", document);
+                      alert("Check console for the document object (DEBUG).");
+                    }}
+                  >
+                    Debug: show doc
+                  </Button>
+                </HStack>
+              </Box>
             </Box>
           </Box>
         </Container>
@@ -689,10 +904,20 @@ export default function EventPage() {
             </AlertDialogBody>
 
             <AlertDialogFooter>
-              <Button ref={cancelRef} onClick={closeDeleteDialog}>
+              <Button
+                ref={cancelRef}
+                onClick={closeDeleteDialog}
+                isDisabled={isDeleting}
+              >
                 Cancel
               </Button>
-              <Button colorScheme="red" onClick={handleConfirmDelete} ml={3}>
+              <Button
+                colorScheme="red"
+                onClick={handleConfirmDelete}
+                ml={3}
+                isLoading={isDeleting}
+                loadingText="Deleting..."
+              >
                 Yes, delete
               </Button>
             </AlertDialogFooter>
