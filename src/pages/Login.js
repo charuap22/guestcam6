@@ -23,6 +23,10 @@ import {
   Spinner,
 } from "@chakra-ui/react";
 
+
+import firebase from "firebase/app"; // ✅ ADD
+import "firebase/firestore";  
+
 import { useLocation, useHistory, NavLink } from "react-router-dom";
 import background from "../assets/party_slide2.jpeg";
 import { useLogin } from "../hooks/useLogin";
@@ -60,26 +64,47 @@ export default function Login() {
     if (rememberedEmail) setEmail(rememberedEmail);
   }, [rememberedEmail]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    updateRemember(email);
+  updateRemember(email);
 
-    try {
-      await login(email, password);
+  try {
+    const userCredential = await login(email, password);
+    const uid = userCredential?.user?.uid;
 
-      // Redirect after login
+    // 🔹 Fetch user doc
+    const userSnap = await firebase
+      .firestore()
+      .collection("users")
+      .doc(uid)
+      .get();
+
+    const userData = userSnap.exists ? userSnap.data() : null;
+
+    // 🔹 Determine plan status
+    const hasPlan =
+      userData?.subscriptionStatus === "active" ||
+      userData?.packageActive === true ||
+      userData?.planId;
+
+    // 🔹 Redirect logic
+    if (!hasPlan) {
+      history.replace("/pricing");
+    } else {
       history.replace(redirectTo);
-    } catch (err) {
-      toast({
-        title: "Login failed",
-        description: err.message || "Unable to login",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
     }
-  };
+  } catch (err) {
+    toast({
+      title: "Login failed",
+      description: err.message || "Unable to login",
+      status: "error",
+      duration: 5000,
+      isClosable: true,
+    });
+  }
+};
+
 
   const handleForgotPassword = async () => {
     if (!email) {
@@ -309,7 +334,7 @@ export default function Login() {
             </VStack>
             <Spacer />
             <Box>
-              <Text color="white">© 2023 GuestPOV. All rights reserved.</Text>
+              <Text color="white">© 2025 GuestPOV. All rights reserved.</Text>
             </Box>
           </Flex>
         </Flex>

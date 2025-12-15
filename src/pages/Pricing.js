@@ -189,7 +189,7 @@ export default function GuestPovPricing() {
         line_items: [
           {
             price_data: {
-              currency: "usd",
+              currency: "cad",
               product_data: {
                 name: currentSubscription
                   ? `Upgrade to ${newPlan.name}`
@@ -533,7 +533,7 @@ export default function GuestPovPricing() {
                         ${amount}
                       </Text>
                       <Text color="gray.500" fontSize="sm">
-                        USD
+                        CAD
                       </Text>
                     </HStack>
 
@@ -716,7 +716,7 @@ export default function GuestPovPricing() {
           </Stack>
 
           <Text fontSize="sm" color="gray.500" mt={6} textAlign="center">
-            Prices shown in USD. All plans include secure storage and
+            Prices shown in CAD. All plans include secure storage and
             downloadable albums for every event.
           </Text>
         </Flex>

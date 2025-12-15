@@ -53,8 +53,8 @@ const Event = () => {
   const { UserInfo } = useUserInfo();
 
   const { eventId, changeEvent } = useEvent();
- const { currentPlan, loading } = usePlan();
-const textGold = "#d4af37";
+  const { currentPlan, loading } = usePlan();
+  const textGold = "#d4af37";
   let barVal = 0;
   // useEffect(() => {
   //   changeEvent(id);
@@ -63,7 +63,7 @@ const textGold = "#d4af37";
   //   console.log(barVal);
   // }, [document, currentPlan]);
   useEffect(() => {
-    if (id)       changeEvent(id);
+    if (id) changeEvent(id);
     if (currentPlan?.NoOfGuests_end && document) {
       const remaining = currentPlan.NoOfGuests_end - document.noOfGuests;
       console.log("Remaining guests:", remaining);
@@ -129,25 +129,25 @@ const textGold = "#d4af37";
               />
             </Box>
 
-         <VStack spacing={4} align="stretch" mb={4}>
-                    <Box textAlign="center">
-                      <Text fontSize="sm" color="gray.500">
-                        {document.eventPageHeader}
-                      </Text>
-                      <Heading
-                        as="h2"
-                        fontSize={{ base: "2xl", md: "3xl" }}
-                        mt={2}
-                        color={textGold}
-                      >
-                        {document.eventName}
-                      </Heading>
-                      <Text fontSize="sm" color="gray.500" mt={2}>
-                        {document.welcomeMessage}
-                      </Text>
-                    </Box>
-                  </VStack>
-        
+            <VStack spacing={4} align="stretch" mb={4}>
+              <Box textAlign="center">
+                <Text fontSize="sm" color="gray.500">
+                  {document.eventPageHeader}
+                </Text>
+                <Heading
+                  as="h2"
+                  fontSize={{ base: "2xl", md: "3xl" }}
+                  mt={2}
+                  color={textGold}
+                >
+                  {document.eventName}
+                </Heading>
+                <Text fontSize="sm" color="gray.500" mt={2}>
+                  {document.welcomeMessage}
+                </Text>
+              </Box>
+            </VStack>
+
             <Text fontSize={"md"}>GUESTPOV</Text>
           </Box>
         </VStack>

@@ -101,7 +101,7 @@ const Menu = () => {
                         <NavLink to="/about">About Us</NavLink>
                       </li>
                       <li>
-                        <NavLink to="/usecases">Use Cases</NavLink>
+                        <NavLink to="/usecases">Events</NavLink>
                         <ul>
                           <li>
                             <a href="/usecases#wedding">Wedding</a>

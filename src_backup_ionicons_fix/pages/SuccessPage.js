@@ -143,14 +143,11 @@ const SuccessPage = () => {
     fetchSessionAndUserData();
   }, [sessionId, updatePlan, history]); // ✅ Added updatePlan and navigate to dependencies
 
-
   if (loading) {
     return (
       <h2 style={{ textAlign: "center", marginTop: "50px" }}>Loading...</h2>
     );
   }
-
-
 
   return (
     <div
@@ -214,4 +211,3 @@ const SuccessPage = () => {
 };
 
 export default SuccessPage;
-

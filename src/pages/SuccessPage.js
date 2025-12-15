@@ -112,7 +112,7 @@ const SuccessPage = () => {
         updatePlan({
           planId,
           planName,
-          price
+          price,
           // NoOfGuests_start: sessionData.metadata.NoOfGuests_start || "0",
           // NoOfGuests_end: sessionData.metadata.NoOfGuests_end || "Unlimited",
         });
@@ -131,7 +131,7 @@ const SuccessPage = () => {
 
         // ✅ Redirect to Dashboard after 3 seconds
         setTimeout(() => {
-           history.push("/admin/dashboard");
+          history.push("/admin/dashboard");
         }, 3000);
       } catch (error) {
         console.error("🔥 Error:", error.message);
@@ -143,14 +143,11 @@ const SuccessPage = () => {
     fetchSessionAndUserData();
   }, [sessionId, updatePlan, history]); // ✅ Added updatePlan and navigate to dependencies
 
-
   if (loading) {
     return (
       <h2 style={{ textAlign: "center", marginTop: "50px" }}>Loading...</h2>
     );
   }
-
-
 
   return (
     <div
@@ -214,4 +211,3 @@ const SuccessPage = () => {
 };
 
 export default SuccessPage;
-

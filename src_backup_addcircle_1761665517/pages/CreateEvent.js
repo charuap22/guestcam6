@@ -33,7 +33,6 @@ import {
 } from "@chakra-ui/react";
 import { IoAddCircleOutline } from "react-icons/io5";
 
-
 import GetPackageInfo from "../components/GetPackageInfo";
 import { useFirestore } from "../hooks/useFirestore";
 import { usePlan } from "../context/PlanContext";
@@ -116,15 +115,14 @@ const CreateEvent = () => {
 
   // ✅ Handle Event Creation
   const handleSubmit = async (e) => {
-
     if (!user) {
       setError("User not logged in.");
       return;
     }
-     e.preventDefault();
-     setIsPending(true);
-     setError(null);
-     
+    e.preventDefault();
+    setIsPending(true);
+    setError(null);
+
     if (!eventName || !eventPageHeader || !welcomeMessage || !dateOfEvent) {
       setError("Please fill in all required fields.");
       setIsPending(false);
@@ -135,7 +133,6 @@ const CreateEvent = () => {
       setIsPending(false);
       return;
     }
-   
 
     try {
       if (eventExists) {
@@ -182,7 +179,7 @@ const CreateEvent = () => {
           plan: currentPlan?.Name || "No Plan",
           amount: currentPlan?.Price || 0,
           guestBook: [],
-          isPublic: true // <-- needed for guest access
+          isPublic: true, // <-- needed for guest access
         };
 
         const response = await addDocument(event);
@@ -210,7 +207,6 @@ const CreateEvent = () => {
         setTimeout(() => {
           history.push("/dashboard");
         }, 1500); // ✅ Redirect after a short delay
-
       } else {
         setError("Please select an event image.");
       }

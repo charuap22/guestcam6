@@ -114,21 +114,21 @@ export default function Signup() {
   return (
     <>
       <Button
-            position="absolute"
-            top="20px"
-            left="20px"
-            zIndex={10}
-            size="sm"
-            bg="whiteAlpha.800"
-            backdropFilter="blur(6px)"
-            color="black"
-            borderRadius="full"
-            px={4}
-            onClick={() => history.push("/")}
-            _hover={{ bg: "white" }}
-          >
-            ← Back
-          </Button>
+        position="absolute"
+        top="20px"
+        left="20px"
+        zIndex={10}
+        size="sm"
+        bg="whiteAlpha.800"
+        backdropFilter="blur(6px)"
+        color="black"
+        borderRadius="full"
+        px={4}
+        onClick={() => history.push("/")}
+        _hover={{ bg: "white" }}
+      >
+        ← Back
+      </Button>
       <Stack minH={"100vh"} direction={{ base: "column", md: "row" }}>
         <Flex p={8} flex={1} align={"center"} justify={"center"}>
           <Stack spacing={4} w={"full"} maxW={"md"}>
@@ -345,7 +345,7 @@ export default function Signup() {
             </VStack>
             <Spacer />
             <Box>
-              <Text color="white">© 2022 Chakra UI. All rights reserved.</Text>
+              <Text color="white">© 2025 GuestPov. All rights reserved.</Text>
             </Box>
           </Flex>
         </Flex>

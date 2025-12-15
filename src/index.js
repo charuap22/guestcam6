@@ -10,8 +10,6 @@ import { PlanProvider } from "./context/PlanContext";
 import { EventProvider } from "./context/EventContext";
 import { UserInfoProvider } from "./context/UserInfoContext";
 
-
-
 ReactDOM.render(
   <React.StrictMode>
     <AuthContextProvider>

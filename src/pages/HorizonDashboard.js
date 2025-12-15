@@ -44,20 +44,20 @@ export default function HorizonDashboard(props) {
   const isGuestRoute = guestPatterns.some((p) => pathname.includes(p));
 
   // --- Route builder ---
-  const getRoutes = (routesArray) =>
-    routesArray.map((route, key) => {
-      if (route.layout === "/admin") {
-        return (
-          <Route
-            exact
-            path={route.layout + (route.path || "")}
-            key={key}
-            render={() => route.component}
-          />
-        );
-      }
-      return null;
-    });
+const getRoutes = (routesArray) =>
+  routesArray.map((route, key) => {
+    if (route.layout === "/admin") {
+      return (
+        <Route
+          exact
+          path={route.layout + (route.path || "")}
+          key={key}
+          render={(props) => <route.component {...props} />}
+        />
+      );
+    }
+    return null;
+  });
 
   return (
     <Box>

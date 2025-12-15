@@ -16,7 +16,6 @@ import {
   useColorModeValue,
   chakra,
   Flex,
- 
   Divider,
 } from "@chakra-ui/react";
 import { keyframes } from "@emotion/react";
@@ -141,7 +140,7 @@ const UseCases = () => {
   return (
     <>
       <Header
-        title="Use Cases"
+        title="Events"
         subtitle="Each celebration is one of a kind — from birthdays and milestones to baby showers and ceremonies. Treasure these moments; they come only once."
         headerImage={bannerBg}
       />
