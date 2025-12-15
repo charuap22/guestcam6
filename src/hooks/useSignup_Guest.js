@@ -11,6 +11,7 @@ import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 export const useSignup_Guest = () => {
+  
   const [isActive, setIsActive] = useState(true);
   const [error, setError] = useState(null);
   const [isPending, setIsPending] = useState(false);
@@ -20,6 +21,7 @@ export const useSignup_Guest = () => {
   const signup = async (displayName, thumbnail, eventId) => {
     setError(null);
     setIsPending(true);
+console.log("GUEST LOGIN REDIRECT TO:", `/admin/guest-dashboard/${eventId}`);
 
     try {
       // ✅ Step 1: Sign in anonymously

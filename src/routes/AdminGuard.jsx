@@ -1,3 +1,4 @@
+// src/routes/AdminGuard.jsx
 import { useEffect } from "react";
 import { useHistory, useLocation } from "react-router-dom";
 import { Center, Spinner } from "@chakra-ui/react";
@@ -18,22 +19,20 @@ export default function AdminGuard({ children }) {
   useEffect(() => {
     if (isLoading) return;
 
-    // 🔴 Not logged in
+    // 🔒 Not logged in → login
     if (!user) {
       history.replace(`/login?redirect=${location.pathname}`);
       return;
     }
 
-    // 🔴 Guests blocked from admin
+    // ✅ ALLOW GUESTS / ANONYMOUS USERS (DO NOTHING)
     if (user.isAnonymous || UserInfo?.role === "guest") {
-      history.replace("/guest-dashboard");
       return;
     }
 
-    // 🔴 OWNER WITHOUT PLAN → FORCE PRICING
+    // 🔒 OWNER WITHOUT PLAN → PRICING
     if (!currentPlan) {
       history.replace("/pricing");
-      return;
     }
   }, [user, UserInfo, currentPlan, isLoading, history, location.pathname]);
 
@@ -45,8 +44,8 @@ export default function AdminGuard({ children }) {
     );
   }
 
-  // 🚫 Block render if plan missing
-  if (!currentPlan) {
+  // 🚫 Block render ONLY for owners without plan
+  if (!currentPlan && !user?.isAnonymous && UserInfo?.role !== "guest") {
     return null;
   }
 
