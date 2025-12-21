@@ -13,5 +13,5 @@ export default function GuestVideos() {
   // allow uploads by default for guests. Change to false if you want to block anonymous uploads.
   const allowUpload = true;
 
-  return <Videos allowUpload={allowUpload} />;
+  return <Videos guestMode={true} allowUpload={allowUpload} />;
 }

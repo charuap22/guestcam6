@@ -58,15 +58,18 @@ function timeAgoFrom(createdAt) {
   return `${Math.floor(s / 86400)}d ago`;
 }
 
-function canUserDeleteEntry(user, entry, isAdmin = false) {
+function canUserDeleteEntry(user, entry, isAdmin) {
+  if (!user || !entry) return false;
+
+  // Owner can delete anything
   if (isAdmin) return true;
-  if (!user) return false;
-  if (entry?.userId && entry.userId === user.uid) return true;
-  if (!entry.userId && entry.displayName && user.displayName) {
-    return entry.displayName.trim() === user.displayName.trim();
-  }
-  return false;
+
+  // Guests: ONLY own entries
+  return entry.userId === user.uid;
 }
+
+
+
 
 /* ---------------- MAIN COMPONENT ---------------- */
 const Guestbook = ({ guestMode = false, allowUpload = true }) => {
@@ -87,8 +90,9 @@ const Guestbook = ({ guestMode = false, allowUpload = true }) => {
     onClose: closeVideoUpload,
   } = useDisclosure();
 
-  /* ---------- Admin detection ---------- */
+  /* ---------- Admin detection (FIXED) ---------- */
   const [isAdmin, setIsAdmin] = useState(false);
+
   useEffect(() => {
     if (!user || !eventDoc) {
       setIsAdmin(false);
@@ -96,17 +100,17 @@ const Guestbook = ({ guestMode = false, allowUpload = true }) => {
     }
 
     const uid = user.uid;
-    const checkValue = (val) => {
-      if (!val) return false;
-      if (typeof val === "string") return val === uid;
-      if (typeof val === "object") {
-        return Object.values(val).some((nested) => checkValue(nested));
-      }
-      return false;
-    };
 
-    const ownerMatch = checkValue(eventDoc);
-    setIsAdmin(ownerMatch);
+    // 🔒 ONLY these fields define event ownership
+    const ownerFields = [
+      eventDoc.createdBy,
+      eventDoc.createdByUid,
+      eventDoc.ownerId,
+      eventDoc.ownerUid,
+      eventDoc.adminId,
+    ];
+
+    setIsAdmin(ownerFields.includes(uid));
   }, [user, eventDoc]);
 
   /* ---------- Guestbook data ---------- */
@@ -114,12 +118,14 @@ const Guestbook = ({ guestMode = false, allowUpload = true }) => {
     eventDoc && Array.isArray(eventDoc.guestBook) ? eventDoc.guestBook : [];
 
   const { textEntriesAll, videoEntriesAll } = useMemo(() => {
-    const texts = [],
-      vids = [];
+    const texts = [];
+    const vids = [];
+
     for (const e of guestBookSafe) {
       if (e?.type === "video") vids.push(e);
       else texts.push(e);
     }
+
     const sortNewest = (arr) =>
       arr.sort((a, b) => {
         const ta = a.createdAt?.toDate
@@ -130,9 +136,14 @@ const Guestbook = ({ guestMode = false, allowUpload = true }) => {
           : new Date(b.createdAt).getTime();
         return tb - ta;
       });
+
     sortNewest(texts);
     sortNewest(vids);
-    return { textEntriesAll: texts, videoEntriesAll: vids };
+
+    return {
+      textEntriesAll: texts,
+      videoEntriesAll: vids,
+    };
   }, [guestBookSafe]);
 
   /* ---------- Add text message ---------- */
@@ -182,25 +193,28 @@ const Guestbook = ({ guestMode = false, allowUpload = true }) => {
   };
 
   /* ---------- Delete entry ---------- */
-  const deleteEntry = async (entry) => {
-    const canDelete = canUserDeleteEntry(
-      user,
-      entry,
-      guestMode ? false : isAdmin
-    );
-    if (!canDelete) {
-      toast({
-        title: "Not allowed",
-        description: "You can delete only your own messages.",
-        status: "error",
-      });
-      return;
-    }
-    if (!window.confirm("Delete this entry?")) return;
-    const updated = (eventDoc.guestBook || []).filter((e) => e.id !== entry.id);
-    await updateDocument(eventDoc.id, { guestBook: updated });
-    toast({ title: "Deleted", status: "info" });
-  };
+const deleteEntry = async (entry) => {
+  const canDelete = canUserDeleteEntry(user, entry, isAdmin);
+
+  if (!canDelete) {
+    toast({
+      title: "Not allowed",
+      description: "You can delete only your own messages.",
+      status: "error",
+    });
+    return;
+  }
+
+  if (!window.confirm("Delete this entry?")) return;
+
+  const updated = (eventDoc.guestBook || []).filter((e) => e.id !== entry.id);
+
+  await updateDocument(eventDoc.id, { guestBook: updated });
+
+  toast({ title: "Deleted", status: "info" });
+};
+
+
 
   /* ---------- Downloads (Owner only) ---------- */
   const downloadAllText = () => {
@@ -399,11 +413,8 @@ const Guestbook = ({ guestMode = false, allowUpload = true }) => {
           ) : (
             <Flex wrap="wrap" gap={4}>
               {videoEntriesAll.map((v) => {
-                const canDelete = canUserDeleteEntry(
-                  user,
-                  v,
-                  guestMode ? false : isAdmin
-                );
+                const canDelete = canUserDeleteEntry(user, v, isAdmin);
+
                 const selected = selectedVideos.has(v.id);
 
                 return (
@@ -499,11 +510,8 @@ const Guestbook = ({ guestMode = false, allowUpload = true }) => {
           ) : (
             <Flex wrap="wrap" gap={4}>
               {textEntriesAll.map((t) => {
-                const canDelete = canUserDeleteEntry(
-                  user,
-                  t,
-                  guestMode ? false : isAdmin
-                );
+               const canDelete = canUserDeleteEntry(user, t, isAdmin);
+
                 return (
                   <Box
                     key={t.id}

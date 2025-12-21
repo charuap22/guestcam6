@@ -270,7 +270,7 @@ const Viewer = ({
 /**
  * allowUpload: boolean - controls whether upload UI is shown
  */
-const Videos = ({ allowUpload = true }) => {
+const Videos = ({ allowUpload = true, guestMode = false }) => {
   const bg = useColorModeValue("gray.50", "gray.900");
   const gold = "#d4af37";
   const tileBg = useColorModeValue("white", "gray.800");
@@ -320,6 +320,7 @@ const Videos = ({ allowUpload = true }) => {
       setIsAdmin(false);
       return;
     }
+
     const uid = user.uid;
     let ownerMatch = false;
     const candidates = [
@@ -496,6 +497,17 @@ const Videos = ({ allowUpload = true }) => {
     );
   }
 
+  // ✅ Guest-ready guard (same pattern as Gallery)
+  if (guestMode && !user) {
+    return (
+      <Flex minH="80vh" align="center" justify="center">
+        <Spinner />
+        <Text ml={3}>Loading videos...</Text>
+      </Flex>
+    );
+  }
+
+  // Guests can see ALL videos
   const safeVideos = videos || [];
 
   const displayUploaderName = (v) => {

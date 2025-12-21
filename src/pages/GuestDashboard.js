@@ -24,6 +24,9 @@ import { MdEvent, MdAccessTime } from "react-icons/md";
 import { CircleIcon } from "../components/EventsList";
 import { useAuthContext } from "../hooks/useAuthContext";
 import { useUserInfo } from "../hooks/useUserInfo";
+import { useEffect } from "react";
+
+import { useEvent } from "../hooks/useEvent";
 
 const Guest_Dashboard = () => {
   const { id } = useParams();
@@ -31,6 +34,15 @@ const Guest_Dashboard = () => {
   const { user } = useAuthContext();
   const { UserInfo } = useUserInfo();
   const history = useHistory();
+
+
+  const { changeEvent } = useEvent();
+
+  useEffect(() => {
+    if (id) {
+      changeEvent(id);
+    }
+  }, [id, changeEvent]);
 
   // Chakra UI colors
   const bgGradient = useColorModeValue(

@@ -1,6 +1,7 @@
 // src/components/navbar/NavbarLinksAdmin.js
-import React from "react";
+import React, { useEffect } from "react";
 import PropTypes from "prop-types";
+
 import {
   Avatar,
   Flex,
@@ -66,25 +67,34 @@ export default function HeaderLinks(props) {
 
   // Try to detect an eventId from a guest-dashboard URL:
   // matches: /admin/guest-dashboard/:eventId
-  const guestEventIdFromUrl = (() => {
-    if (typeof window === "undefined") return null;
-    try {
-      const m = window.location.pathname.match(
-        /\/admin\/guest-dashboard\/([^/]+)/
-      );
-      return m ? m[1] : null;
-    } catch {
-      return null;
-    }
-  })();
+const guestEventIdFromUrl = React.useMemo(() => {
+  if (typeof window === "undefined") return null;
+
+  const path = window.location.pathname;
+
+  // supports:
+  // /admin/guest-dashboard/:id
+  // /admin/gallery/guest/:id
+  // /admin/videos/guest/:id
+  // /admin/guestbook/guest/:id
+  const match = path.match(
+    /\/admin\/(guest-dashboard|gallery\/guest|videos\/guest|guestbook\/guest)\/([^/]+)/
+  );
+
+  return match ? match[2] : null;
+}, []);
+
 
   // Resolve currentEventId using many fallbacks:
   // 1) event context (ctxEventId)
   // 2) route params (params.eventId or params.id)
   // 3) guest URL extractor (guestEventIdFromUrl) — used especially when a guest is logged in
   // 4) null if none found
-  const currentEventId =
-    ctxEventId || params.eventId || params.id || guestEventIdFromUrl || null;
+  const isGuest = user?.isAnonymous || UserInfo?.role === "guest";
+
+  const currentEventId = isGuest
+    ? guestEventIdFromUrl || params.id || null
+    : ctxEventId || params.eventId || params.id || null;
 
   const { document: userDoc } = useDocument("users", user?.uid);
   const { document: eventDoc } = useDocument("events", currentEventId);
@@ -113,14 +123,36 @@ export default function HeaderLinks(props) {
   // constants
   const HOME_ROUTE = "/admin/dashboard";
   const MANAGE_EVENT_ROUTE = (id) => `/admin/events/${id}`;
+  const getGuestEventId = () => {
+    if (!isGuest) return null;
+
+    // Prefer URL-based event id for guests
+    return guestEventIdFromUrl || params.id || params.eventId || null;
+  };
 
   const pickTargetId = () => {
+    // ✅ Guests: always use URL eventId
+    const guestId = getGuestEventId();
+    if (guestId) return guestId;
+
+    // ✅ Owners: context or owned events
     if (currentEventId) return currentEventId;
-    if (isOwner && Array.isArray(userEvents) && userEvents.length > 0)
+
+    if (isOwner && Array.isArray(userEvents) && userEvents.length > 0) {
       return userEvents[0].id;
+    }
 
     return null;
   };
+  useEffect(() => {
+    console.debug("Navbar event resolution", {
+      isGuest,
+      guestEventIdFromUrl,
+      ctxEventId,
+      params,
+      picked: pickTargetId(),
+    });
+  }, []);
 
   // gallery handler
   const handleOpenGallery = (roleBase) => {
@@ -204,8 +236,6 @@ export default function HeaderLinks(props) {
       );
     }
   }, [user, UserInfo, guestEventIdFromUrl]);
-
-  const isGuest = user?.isAnonymous || UserInfo?.role === "guest";
 
   return (
     <Flex

@@ -67,17 +67,21 @@ function timeAgoFromTimestamp(ts) {
 }
 
 function getUploaderUid(img) {
-  if (!img) return null;
-  return img.uploaderUid || img.userId || img.uploader_id || null;
+  return img?.createdBy || null;
 }
 
+
 function canUserDeleteImage(user, img, isAdmin = false) {
-  if (!img) return false;
   if (isAdmin) return true;
-  if (!user) return false;
-  const uploaderId = getUploaderUid(img);
-  return uploaderId && uploaderId === user.uid;
+  if (!user || !img) return false;
+
+  // support both schemas
+  const uploaderId = img.createdBy || img.userId;
+
+  return uploaderId === user.uid;
 }
+
+
 
 /* ------------------ Viewer Modal ------------------ */
 const Viewer = ({
@@ -294,12 +298,13 @@ const Gallery = ({ guestMode = false, allowUpload = true }) => {
       ? eventLoadingRaw
       : !eventDoc && !eventError && !!id;
 
-  // collection can be large; we pass id directly (if id is falsy, the hook may still run — we guard rendering below)
+  const galleryQuery = ["eventId", "==", id];
+
   const {
     documents: images,
     error,
     isPending,
-  } = useCollection("gallery", ["eventId", "==", id], ["createdAt", "desc"]);
+  } = useCollection("gallery", galleryQuery, ["createdAt", "desc"]);
 
   useEffect(() => {
     if (id) changeEvent(id);
@@ -540,6 +545,15 @@ const Gallery = ({ guestMode = false, allowUpload = true }) => {
     );
   }
 
+  if (guestMode && !user) {
+    return (
+      <Flex minH="80vh" align="center" justify="center">
+        <Spinner />
+        <Text ml={3}>Loading gallery...</Text>
+      </Flex>
+    );
+  }
+
   // only after loading finished do we treat "no event found" as real absence
   if (!eventDoc) {
     return (
@@ -552,6 +566,7 @@ const Gallery = ({ guestMode = false, allowUpload = true }) => {
     );
   }
 
+  // Guests can see ALL images
   const safeImages = images || [];
 
   const displayUploaderName = (img) => {
@@ -921,6 +936,28 @@ const Gallery = ({ guestMode = false, allowUpload = true }) => {
         currentUserId={user?.uid}
         isAdmin={isAdmin}
       />
+      {allowUpload && (
+        <Box
+          position="fixed"
+          bottom={{ base: 4, md: 6 }}
+          right={{ base: 4, md: 8 }}
+          zIndex={1000}
+        >
+          <Button
+            onClick={openUpload}
+            leftIcon={<AddIcon />}
+            bgGradient="linear(to-r, #b58e0a, #d4af37)"
+            color="black"
+            borderRadius="full"
+            px={6}
+            py={6}
+            boxShadow="lg"
+            _hover={{ opacity: 0.9 }}
+          >
+            Add Photos
+          </Button>
+        </Box>
+      )}
     </Box>
   );
 };
