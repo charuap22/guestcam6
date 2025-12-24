@@ -1,297 +1,114 @@
-// src/components/VideoUploadForm.js
-import React, { useRef, useState, useEffect, useCallback } from "react";
-import {
-  Box,
-  VStack,
-  HStack,
-  Text,
-  Alert,
-  AlertIcon,
-  Wrap,
-  WrapItem,
-  Center,
-  Heading,
-  Divider,
-  IconButton,
-  useToast,
-  Button,
-  AspectRatio,
-} from "@chakra-ui/react";
-import { AddIcon, SmallCloseIcon } from "@chakra-ui/icons";
-import { ProgressBar } from "./ProgressBar"; // same ProgressBar but fileType='videos'
+import React, { useState } from "react";
+import { Box, Button, Text, Input, Progress, VStack } from "@chakra-ui/react";
+import firebase from "firebase/app";
+import "firebase/storage";
 
-const gold = "#d4af37";
-const MAX_FILE_SIZE = 200 * 1024 * 1024;
+export default function VideoUploadForm({
+  user,
+  eventId,
+  onUploadComplete,
+  onClose,
+}) {
+  const [file, setFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [error, setError] = useState("");
 
-const humanFileSize = (size) => {
-  if (size === 0) return "0 B";
-  const i = Math.floor(Math.log(size) / Math.log(1024));
-  return `${(size / Math.pow(1024, i)).toFixed(i ? 1 : 0)} ${
-    ["B", "KB", "MB", "GB"][i]
-  }`;
-};
+  /* ---------- FILE PICK ---------- */
+  const handleFileChange = (e) => {
+    const selected = e.target.files[0];
+    if (!selected) return;
 
-const allowedTypes = [
-  "video/mp4",
-  "video/quicktime",
-  "video/x-m4v",
-  "video/webm",
-  "video/ogg",
-];
-
-const VideoUploadForm = ({ user, eventId, onUploadComplete, onClose }) => {
-  const hiddenFileInput = useRef(null);
-  const [error, setError] = useState(null);
-  const [files, setFiles] = useState([]);
-  const toast = useToast();
-
-  useEffect(() => {
-    return () => {
-      files.forEach((f) => f.previewUrl && URL.revokeObjectURL(f.previewUrl));
-    };
-  }, [files]);
-
-  const validateAndAdd = useCallback((selectedFiles) => {
-    setError(null);
-    const toAdd = [];
-
-    for (const file of selectedFiles) {
-      if (!allowedTypes.includes(file.type)) {
-        setError("Only MP4, MOV, M4V, WEBM or OGG video files are allowed.");
-        return;
-      }
-      if (file.size > MAX_FILE_SIZE) {
-        setError(
-          `"${file.name}" is too large. Max allowed is ${humanFileSize(
-            MAX_FILE_SIZE
-          )}.`
-        );
-        return;
-      }
-      const previewUrl = URL.createObjectURL(file);
-      toAdd.push({
-        id: `${file.name}-${file.size}-${Date.now()}`,
-        file,
-        previewUrl,
-        name: file.name,
-        size: file.size,
-      });
+    if (
+      !selected.type.startsWith("image/") &&
+      !selected.type.startsWith("video/")
+    ) {
+      setError("Only images and videos are allowed");
+      return;
     }
 
-    if (toAdd.length > 0) {
-      setFiles((prev) => [...prev, ...toAdd]);
-    }
-  }, []);
-
-  const changeHandler = (e) => {
-    const selected = Array.from(e.target.files || []);
-    if (!selected.length) return;
-    validateAndAdd(selected);
-    e.target.value = null;
+    setError("");
+    setFile(selected);
   };
 
-  const onDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const dropped = Array.from(e.dataTransfer.files || []);
-    if (!dropped.length) return;
-    validateAndAdd(dropped);
-  };
-  const onDragOver = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
+  /* ---------- START UPLOAD ---------- */
+  const startUpload = async () => {
+    if (!file) return;
 
-  const removeFile = (id) => {
-    setFiles((prev) => {
-      const removed = prev.find((p) => p.id === id);
-      if (removed && removed.previewUrl)
-        URL.revokeObjectURL(removed.previewUrl);
-      return prev.filter((p) => p.id !== id);
-    });
-  };
+    setUploading(true);
 
-  const onFileDone = (meta, originalFile) => {
-    setFiles((prev) => {
-      const remaining = prev.filter((p) => p.file !== originalFile);
-      const finished = prev.find((p) => p.file === originalFile);
-      if (finished && finished.previewUrl)
-        URL.revokeObjectURL(finished.previewUrl);
-      return remaining;
-    });
+    const type = file.type.startsWith("video/") ? "video" : "image";
+    const folder = type === "video" ? "videos" : "images";
 
-    if (onUploadComplete) onUploadComplete(meta);
+    const storageRef = firebase
+      .storage()
+      .ref(`guestbook/${eventId}/${folder}/${Date.now()}_${file.name}`);
 
-    toast({
-      title: "Video uploaded",
-      description: `${meta?.name || "Video"} uploaded successfully.`,
-      status: "success",
-      duration: 2500,
-      isClosable: true,
-      position: "bottom-right",
-    });
+    const uploadTask = storageRef.put(file);
+
+    uploadTask.on(
+      "state_changed",
+      (snap) => {
+        const pct = (snap.bytesTransferred / snap.totalBytes) * 100;
+        setProgress(Math.round(pct));
+      },
+      (err) => {
+        console.error(err);
+        setError("Upload failed");
+        setUploading(false);
+      },
+      async () => {
+        const url = await uploadTask.snapshot.ref.getDownloadURL();
+
+        onUploadComplete({
+          url,
+          type,
+        });
+
+        setUploading(false);
+        setProgress(0);
+        setFile(null);
+        onClose();
+      }
+    );
   };
 
   return (
-    <Box>
-      <VStack spacing={6} align="stretch">
-        <Box>
-          <Heading size="md">Add videos</Heading>
-          <Text fontSize="sm" color="gray.500" mt={1}>
-            Upload videos (MP4, MOV, WEBM, OGG). Max size{" "}
-            {humanFileSize(MAX_FILE_SIZE)} each.
+    <VStack spacing={4} align="stretch">
+      <Text fontWeight="600">Upload photo or video</Text>
+
+      <Input type="file" accept="image/*,video/*" onChange={handleFileChange} />
+
+      {file && (
+        <Text fontSize="sm" color="gray.600">
+          Selected: {file.name}
+        </Text>
+      )}
+
+      {uploading && (
+        <>
+          <Progress value={progress} size="sm" />
+          <Text fontSize="xs" textAlign="center">
+            Uploading… {progress}%
           </Text>
-        </Box>
+        </>
+      )}
 
-        <Divider />
+      {error && (
+        <Text fontSize="sm" color="red.500">
+          {error}
+        </Text>
+      )}
 
-        <Center>
-          <Box
-            onDrop={onDrop}
-            onDragOver={onDragOver}
-            onClick={() => hiddenFileInput.current?.click()}
-            cursor="pointer"
-            px={6}
-            py={8}
-            borderRadius="lg"
-            border="2px dashed"
-            borderColor="gray.200"
-            bg="transparent"
-            transition="all 0.2s"
-            _hover={{ bg: "gray.50", borderColor: gold }}
-            width={{ base: "100%", sm: "640px" }}
-          >
-            <VStack spacing={3}>
-              <Box
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-                borderRadius="12px"
-                bg="linear-gradient(180deg, rgba(99,102,241,0.04), rgba(124,58,237,0.03))"
-                p={3}
-              >
-                <AddIcon boxSize={6} color={gold} />
-              </Box>
-              <Text fontWeight="600">
-                Drag & drop videos here or click to browse
-              </Text>
-              <Text fontSize="sm" color="gray.500">
-                Select multiple videos at once.
-              </Text>
-            </VStack>
-          </Box>
-        </Center>
-
-        <input
-          ref={hiddenFileInput}
-          type="file"
-          accept="video/*"
-          multiple
-          onChange={changeHandler}
-          style={{ display: "none" }}
-        />
-
-        {error && (
-          <Alert status="error" rounded="md">
-            <AlertIcon />
-            {error}
-          </Alert>
-        )}
-
-        {files.length > 0 && (
-          <Box>
-            <HStack justify="space-between" mb={3}>
-              <Text fontSize="sm" fontWeight="600">
-                {files.length} video{files.length > 1 ? "s" : ""}
-              </Text>
-            </HStack>
-
-            <Wrap spacing={4}>
-              {files.map((entry) => (
-                <WrapItem key={entry.id}>
-                  <Box
-                    w="220px"
-                    borderRadius="md"
-                    overflow="hidden"
-                    boxShadow="sm"
-                    bg="white"
-                    border="1px solid"
-                    borderColor="gray.100"
-                  >
-                    <Box position="relative" h="140px" bg="gray.50">
-                      <AspectRatio ratio={16 / 9}>
-                        <video
-                          src={entry.previewUrl}
-                          playsInline
-                          muted
-                          loop
-                          autoPlay
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "cover",
-                          }}
-                        />
-                      </AspectRatio>
-
-                      <IconButton
-                        aria-label="remove file"
-                        icon={<SmallCloseIcon />}
-                        size="sm"
-                        position="absolute"
-                        top={2}
-                        right={2}
-                        bg="rgba(0,0,0,0.45)"
-                        color="white"
-                        onClick={() => removeFile(entry.id)}
-                      />
-                    </Box>
-
-                    <Box p={3}>
-                      <Text fontSize="sm" noOfLines={1} fontWeight="600">
-                        {entry.name}
-                      </Text>
-                      <Text fontSize="xs" color="gray.500">
-                        {humanFileSize(entry.size)}
-                      </Text>
-
-                      <Box mt={3}>
-                        <ProgressBar
-                          file={entry.file}
-                          fileurl={entry.previewUrl}
-                          user={user}
-                          fileType="videos"
-                          eventId={eventId}
-                          onDone={(meta) => onFileDone(meta, entry.file)}
-                        />
-                      </Box>
-                    </Box>
-                  </Box>
-                </WrapItem>
-              ))}
-            </Wrap>
-          </Box>
-        )}
-
-        <Center>
-          <Button
-            mt={6}
-            size="lg"
-            borderRadius="full"
-            px={10}
-            py={6}
-            colorScheme="yellow"
-            bg={gold}
-            color="white"
-            _hover={{ bg: "#e0b94d" }}
-            onClick={() => onClose && onClose()}
-          >
-            Close
-          </Button>
-        </Center>
-      </VStack>
-    </Box>
+      <Button
+        bg="#EBD9A6"
+        color="#3A2F2A"
+        _hover={{ bg: "#D1B7A1" }}
+        onClick={startUpload}
+        isDisabled={!file || uploading}
+      >
+        Upload
+      </Button>
+    </VStack>
   );
-};
-
-export default VideoUploadForm;
+}

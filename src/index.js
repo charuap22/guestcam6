@@ -9,11 +9,12 @@ import { ChakraProvider } from "@chakra-ui/react";
 import { PlanProvider } from "./context/PlanContext";
 import { EventProvider } from "./context/EventContext";
 import { UserInfoProvider } from "./context/UserInfoContext";
+import { theme } from "./theme";
 
 ReactDOM.render(
   <React.StrictMode>
     <AuthContextProvider>
-      <ChakraProvider>
+      <ChakraProvider theme={theme}>
         <PlanProvider>
           <EventProvider>
             <UserInfoProvider>

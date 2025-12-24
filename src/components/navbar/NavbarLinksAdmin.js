@@ -91,10 +91,31 @@ const guestEventIdFromUrl = React.useMemo(() => {
   // 3) guest URL extractor (guestEventIdFromUrl) — used especially when a guest is logged in
   // 4) null if none found
   const isGuest = user?.isAnonymous || UserInfo?.role === "guest";
+const normalizeId = (id) =>
+  typeof id === "string" && id.trim() === "" ? null : id;
 
-  const currentEventId = isGuest
-    ? guestEventIdFromUrl || params.id || null
-    : ctxEventId || params.eventId || params.id || null;
+const eventIdFromUrl = React.useMemo(() => {
+  if (typeof window === "undefined") return null;
+
+  const path = window.location.pathname;
+
+  // Supports BOTH owner + guest routes
+  const match = path.match(
+    /\/admin\/(guestbook|gallery|videos)\/(owner|guest)\/([^/]+)/
+  );
+
+  return match ? match[3] : null;
+}, []);
+
+const currentEventId = normalizeId(
+  ctxEventId ||
+    eventIdFromUrl || // 🔥 THIS FIXES OWNER ROUTES
+    params.eventId ||
+    params.id
+);
+
+
+
 
   const { document: userDoc } = useDocument("users", user?.uid);
   const { document: eventDoc } = useDocument("events", currentEventId);
@@ -130,20 +151,31 @@ const guestEventIdFromUrl = React.useMemo(() => {
     return guestEventIdFromUrl || params.id || params.eventId || null;
   };
 
-  const pickTargetId = () => {
-    // ✅ Guests: always use URL eventId
-    const guestId = getGuestEventId();
-    if (guestId) return guestId;
+const pickTargetId = () => {
+  // ✅ 1. ALWAYS trust route param first
+  if (params?.id) return params.id;
 
-    // ✅ Owners: context or owned events
-    if (currentEventId) return currentEventId;
+  // ✅ 2. Guests: fallback to URL parsing
+  const guestId = getGuestEventId();
+  if (guestId) return guestId;
 
-    if (isOwner && Array.isArray(userEvents) && userEvents.length > 0) {
-      return userEvents[0].id;
-    }
+  // ✅ 3. Owners: context fallback
+  if (currentEventId) return currentEventId;
 
-    return null;
-  };
+  // ✅ 4. Owners: first owned event
+  if (isOwner && Array.isArray(userEvents) && userEvents.length > 0) {
+    return userEvents[0].id;
+  }
+
+  return null;
+};
+console.log("Navbar event resolution", {
+  isGuest,
+  guestEventIdFromUrl,
+  ctxEventId,
+  params,
+  picked: pickTargetId(),
+});
   useEffect(() => {
     console.debug("Navbar event resolution", {
       isGuest,
@@ -287,6 +319,24 @@ const guestEventIdFromUrl = React.useMemo(() => {
          ----------------------------- */}
       {isMobile ? (
         <>
+          {/* NEW: Guest Dashboard mobile icon (visible for guests) */}
+          {isGuest && (
+            <MobileIcon
+              label="Dashboard"
+              icon={FiGrid}
+              bg="#6C5CE7"
+              onClick={() => {
+                const id = pickTargetId();
+                if (id) history.push(`/admin/guest-dashboard/${id}`);
+                else
+                  toast({
+                    title: "No event found",
+                    status: "warning",
+                    description: "No event id found for the guest dashboard.",
+                  });
+              }}
+            />
+          )}
           <MobileIcon
             label="Photos"
             icon={FiImage}
@@ -325,28 +375,23 @@ const guestEventIdFromUrl = React.useMemo(() => {
               else toast({ title: "No event found", status: "warning" });
             }}
           />
-
-          {/* NEW: Guest Dashboard mobile icon (visible for guests) */}
-          {isGuest && (
-            <MobileIcon
-              label="Guest Dashboard"
-              icon={FiGrid}
-              bg="#6C5CE7"
-              onClick={() => {
-                const id = pickTargetId();
-                if (id) history.push(`/admin/guest-dashboard/${id}`);
-                else
-                  toast({
-                    title: "No event found",
-                    status: "warning",
-                    description: "No event id found for the guest dashboard.",
-                  });
-              }}
-            />
-          )}
         </>
       ) : (
         <Flex align="center" gap={6} flexWrap="nowrap">
+          {/* NEW: Guest Dashboard button (desktop) visible for guests */}
+          {isGuest && (
+            <Button
+              size="sm"
+              variant="ghost"
+              leftIcon={<Icon as={FiGrid} color="#6C5CE7" w={5} h={5} />}
+              onClick={openGuestDashboard}
+              fontWeight={800}
+              color={textColor}
+              _hover={{ color: "#6C5CE7" }}
+            >
+              Dashboard
+            </Button>
+          )}
           {/* Photos */}
           <Link
             as="button"
@@ -397,21 +442,6 @@ const guestEventIdFromUrl = React.useMemo(() => {
             <Icon as={FiBook} color={blue} w={5} h={5} />
             <Box as="span">Guestbook</Box>
           </Link>
-
-          {/* NEW: Guest Dashboard button (desktop) visible for guests */}
-          {isGuest && (
-            <Button
-              size="sm"
-              variant="ghost"
-              leftIcon={<Icon as={FiGrid} color="#6C5CE7" w={5} h={5} />}
-              onClick={openGuestDashboard}
-              fontWeight={800}
-              color={textColor}
-              _hover={{ color: "#6C5CE7" }}
-            >
-              Guest Dashboard
-            </Button>
-          )}
         </Flex>
       )}
 
