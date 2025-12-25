@@ -21,7 +21,8 @@ import { useParams } from "react-router-dom";
 import { useAuthContext } from "../hooks/useAuthContext";
 import HeaderSpacer from "../components/HeaderSpacer";
 import { FiTrash2 } from "react-icons/fi";
-import GuestbookUploadModal from "../components/GuestbookUploadModal";
+import UniversalUploadModal from "../components/UniversalUploadModal";
+
 
 /* ---------- utils ---------- */
 const timeAgo = (ts) => {
@@ -213,7 +214,7 @@ export default function Guestbook() {
       </Box>
 
       {/* ================= UPLOAD MODAL ================= */}
-      <GuestbookUploadModal
+      <UniversalUploadModal
         isOpen={uploadOpen}
         onClose={closeUpload}
         eventId={eventId}

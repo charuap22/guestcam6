@@ -46,7 +46,7 @@ import {
   FiTrash2,
 } from "react-icons/fi";
 
-import UploadForm from "../components/UploadForm";
+import UniversalUploadModal from "../components/UniversalUploadModal";
 import ImageCardSkeleton from "../components/ImageCardSkeleton";
 
 import {
@@ -272,6 +272,10 @@ const Viewer = ({
 /* ------------------ Gallery Page ------------------ */
 
 const Gallery = ({ guestMode = false, allowUpload = true }) => {
+
+
+  const { addDocument } = useFirestore("gallery");
+
   const bg = useColorModeValue("gray.50", "gray.900");
   const tileBg = useColorModeValue("white", "gray.800");
   const tileShadow = useColorModeValue(
@@ -724,17 +728,24 @@ const Gallery = ({ guestMode = false, allowUpload = true }) => {
         </Fade>
       )}
 
-      {/* Upload Modal */}
       {allowUpload && (
-        <Modal isOpen={uploadOpen} onClose={closeUpload} size="lg" isCentered>
-          <ModalOverlay bg="blackAlpha.600" />
-          <ModalContent borderRadius="2xl" p={4}>
-            <ModalCloseButton />
-            <ModalBody>
-              <UploadForm user={user} eventId={id} onClose={closeUpload} />
-            </ModalBody>
-          </ModalContent>
-        </Modal>
+        <UniversalUploadModal
+          isOpen={uploadOpen}
+          onClose={closeUpload}
+          eventId={id}
+          user={user}
+          accept="image/*"
+          onUploadComplete={async ({ mediaUrl, file }) => {
+            await addDocument({
+              eventId: id,
+              url: mediaUrl,
+              filename: file?.name || "image",
+              createdAt: new Date(),
+              createdBy: user?.uid || null,
+              uploaderName: user?.displayName || "Guest",
+            });
+          }}
+        />
       )}
 
       {/* Gallery Grid */}
@@ -754,29 +765,7 @@ const Gallery = ({ guestMode = false, allowUpload = true }) => {
             }}
             gap={{ base: 3, md: 4 }}
           >
-            {/* Add card */}
-            {allowUpload && (
-              <GridItem>
-                <Box
-                  role="button"
-                  onClick={openUpload}
-                  cursor="pointer"
-                  borderRadius="24px"
-                  bg={tileBg}
-                  boxShadow={tileShadow}
-                  h={{ base: "160px", md: "220px" }}
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="center"
-                  flexDirection="column"
-                >
-                  <AddIcon boxSize={6} color="#6b46ff" />
-                  <Text fontWeight="600" mt={2}>
-                    Add Photos
-                  </Text>
-                </Box>
-              </GridItem>
-            )}
+          
 
             {safeImages.map((img, idx) => {
               const canDelete = canUserDeleteImage(user, img, isAdmin);

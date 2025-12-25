@@ -40,7 +40,9 @@ import {
 import { AddIcon } from "@chakra-ui/icons";
 import { FiMoreHorizontal, FiX, FiDownload, FiTrash2 } from "react-icons/fi";
 
-import VideoUploadForm from "../components/VideoUploadForm";
+import UniversalUploadModal from "../components/UniversalUploadModal";
+
+
 import ImageCardSkeleton from "../components/ImageCardSkeleton";
 
 import {
@@ -271,6 +273,9 @@ const Viewer = ({
  * allowUpload: boolean - controls whether upload UI is shown
  */
 const Videos = ({ allowUpload = true, guestMode = false }) => {
+
+  const { addDocument } = useFirestore("videos");
+
   const bg = useColorModeValue("gray.50", "gray.900");
   const gold = "#d4af37";
   const tileBg = useColorModeValue("white", "gray.800");
@@ -665,15 +670,23 @@ const Videos = ({ allowUpload = true, guestMode = false }) => {
 
       {/* Upload Modal — only mount if allowUpload */}
       {allowUpload && (
-        <Modal isOpen={uploadOpen} onClose={closeUpload} size="lg" isCentered>
-          <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(6px)" />
-          <ModalContent borderRadius="2xl" p={4}>
-            <ModalCloseButton />
-            <ModalBody>
-              <VideoUploadForm user={user} eventId={id} onClose={closeUpload} />
-            </ModalBody>
-          </ModalContent>
-        </Modal>
+        <UniversalUploadModal
+          isOpen={uploadOpen}
+          onClose={closeUpload}
+          eventId={id}
+          user={user}
+          accept="video/*"
+          onUploadComplete={async ({ mediaUrl, file }) => {
+            await addDocument({
+              eventId: id,
+              url: mediaUrl,
+              filename: file?.name || "video",
+              createdAt: new Date(),
+              createdBy: user?.uid || null,
+              uploaderName: user?.displayName || "Guest",
+            });
+          }}
+        />
       )}
 
       {/* Grid */}
