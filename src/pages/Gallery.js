@@ -54,7 +54,10 @@ import {
   downloadUrlsAsZip,
   downloadFolderAsZip,
 } from "../utils/downloads";
-
+const primaryBg = "#EBD9A6";
+const primaryHover = "#D1B7A1";
+const primaryText = "#3A2F2A";
+const softBorder = "#a57256";
 /* ------------------ Utilities ------------------ */
 function timeAgoFromTimestamp(ts) {
   if (!ts) return "";
@@ -70,7 +73,6 @@ function getUploaderUid(img) {
   return img?.createdBy || null;
 }
 
-
 function canUserDeleteImage(user, img, isAdmin = false) {
   if (isAdmin) return true;
   if (!user || !img) return false;
@@ -80,8 +82,6 @@ function canUserDeleteImage(user, img, isAdmin = false) {
 
   return uploaderId === user.uid;
 }
-
-
 
 /* ------------------ Viewer Modal ------------------ */
 const Viewer = ({
@@ -136,8 +136,8 @@ const Viewer = ({
                 aria-label="close"
                 icon={<FiX />}
                 onClick={onClose}
-                bg="rgba(0,0,0,0.45)"
-                color="white"
+                bg="rgba(249,247,238,0.95)"
+                color={primaryText}
                 size="sm"
               />
               <Tag bg="rgba(0,0,0,0.45)" color="white" fontSize="sm">
@@ -151,8 +151,8 @@ const Viewer = ({
                   aria-label="download"
                   icon={<FiDownload />}
                   onClick={() => handleDownload(currentImage.url)}
-                  bg="rgba(0,0,0,0.45)"
-                  color="white"
+                  bg="rgba(249,247,238,0.95)"
+                  color={primaryText}
                   size="sm"
                 />
               </Tooltip>
@@ -163,8 +163,8 @@ const Viewer = ({
                     aria-label="delete"
                     icon={<FiTrash2 />}
                     onClick={handleDeleteClick}
-                    bg="rgba(0,0,0,0.45)"
-                    color="white"
+                    bg="rgba(249,247,238,0.95)"
+                    color={primaryText}
                     size="sm"
                   />
                 </Tooltip>
@@ -225,8 +225,9 @@ const Viewer = ({
           <Box
             px={{ base: 3, md: 8 }}
             py={3}
-            bg="linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.6) 100%)"
-            color="white"
+            bg="#f9f7eeff"
+            color={primaryText}
+            borderTop={`1px solid ${softBorder}`}
           >
             <Flex align="center" justify="space-between">
               <Box>
@@ -272,16 +273,15 @@ const Viewer = ({
 /* ------------------ Gallery Page ------------------ */
 
 const Gallery = ({ guestMode = false, allowUpload = true }) => {
-
-
   const { addDocument } = useFirestore("gallery");
 
-  const bg = useColorModeValue("gray.50", "gray.900");
-  const tileBg = useColorModeValue("white", "gray.800");
-  const tileShadow = useColorModeValue(
-    "0 8px 30px rgba(15, 23, 42, 0.06)",
-    "0 6px 20px rgba(0,0,0,0.3)"
-  );
+const bg = "gray.50"; // same as Guestbook page
+
+const tileBg = "#FFFFFF"; // clean guest cards
+const tileShadow = "sm";
+
+
+
 
   const { id } = useParams();
 
@@ -617,12 +617,10 @@ const Gallery = ({ guestMode = false, allowUpload = true }) => {
             <MenuButton
               as={Button}
               size="sm"
-              bgGradient="linear(to-r, #b58e0a, #d4af37)"
-              color="black"
-              leftIcon={<FiDownload />}
+              bg={primaryBg}
+              color={primaryText}
+              _hover={{ bg: primaryHover }}
               borderRadius="full"
-              px={4}
-              py={2}
             >
               Actions
             </MenuButton>
@@ -650,7 +648,8 @@ const Gallery = ({ guestMode = false, allowUpload = true }) => {
             mb={4}
             align="center"
             justify="flex-start"
-            bg="rgba(212,175,55,0.06)"
+            bg="#f9f7eeff"
+            border={`1px solid ${softBorder}`}
             borderRadius="xl"
             boxShadow="sm"
             flexWrap="wrap"
@@ -759,27 +758,32 @@ const Gallery = ({ guestMode = false, allowUpload = true }) => {
         ) : (
           <Grid
             templateColumns={{
-              base: "repeat(2, 1fr)",
-              sm: "repeat(3, 1fr)",
-              md: "repeat(4, 1fr)",
+              base: "repeat(3, 1fr)", // mobile Instagram feel
+              sm: "repeat(4, 1fr)",
+              md: "repeat(5, 1fr)",
+              lg: "repeat(6, 1fr)",
             }}
-            gap={{ base: 3, md: 4 }}
+            gap={1}
           >
-          
-
             {safeImages.map((img, idx) => {
               const canDelete = canUserDeleteImage(user, img, isAdmin);
 
               return (
                 <GridItem key={img.id}>
                   <Box
-                    borderRadius="24px"
-                    overflow="hidden"
-                    bg={tileBg}
-                    boxShadow={tileShadow}
                     position="relative"
+                    bg={tileBg}
+                    aspectRatio={1}
                     cursor={selectMode ? "default" : "pointer"}
-                    h={{ base: "160px", md: "220px" }}
+                    border={
+                      selected.has(img.id)
+                        ? `2px solid ${primaryHover}`
+                        : "1px solid #eee"
+                    }
+                    transition="transform 0.15s ease"
+                    _hover={{
+                      transform: selectMode ? "none" : "scale(1.01)",
+                    }}
                     onClick={() =>
                       selectMode ? toggleSelect(img.id) : openViewerAt(idx)
                     }
@@ -792,8 +796,13 @@ const Gallery = ({ guestMode = false, allowUpload = true }) => {
                         left={3}
                         zIndex={30}
                         onClick={(e) => e.stopPropagation()}
-                        role="button"
-                        aria-label={`Toggle select ${img.filename || "photo"}`}
+                        bg="#f9f7eeff"
+                        backdropFilter="blur(6px)"
+                        borderRadius="md"
+                        p={1}
+                        border={
+                          selected.has(img.id) ? "3px solid #d4af37" : "none"
+                        }
                       >
                         <Checkbox
                           isChecked={selected.has(img.id)}
@@ -812,61 +821,27 @@ const Gallery = ({ guestMode = false, allowUpload = true }) => {
                     <Image
                       src={img.url}
                       alt={img.filename || "photo"}
-                      objectFit="cover"
                       w="100%"
                       h="100%"
+                      objectFit="cover"
                     />
 
-                    <Box position="absolute" top={2} right={2} zIndex={15}>
-                      <Menu>
-                        <MenuButton
-                          as={IconButton}
-                          icon={<FiMoreHorizontal />}
-                          size="sm"
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                        <MenuList>
-                          <MenuItem
-                            icon={<FiDownload />}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              downloadImage(img.url, img.filename || "photo");
-                            }}
-                          >
-                            Download
-                          </MenuItem>
-
-                          {canDelete && (
-                            <MenuItem
-                              icon={<FiTrash2 />}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDelete(img);
-                              }}
-                            >
-                              Delete
-                            </MenuItem>
-                          )}
-                        </MenuList>
-                      </Menu>
-                    </Box>
-
-                    <Box
+                    {/* <Box
                       position="absolute"
-                      bottom={3}
-                      left={3}
-                      bg="rgba(0,0,0,0.45)"
+                      bottom={0}
+                      left={0}
+                      right={0}
                       px={3}
-                      py={1}
-                      borderRadius="full"
+                      py={2}
+                     bgGradient="linear(to-t, rgba(249,247,238,0.95), rgba(249,247,238,0))"
                     >
-                      <Text fontSize="xs" color="gray.200">
-                        {displayUploaderName(img)}{" "}
+                      <Text fontSize="xs" color="whiteAlpha.900">
+                        {displayUploaderName(img)}
                         {img.createdAt
-                          ? `• ${timeAgoFromTimestamp(img.createdAt)}`
+                          ? ` • ${timeAgoFromTimestamp(img.createdAt)}`
                           : ""}
                       </Text>
-                    </Box>
+                    </Box> */}
                   </Box>
                 </GridItem>
               );
@@ -935,13 +910,15 @@ const Gallery = ({ guestMode = false, allowUpload = true }) => {
           <Button
             onClick={openUpload}
             leftIcon={<AddIcon />}
-            bgGradient="linear(to-r, #b58e0a, #d4af37)"
-            color="black"
+            bg={primaryBg}
+            color={primaryText}
+            _hover={{ bg: primaryHover }}
+          
             borderRadius="full"
             px={6}
             py={6}
             boxShadow="lg"
-            _hover={{ opacity: 0.9 }}
+           
           >
             Add Photos
           </Button>
