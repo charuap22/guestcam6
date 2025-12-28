@@ -129,3 +129,11 @@ p{
 [data-select-toolbar] p {
   color: #4a5568 !important;
 }
+/* Hide native big play button */
+video::-webkit-media-controls-overlay-play-button {
+  display: none !important;
+}
+
+video::-webkit-media-controls-start-playback-button {
+  display: none !important;
+}

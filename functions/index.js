@@ -1,53 +1,94 @@
-// const functions = require("firebase-functions");
-// const admin = require("firebase-admin");
-// const stripe = require("stripe")(functions.config().stripe.secret_key);
+const functions = require("firebase-functions");
+const admin = require("firebase-admin");
+const ffmpeg = require("fluent-ffmpeg");
+const ffmpegPath = require("ffmpeg-static");
+const path = require("path");
+const os = require("os");
+const fs = require("fs");
 
-// admin.initializeApp();
+admin.initializeApp();
+ffmpeg.setFfmpegPath(ffmpegPath);
 
-// /**
-//  * Cloud Function to handle Stripe webhook events.
-//  */
-// exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
-//   const sig = req.headers["stripe-signature"];
-//   const endpointSecret = functions.config().stripe.webhook_secret;
+/**
+ * Generate REAL poster image for uploaded videos
+ */
+exports.generateVideoThumbnail = functions.storage
+  .object()
+  .onFinalize(async (object) => {
+    try {
+      if (!object.contentType || !object.contentType.startsWith("video/")) {
+        return null;
+      }
 
-//   let event;
+      const filePath = object.name; // videos/eventId/filename.mp4
+      if (!filePath || !filePath.startsWith("videos/")) {
+        return null;
+      }
 
-//   try {
-//     event = stripe.webhooks.constructEvent(req.rawBody, sig, endpointSecret);
-//   } catch (err) {
-//     console.error("⚠️  Webhook signature verification failed.", err.message);
-//     return res.sendStatus(400);
-//   }
+      const bucket = admin.storage().bucket(object.bucket);
 
-//   // Handle the event
-//   switch (event.type) {
-//     case "checkout.session.completed": {
-//       const session = event.data.object;
-//       // Fulfill the purchase, e.g., update Firestore
+      const tempVideoPath = path.join(os.tmpdir(), path.basename(filePath));
 
-//       // Retrieve the user ID from the session metadata
-//       const userId = session.metadata.userId;
-//       const planId = session.metadata.planId;
+      const thumbFileName = filePath.replace(/\.[^/.]+$/, ".jpg");
+      const tempThumbPath = path.join(
+        os.tmpdir(),
+        path.basename(thumbFileName)
+      );
 
-//       // Update the user's information in Firestore
-//       try {
-//         await admin.firestore().collection("users").doc(userId).update({
-//           planId,
-//           subscribedOn: session.created,
-//           subscriptionStatus: "active",
-//         });
+      // Download video
+      await bucket.file(filePath).download({
+        destination: tempVideoPath,
+      });
 
-//         console.log(`Successfully updated user ${userId} after payment.`);
-//       } catch (error) {
-//         console.error(`Error updating user ${userId}:`, error);
-//       }
-//       break;
-//     }
-//     // ... handle other event types
-//     default: {
-//       console.log(`Unhandled event type ${event.type}`);
-//     }
-//   }
-//   res.sendStatus(200);
-// });
+      // Extract frame at 1 second
+      await new Promise((resolve, reject) => {
+        ffmpeg(tempVideoPath)
+          .on("end", resolve)
+          .on("error", reject)
+          .screenshots({
+            count: 1,
+            timemarks: ["1"],
+            filename: path.basename(tempThumbPath),
+            folder: os.tmpdir(),
+          });
+      });
+
+      // Upload thumbnail
+      await bucket.upload(tempThumbPath, {
+        destination: thumbFileName,
+        contentType: "image/jpeg",
+        metadata: {
+          cacheControl: "public,max-age=31536000",
+        },
+      });
+
+      // Cleanup temp files
+      fs.unlinkSync(tempVideoPath);
+      fs.unlinkSync(tempThumbPath);
+
+      // Get public URL
+      const [thumbnailUrl] = await bucket.file(thumbFileName).getSignedUrl({
+        action: "read",
+        expires: "03-01-2035",
+      });
+
+      // Update Firestore video doc
+      const snapshot = await admin
+        .firestore()
+        .collection("videos")
+        .where("storagePath", "==", filePath)
+        .limit(1)
+        .get();
+
+      if (!snapshot.empty) {
+        await snapshot.docs[0].ref.update({
+          thumbnailUrl,
+        });
+      }
+
+      return null;
+    } catch (error) {
+      console.error("Thumbnail generation failed:", error);
+      return null;
+    }
+  });
