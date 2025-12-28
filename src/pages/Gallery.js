@@ -1,37 +1,53 @@
 // src/pages/Gallery.js
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { useAuthContext } from "../hooks/useAuthContext";
 import { useCollection } from "../hooks/useCollection";
 import { useEvent } from "../hooks/useEvent";
 import { useDocument } from "../hooks/useDocument";
 import { useFirestore } from "../hooks/useFirestore";
+import { Skeleton } from "@chakra-ui/react";
 
 import {
-  Box,
-  Flex,
-  Text,
-  Spinner,
-  Button,
-  useColorModeValue,
   Modal,
   ModalOverlay,
   ModalContent,
   ModalBody,
+  Flex,
+  HStack,
+  IconButton,
+  Tag,
+  Center,
+  Image as ChakraImage,
+  Button,
+} from "@chakra-ui/react";
+import {
+  FiX,
+  FiChevronLeft,
+  FiChevronRight,
+} from "react-icons/fi";
+import {
+  Box,
+
+  Text,
+  Spinner,
+ 
+  useColorModeValue,
+
   ModalCloseButton,
   useDisclosure,
-  HStack,
+  
   Grid,
   GridItem,
-  Image,
+ 
   Menu,
   MenuButton,
   MenuList,
   MenuItem,
-  IconButton,
-  Tag,
+ 
+ 
   Tooltip,
-  Center,
+  
   Fade,
   Checkbox,
 } from "@chakra-ui/react";
@@ -39,9 +55,9 @@ import {
 import { AddIcon } from "@chakra-ui/icons";
 import {
   FiMoreHorizontal,
-  FiChevronLeft,
-  FiChevronRight,
-  FiX,
+ 
+ 
+  
   FiDownload,
   FiTrash2,
 } from "react-icons/fi";
@@ -84,191 +100,344 @@ function canUserDeleteImage(user, img, isAdmin = false) {
 }
 
 /* ------------------ Viewer Modal ------------------ */
+
+
+/* ============================
+   FULLSCREEN VIEWER
+   (SAFE TO MODIFY)
+============================ */
+
 const Viewer = ({
   isOpen,
   onClose,
-  images,
-  startIndex,
-  onDelete,
-  currentUserId,
-  isAdmin,
-}) => {
-  const [index, setIndex] = useState(startIndex || 0);
 
+  images = [],          // 🔹 all images
+  startIndex = 0,       // 🔹 index clicked from grid
+
+  currentUser,          // 🔹 for delete permission
+  isAdmin,              // 🔹 owner/host flag
+  onDelete,             // 🔹 delete handler from Gallery
+}) => {
+  /* ---------------- STATE ---------------- */
+  const [index, setIndex] = useState(startIndex);
+  const [scale, setScale] = useState(1);      // 🔹 zoom level
+  const [autoPlay, setAutoPlay] = useState(false);
+const [imgLoading, setImgLoading] = useState(true);
+
+
+
+  /* ---------------- REFS ---------------- */
+  const lastTap = useRef(0);                   // 🔹 double-tap detect
+  const touch = useRef({
+    startX: 0,
+    lastTime: 0,
+    pinchDist: null,
+  });
+
+  const preloaded = useRef(new Set());          // 🔹 prefetch cache
+  const PREFETCH_LIMIT = 5;                     // 🔹 change if needed
+
+  const hasImages = images.length > 0;
+  const currentImage = hasImages ? images[index] : null;
+
+  /* ---------------- PERMISSIONS ---------------- */
+  const canDelete =
+    isAdmin ||
+    (currentUser &&
+      (currentImage?.createdBy === currentUser.uid ||
+       currentImage?.userId === currentUser.uid));
+
+  /* ---------------- RESET ZOOM ---------------- */
+  const resetTransform = () => setScale(1);
+
+  /* ---------------- OPEN SYNC ---------------- */
   useEffect(() => {
-    setIndex(startIndex || 0);
+    setIndex(startIndex);
+    resetTransform();
   }, [startIndex, isOpen]);
 
-  if (!images || images.length === 0) return null;
+useEffect(() => {
+  if (!preloaded.current.has(index)) {
+    setImgLoading(true);
+  }
+}, [index]);
 
-  const currentImage = images[index];
-  const canDelete = canUserDeleteImage(
-    currentUserId ? { uid: currentUserId } : null,
-    currentImage,
-    isAdmin
-  );
+  /* ---------------- KEYBOARD (⬅ ➡ ESC) ---------------- */
+  useEffect(() => {
+    if (!isOpen || !hasImages) return;
 
-  const handleDownload = (url) => {
-    downloadImage(url, currentImage.filename || "photo");
+    const onKey = (e) => {
+      if (e.key === "ArrowRight") {
+        e.preventDefault();
+        next();
+      }
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        prev();
+      }
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isOpen, hasImages]);
+
+  /* ---------------- AUTOPLAY ---------------- */
+  useEffect(() => {
+    if (!autoPlay || !isOpen || !hasImages) return;
+
+    const id = setInterval(() => {
+      setIndex((i) => (i + 1) % images.length);
+      resetTransform();
+    }, 3000); // 🔹 change speed here (ms)
+
+    return () => clearInterval(id);
+  }, [autoPlay, isOpen, hasImages, images.length]);
+
+  /* ---------------- PREFETCH (FAST SLIDES) ---------------- */
+  useEffect(() => {
+    if (!hasImages) return;
+
+    const preload = (i) => {
+      if (!images[i]) return;
+      if (preloaded.current.has(i)) return;
+
+      const img = new window.Image();   // ⚠️ MUST be window.Image
+      img.src = images[i].url;
+
+      preloaded.current.add(i);
+
+      if (preloaded.current.size > PREFETCH_LIMIT) {
+        const first = preloaded.current.values().next().value;
+        preloaded.current.delete(first);
+      }
+    };
+
+    preload((index + 1) % images.length);
+    preload((index - 1 + images.length) % images.length);
+  }, [index, hasImages, images]);
+
+  /* ---------------- NAVIGATION ---------------- */
+const next = () => {
+  setImgLoading(true);
+  setIndex((i) => (i + 1) % images.length);
+  resetTransform();
+  setAutoPlay(false);
+};
+
+const prev = () => {
+  setImgLoading(true);
+  setIndex((i) => (i - 1 + images.length) % images.length);
+  resetTransform();
+  setAutoPlay(false);
+};
+
+
+  /* ---------------- TOUCH / SWIPE ---------------- */
+  const onTouchStart = (e) => {
+    if (e.touches.length === 1) {
+      touch.current.startX = e.touches[0].clientX;
+      touch.current.lastTime = Date.now();
+    }
+
+    if (e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      touch.current.pinchDist = Math.hypot(dx, dy);
+    }
   };
 
-  const handleDeleteClick = async () => {
-    await onDelete(currentImage);
-    if (index >= images.length - 1) setIndex(Math.max(0, images.length - 2));
+  const onTouchMove = (e) => {
+    if (e.touches.length === 2 && touch.current.pinchDist) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const dist = Math.hypot(dx, dy);
+
+      setScale((s) =>
+        Math.min(3, Math.max(1, s * (dist / touch.current.pinchDist)))
+      );
+
+      touch.current.pinchDist = dist;
+    }
   };
 
+  const onTouchEnd = (e) => {
+    if (touch.current.pinchDist) {
+      touch.current.pinchDist = null;
+      return;
+    }
+
+    const dx = e.changedTouches[0].clientX - touch.current.startX;
+    const dt = Date.now() - touch.current.lastTime;
+    const velocity = dx / dt;
+
+    if (Math.abs(dx) > 80 || Math.abs(velocity) > 0.5) {
+      dx < 0 ? next() : prev();
+    }
+  };
+
+  /* ---------------- DOUBLE TAP ZOOM ---------------- */
+  const onDoubleTap = () => {
+    const now = Date.now();
+    if (now - lastTap.current < 300) {
+      setScale((s) => (s === 1 ? 2 : 1));
+      setAutoPlay(false);
+    }
+    lastTap.current = now;
+  };
+
+  if (!hasImages) return null;
+
+  /* ---------------- RENDER ---------------- */
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="full" isCentered>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      size="full"
+      trapFocus={false} // 🔹 REQUIRED for keyboard arrows
+      autoFocus={false}
+    >
       <ModalOverlay bg="blackAlpha.800" />
       <ModalContent bg="transparent" boxShadow="none">
-        <ModalBody p={0} display="flex" flexDirection="column" h="100vh">
-          {/* Top bar */}
+        <ModalBody p={0} h="100vh">
+          {/* ===== TOP BAR ===== */}
           <Flex
             position="absolute"
             top={3}
             left={3}
             right={3}
+            zIndex={50}
             justify="space-between"
-            zIndex={40}
           >
-            <HStack spacing={2}>
-              <IconButton
-                aria-label="close"
-                icon={<FiX />}
-                onClick={onClose}
-                bg="rgba(249,247,238,0.95)"
-                color={primaryText}
-                size="sm"
-              />
-              <Tag bg="rgba(0,0,0,0.45)" color="white" fontSize="sm">
+            <HStack>
+              <IconButton icon={<FiX />} onClick={onClose} />
+              <Tag>
                 {index + 1} / {images.length}
               </Tag>
             </HStack>
 
-            <HStack spacing={2}>
-              <Tooltip label="Download">
-                <IconButton
-                  aria-label="download"
-                  icon={<FiDownload />}
-                  onClick={() => handleDownload(currentImage.url)}
-                  bg="rgba(249,247,238,0.95)"
-                  color={primaryText}
-                  size="sm"
-                />
-              </Tooltip>
+            <HStack>
+              {/* DOWNLOAD */}
+              <IconButton
+                icon={<FiDownload />}
+                onClick={() =>
+                  downloadImage(
+                    currentImage.url,
+                    currentImage.filename || "photo"
+                  )
+                }
+              />
 
+              {/* DELETE (permission based) */}
               {canDelete && (
-                <Tooltip label="Delete">
-                  <IconButton
-                    aria-label="delete"
-                    icon={<FiTrash2 />}
-                    onClick={handleDeleteClick}
-                    bg="rgba(249,247,238,0.95)"
-                    color={primaryText}
-                    size="sm"
-                  />
-                </Tooltip>
+                <IconButton
+                  icon={<FiTrash2 />}
+                  color="red.500"
+                  onClick={() => onDelete(currentImage)}
+                />
               )}
+
+              {/* PLAY / STOP */}
+              <Button size="sm" onClick={() => setAutoPlay((s) => !s)}>
+                {autoPlay ? "Stop" : "Play"}
+              </Button>
             </HStack>
           </Flex>
 
-          {/* Image */}
-          <Center flex="1">
-            <Fade in={isOpen} key={currentImage.url}>
-              <Box
-                maxW="100vw"
-                maxH="100vh"
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-              >
-                <IconButton
-                  aria-label="prev"
-                  icon={<FiChevronLeft />}
+          {/* ===== IMAGE ===== */}
+          {/* ===== IMAGE ===== */}
+          <Center
+            h="100%"
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+            onClick={onDoubleTap}
+          >
+            <Box position="relative">
+              {/* Skeleton */}
+              {imgLoading && (
+                <Box
                   position="absolute"
-                  left={2}
-                  top="50%"
-                  transform="translateY(-50%)"
-                  zIndex={30}
-                  onClick={() =>
-                    setIndex((i) => (i - 1 + images.length) % images.length)
-                  }
-                  bg="rgba(0,0,0,0.35)"
-                  color="white"
-                  size="sm"
-                />
-                <Image
-                  src={currentImage.url}
-                  maxH="86vh"
-                  maxW="92vw"
-                  objectFit="contain"
-                  borderRadius="md"
-                />
-                <IconButton
-                  aria-label="next"
-                  icon={<FiChevronRight />}
-                  position="absolute"
-                  right={2}
-                  top="50%"
-                  transform="translateY(-50%)"
-                  zIndex={30}
-                  onClick={() => setIndex((i) => (i + 1) % images.length)}
-                  bg="rgba(0,0,0,0.35)"
-                  color="white"
-                  size="sm"
-                />
-              </Box>
-            </Fade>
+                  inset={0}
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                  pointerEvents="none"
+                >
+                  <Skeleton
+                    height="40vh"
+                    width="40vw"
+                    maxW="600px"
+                    borderRadius="lg"
+                    startColor="blackAlpha.200"
+                    endColor="blackAlpha.400"
+                    fadeDuration={0.15}
+                  />
+                </Box>
+              )}
+
+              {/* Image */}
+              <ChakraImage
+                src={currentImage.url}
+                maxH="90vh"
+                maxW="95vw"
+                objectFit="contain"
+                transform={`scale(${scale})`}
+                transition="transform 0.25s ease, opacity 0.25s ease"
+                opacity={imgLoading ? 0.4 : 1}
+                draggable={false}
+                onLoad={() => setImgLoading(false)}
+                onError={() => setImgLoading(false)}
+              />
+            </Box>
           </Center>
 
-          {/* Bottom bar */}
+          {/* ===== ARROWS ===== */}
+          <IconButton
+            icon={<FiChevronLeft />}
+            position="absolute"
+            left={2}
+            top="50%"
+            zIndex={50}
+            onClick={prev}
+          />
+          <IconButton
+            icon={<FiChevronRight />}
+            position="absolute"
+            right={2}
+            top="50%"
+            zIndex={50}
+            onClick={next}
+          />
+
+          {/* ===== BOTTOM INFO ===== */}
           <Box
-            px={{ base: 3, md: 8 }}
+            position="absolute"
+            bottom={0}
+            left={0}
+            right={0}
+            px={4}
             py={3}
             bg="#f9f7eeff"
-            color={primaryText}
             borderTop={`1px solid ${softBorder}`}
           >
-            <Flex align="center" justify="space-between">
-              <Box>
-                <Text fontWeight="600">{currentImage.filename || "Photo"}</Text>
-                <Text fontSize="xs" color="whiteAlpha.700">
-                  {currentImage.createdAt
-                    ? timeAgoFromTimestamp(currentImage.createdAt)
-                    : ""}
-                </Text>
-              </Box>
-
-              <HStack spacing={2}>
-                <Button
-                  variant="ghost"
-                  color="white"
-                  onClick={() => handleDownload(currentImage.url)}
-                  size="sm"
-                >
-                  Download
-                </Button>
-                {canDelete && (
-                  <Button
-                    colorScheme="red"
-                    variant="outline"
-                    onClick={handleDeleteClick}
-                    size="sm"
-                  >
-                    Delete
-                  </Button>
-                )}
-                <Button onClick={onClose} size="sm">
-                  Close
-                </Button>
-              </HStack>
-            </Flex>
+            <Text fontSize="sm" fontWeight="600" color={primaryText}>
+              {currentImage.uploaderName || "Guest"}
+            </Text>
+            <Text fontSize="xs" color="gray.600">
+              {timeAgoFromTimestamp(currentImage.createdAt)}
+            </Text>
           </Box>
         </ModalBody>
       </ModalContent>
     </Modal>
   );
 };
+
+
+
 
 /* ------------------ Gallery Page ------------------ */
 
@@ -529,46 +698,29 @@ const tileShadow = "sm";
     );
   }
 
-  // handle missing id (router) early — avoid calling hooks that might misbehave with undefined id
-  if (!id) {
-    return (
-      <Flex minH="80vh" align="center" justify="center">
-        <Spinner size="xl" color="#d4af37" />
-        <Text ml={3}>Preparing gallery...</Text>
-      </Flex>
-    );
-  }
 
-  // show event loading spinner while useDocument is fetching
-  if (eventLoading) {
-    return (
-      <Flex minH="80vh" align="center" justify="center">
-        <Spinner size="xl" color="#d4af37" />
-        <Text ml={3}>Loading event...</Text>
-      </Flex>
-    );
-  }
 
-  if (guestMode && !user) {
-    return (
-      <Flex minH="80vh" align="center" justify="center">
-        <Spinner />
-        <Text ml={3}>Loading gallery...</Text>
-      </Flex>
-    );
-  }
 
-  // only after loading finished do we treat "no event found" as real absence
-  if (!eventDoc) {
-    return (
-      <Flex minH="80vh" align="center" justify="center" direction="column">
-        <Text fontWeight="bold">No event found</Text>
-        <Text fontSize="sm" color="gray.500">
-          Event id: {id}
-        </Text>
-      </Flex>
-    );
-  }
+  // if (guestMode && !user) {
+  //   return (
+  //     <Flex minH="80vh" align="center" justify="center">
+  //       <Spinner />
+  //       <Text ml={3}>Loading gallery...</Text>
+  //     </Flex>
+  //   );
+  // }
+
+if (!eventLoading && !eventDoc) {
+  return (
+    <Flex minH="80vh" align="center" justify="center" direction="column">
+      <Text fontWeight="bold">No event found</Text>
+      <Text fontSize="sm" color="gray.500">
+        Event id: {id}
+      </Text>
+    </Flex>
+  );
+}
+
 
   // Guests can see ALL images
   const safeImages = images || [];
@@ -606,123 +758,109 @@ const tileShadow = "sm";
         <HStack spacing={3}>
           <Button
             size="sm"
+            variant="outline"
+            borderRadius="full"
             onClick={() => setSelectMode((s) => !s)}
-            variant={selectMode ? "solid" : "outline"}
-            colorScheme={selectMode ? "purple" : undefined}
           >
             {selectMode ? "Exit select" : "Select images"}
           </Button>
-
-          <Menu>
-            <MenuButton
-              as={Button}
-              size="sm"
-              bg={primaryBg}
-              color={primaryText}
-              _hover={{ bg: primaryHover }}
-              borderRadius="full"
-            >
-              Actions
-            </MenuButton>
-            <MenuList>
-              <MenuItem onClick={downloadSelected}>Download Selected</MenuItem>
-              <MenuItem onClick={deleteSelected}>Delete Selected</MenuItem>
-              <MenuItem
-                onClick={downloadSelectedAsZip}
-                isDisabled={selected.size === 0}
-              >
-                Download Selected (ZIP)
-              </MenuItem>
-              <MenuItem onClick={downloadAllAsZip}>Download All (ZIP)</MenuItem>
-            </MenuList>
-          </Menu>
         </HStack>
       </Flex>
 
+      {eventLoading && (
+        <Box px={{ base: 3, md: 8 }} mb={3}>
+          <Skeleton
+            height="14px"
+            width="140px"
+            borderRadius="md"
+            startColor="#efe7da"
+            endColor="#e0d4c2"
+          />
+        </Box>
+      )}
       {/* Select-mode toolbar */}
       {selectMode && (
         <Fade in={selectMode}>
           <Flex
-            px={{ base: 3, md: 8 }}
+            px={{ base: 4, md: 8 }}
             py={3}
             mb={4}
             align="center"
-            justify="flex-start"
-            bg="#f9f7eeff"
-            border={`1px solid ${softBorder}`}
-            borderRadius="xl"
-            boxShadow="sm"
+            justify="space-between"
+            bg="white"
+            borderRadius="2xl"
+            boxShadow="0 8px 24px rgba(0,0,0,0.08)"
             flexWrap="wrap"
-            gap={2}
-            overflowX="auto"
-            css={{
-              "&::-webkit-scrollbar": { display: "none" },
-              "-ms-overflow-style": "none",
-              "scrollbar-width": "none",
-            }}
+            gap={3}
           >
-            <HStack
-              spacing={2}
-              flexWrap="wrap"
-              align="center"
-              justify="flex-start"
-              w="full"
-            >
+            {/* LEFT */}
+            <HStack spacing={3}>
               <Button
                 size="sm"
-                variant="solid"
-                colorScheme="purple"
+                variant="ghost"
+                fontWeight="600"
                 onClick={selectAll}
               >
-                Select All
+                Select all
               </Button>
 
+              <Tag borderRadius="full" bg="gray.100" color="gray.700">
+                {selected.size} selected
+              </Tag>
+            </HStack>
+
+            {/* RIGHT ACTIONS */}
+            <HStack spacing={2}>
+              {/* DOWNLOAD */}
               <Button
                 size="sm"
-                bg="#d4af37"
-                color="black"
-                leftIcon={<FiDownload />}
+                borderRadius="full"
+                bg="gray.900"
+                color="white"
+                leftIcon={<FiDownload color="white" />}
+                _hover={{ bg: "gray.800" }}
+                isDisabled={selected.size === 0}
                 onClick={downloadSelected}
               >
-                Download Selected
+                Download
               </Button>
 
+              {/* ZIP */}
               <Button
                 size="sm"
+                borderRadius="full"
                 variant="outline"
-                borderColor="red.400"
-                color="red.400"
-                leftIcon={<FiTrash2 />}
+                leftIcon={<FiDownload />}
+                isDisabled={selected.size === 0}
+                onClick={downloadSelectedAsZip}
+              >
+                ZIP
+              </Button>
+
+              {/* DELETE */}
+              <Button
+                size="sm"
+                borderRadius="full"
+                variant="ghost"
+                color="red.600"
+                leftIcon={<FiTrash2 color="red" />}
+                _hover={{ bg: "red.50" }}
+                isDisabled={selected.size === 0}
                 onClick={deleteSelected}
               >
-                Delete Selected
+                Delete
               </Button>
 
+              {/* CLEAR */}
               <Button
                 size="sm"
-                variant="solid"
-                colorScheme="yellow"
-                leftIcon={<FiDownload />}
-                isLoading={zipProcessing}
-                onClick={downloadAllAsZip}
+                borderRadius="full"
+                variant="ghost"
+                onClick={clearSelection}
               >
-                Download All (ZIP)
-              </Button>
-
-              <Button size="sm" variant="outline" onClick={clearSelection}>
                 Clear
               </Button>
             </HStack>
-
-            <Text
-              fontSize="sm"
-              color="gray.600"
-              ml="auto"
-              mt={{ base: 2, md: 0 }}
-              whiteSpace="nowrap"
-            >
-              {selected.size} selected
-            </Text>
           </Flex>
         </Fade>
       )}
@@ -749,12 +887,20 @@ const tileShadow = "sm";
 
       {/* Gallery Grid */}
       <Box px={{ base: 3, md: 8 }} py={{ base: 4, md: 10 }} mx="auto" w="100%">
-        {isPending ? (
-          <Flex wrap="wrap" justify="center" gap={{ base: 3, md: 6 }}>
-            {[...Array(6)].map((_, i) => (
+        {eventLoading || isPending ? (
+          <Grid
+            templateColumns={{
+              base: "repeat(3, 1fr)",
+              sm: "repeat(4, 1fr)",
+              md: "repeat(5, 1fr)",
+              lg: "repeat(6, 1fr)",
+            }}
+            gap={1}
+          >
+            {[...Array(12)].map((_, i) => (
               <ImageCardSkeleton key={i} />
             ))}
-          </Flex>
+          </Grid>
         ) : (
           <Grid
             templateColumns={{
@@ -818,7 +964,7 @@ const tileShadow = "sm";
                       </Box>
                     )}
 
-                    <Image
+                    <ChakraImage
                       src={img.url}
                       alt={img.filename || "photo"}
                       w="100%"
@@ -891,15 +1037,17 @@ const tileShadow = "sm";
       )}
 
       {/* Viewer */}
+
       <Viewer
         isOpen={viewerOpen}
         onClose={() => setViewerOpen(false)}
         images={safeImages}
         startIndex={viewerIndex}
-        onDelete={handleDelete}
-        currentUserId={user?.uid}
+        currentUser={user}
         isAdmin={isAdmin}
+        onDelete={handleDelete}
       />
+
       {allowUpload && (
         <Box
           position="fixed"
@@ -913,12 +1061,10 @@ const tileShadow = "sm";
             bg={primaryBg}
             color={primaryText}
             _hover={{ bg: primaryHover }}
-          
             borderRadius="full"
             px={6}
             py={6}
             boxShadow="lg"
-           
           >
             Add Photos
           </Button>

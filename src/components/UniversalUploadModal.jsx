@@ -27,9 +27,11 @@ export default function UniversalUploadModal({
   accept = "image/*,video/*",
 }) {
   const inputRef = useRef();
+  const uploadTasks = useRef({});
+
   const [files, setFiles] = useState([]);
   const [progressMap, setProgressMap] = useState({});
-  const uploadTasks = useRef({});
+  const [uploading, setUploading] = useState(false); // ✅ ADDED
 
   /* ---------- FILE SELECT ---------- */
   const handleSelect = (e) => {
@@ -38,11 +40,16 @@ export default function UniversalUploadModal({
       preview: URL.createObjectURL(file),
       id: `${file.name}-${Date.now()}`,
     }));
+
     setFiles((prev) => [...prev, ...selected]);
   };
 
   /* ---------- UPLOAD ---------- */
   const startUpload = async () => {
+    if (!files.length) return;
+
+    setUploading(true); // ✅ DISABLE BUTTON
+
     files.forEach(({ file, id }) => {
       const type = file.type.startsWith("video") ? "video" : "image";
       const path = `guestbook/${eventId}/${type}s/${Date.now()}-${file.name}`;
@@ -62,12 +69,18 @@ export default function UniversalUploadModal({
         console.error,
         async () => {
           const url = await ref.getDownloadURL();
+
           await onUploadComplete({
             type,
             mediaUrl: url,
           });
 
           setFiles((prev) => prev.filter((f) => f.id !== id));
+
+          // ✅ re-enable once uploads finish
+          setTimeout(() => {
+            setUploading(false);
+          }, 300);
         }
       );
     });
@@ -142,13 +155,16 @@ export default function UniversalUploadModal({
             ))}
           </SimpleGrid>
 
+          {/* UPLOAD BUTTON */}
           <Button
             mt={5}
             w="100%"
             bg="#EBD9A6"
             _hover={{ bg: "#D1B7A1" }}
             onClick={startUpload}
-            isDisabled={!files.length}
+            isDisabled={!files.length || uploading} // ✅ DISABLED
+            isLoading={uploading} // ✅ SPINNER
+            loadingText="Uploading..."
           >
             Upload
           </Button>
