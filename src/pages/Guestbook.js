@@ -133,7 +133,7 @@ export default function Guestbook() {
     <Box minH="100vh" bg="gray.50" pb="140px">
       <HeaderSpacer />
 
-      <Box px={{ base: 4, md: 8 }} maxW="1400px" mx="auto">
+      <Box px={{ base: 3, md: 8 }} >
         <Flex direction={{ base: "column", md: "row" }} gap={10}>
           {/* ================= YOUR MESSAGES ================= */}
           <Box w={{ base: "100%", md: "30%" }}>

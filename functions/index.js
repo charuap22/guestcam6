@@ -8,87 +8,95 @@ const fs = require("fs");
 
 admin.initializeApp();
 ffmpeg.setFfmpegPath(ffmpegPath);
-
-/**
- * Generate REAL poster image for uploaded videos
- */
-exports.generateVideoThumbnail = functions.storage
-  .object()
+exports.processVideo = functions
+  .runWith({ memory: "1GB", timeoutSeconds: 540 })
+  .storage.object()
   .onFinalize(async (object) => {
-    try {
-      if (!object.contentType || !object.contentType.startsWith("video/")) {
-        return null;
-      }
+    if (!object.contentType?.startsWith("video/")) return;
 
-      const filePath = object.name; // videos/eventId/filename.mp4
-      if (!filePath || !filePath.startsWith("videos/")) {
-        return null;
-      }
+    const filePath = object.name;
 
-      const bucket = admin.storage().bucket(object.bucket);
+    // ✅ ONLY original uploads
+    if (!filePath.startsWith("guestbook/")) return;
+    if (!filePath.includes("/videos/")) return;
 
-      const tempVideoPath = path.join(os.tmpdir(), path.basename(filePath));
-
-      const thumbFileName = filePath.replace(/\.[^/.]+$/, ".jpg");
-      const tempThumbPath = path.join(
-        os.tmpdir(),
-        path.basename(thumbFileName)
-      );
-
-      // Download video
-      await bucket.file(filePath).download({
-        destination: tempVideoPath,
-      });
-
-      // Extract frame at 1 second
-      await new Promise((resolve, reject) => {
-        ffmpeg(tempVideoPath)
-          .on("end", resolve)
-          .on("error", reject)
-          .screenshots({
-            count: 1,
-            timemarks: ["1"],
-            filename: path.basename(tempThumbPath),
-            folder: os.tmpdir(),
-          });
-      });
-
-      // Upload thumbnail
-      await bucket.upload(tempThumbPath, {
-        destination: thumbFileName,
-        contentType: "image/jpeg",
-        metadata: {
-          cacheControl: "public,max-age=31536000",
-        },
-      });
-
-      // Cleanup temp files
-      fs.unlinkSync(tempVideoPath);
-      fs.unlinkSync(tempThumbPath);
-
-      // Get public URL
-      const [thumbnailUrl] = await bucket.file(thumbFileName).getSignedUrl({
-        action: "read",
-        expires: "03-01-2035",
-      });
-
-      // Update Firestore video doc
-      const snapshot = await admin
-        .firestore()
-        .collection("videos")
-        .where("storagePath", "==", filePath)
-        .limit(1)
-        .get();
-
-      if (!snapshot.empty) {
-        await snapshot.docs[0].ref.update({
-          thumbnailUrl,
-        });
-      }
-
-      return null;
-    } catch (error) {
-      console.error("Thumbnail generation failed:", error);
-      return null;
+    // ❌ prevent recursion
+    if (filePath.includes("/thumbnails/") || filePath.includes("/previews/")) {
+      return;
     }
+
+    const parts = filePath.split("/");
+    const eventId = parts[1];
+    const fileName = path.basename(filePath);
+    const videoId = path.parse(fileName).name;
+
+    const bucket = admin.storage().bucket(object.bucket);
+
+    const tempVideo = path.join(os.tmpdir(), fileName);
+    const tempThumb = path.join(os.tmpdir(), `${videoId}.jpg`);
+    const tempPreview = path.join(os.tmpdir(), `${videoId}-preview.mp4`);
+
+    await bucket.file(filePath).download({ destination: tempVideo });
+
+    // Thumbnail
+    await new Promise((res, rej) => {
+      ffmpeg(tempVideo)
+        .screenshots({
+          timestamps: ["1"],
+          filename: `${videoId}.jpg`,
+          folder: os.tmpdir(),
+          size: "640x?", // ✅ PRESERVE ASPECT RATIO
+        })
+        .on("end", res)
+        .on("error", rej);
+    });
+
+    // Preview
+    await new Promise((res, rej) => {
+      ffmpeg(tempVideo)
+        .setStartTime(0)
+        .setDuration(2.5)
+        .outputOptions([
+          "-movflags faststart",
+          "-pix_fmt yuv420p",
+          "-vf scale=480:-2",
+          "-preset veryfast",
+          "-b:v 400k",
+        ])
+        .save(tempPreview)
+        .on("end", res)
+        .on("error", rej);
+    });
+
+    const thumbPath = `thumbnails/${eventId}/${videoId}.jpg`;
+    const previewPath = `previews/${eventId}/${videoId}.mp4`;
+
+    await bucket.upload(tempThumb, { destination: thumbPath });
+    await bucket.upload(tempPreview, { destination: previewPath });
+
+    const thumbUrl = `https://firebasestorage.googleapis.com/v0/b/${
+      bucket.name
+    }/o/${encodeURIComponent(thumbPath)}?alt=media`;
+    const previewUrl = `https://firebasestorage.googleapis.com/v0/b/${
+      bucket.name
+    }/o/${encodeURIComponent(previewPath)}?alt=media`;
+
+    const snap = await admin
+      .firestore()
+      .collection("videos")
+      .where("storagePath", "==", filePath)
+      .limit(1)
+      .get();
+
+    if (!snap.empty) {
+      await snap.docs[0].ref.update({
+        thumbUrl,
+        previewUrl,
+        status: "ready",
+      });
+    }
+
+    fs.unlinkSync(tempVideo);
+    fs.unlinkSync(tempThumb);
+    fs.unlinkSync(tempPreview);
   });

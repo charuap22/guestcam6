@@ -33,6 +33,8 @@ export default function UniversalUploadModal({
   const [progressMap, setProgressMap] = useState({});
   const [uploading, setUploading] = useState(false); // ✅ ADDED
 
+  
+
   /* ---------- FILE SELECT ---------- */
   const handleSelect = (e) => {
     const selected = Array.from(e.target.files).map((file) => ({
@@ -58,31 +60,33 @@ export default function UniversalUploadModal({
       const task = ref.put(file);
       uploadTasks.current[id] = task;
 
-      task.on(
-        "state_changed",
-        (snap) => {
-          const percent = Math.round(
-            (snap.bytesTransferred / snap.totalBytes) * 100
-          );
-          setProgressMap((p) => ({ ...p, [id]: percent }));
-        },
-        console.error,
-        async () => {
-          const url = await ref.getDownloadURL();
+     task.on(
+       "state_changed",
+       (snap) => {
+         const percent = Math.round(
+           (snap.bytesTransferred / snap.totalBytes) * 100
+         );
+         setProgressMap((p) => ({ ...p, [id]: percent }));
+       },
+       console.error,
+       async () => {
+         const url = await ref.getDownloadURL();
 
-          await onUploadComplete({
-            type,
-            mediaUrl: url,
-          });
+        await onUploadComplete({
+          type,
+          mediaUrl: url,
+          file,
+          storagePath: path, // 🔥 PASS EXACT PATH
+        });
 
-          setFiles((prev) => prev.filter((f) => f.id !== id));
+         setFiles((prev) => prev.filter((f) => f.id !== id));
 
-          // ✅ re-enable once uploads finish
-          setTimeout(() => {
-            setUploading(false);
-          }, 300);
-        }
-      );
+         setTimeout(() => setUploading(false), 300);
+         console.log("UPLOAD PATH:", path);
+
+       }
+     );
+
     });
   };
 

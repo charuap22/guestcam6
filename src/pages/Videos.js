@@ -18,7 +18,7 @@ import {
   Center,
   Fade,
   Checkbox,
-  Skeleton,
+  Image,
   useDisclosure,
   useColorModeValue,
 } from "@chakra-ui/react";
@@ -42,6 +42,7 @@ import { useFirestore } from "../hooks/useFirestore";
 import UniversalUploadModal from "../components/UniversalUploadModal";
 import ImageCardSkeleton from "../components/ImageCardSkeleton";
 import { downloadImage, downloadUrlsAsZip } from "../utils/downloads";
+import { AspectRatio } from "@chakra-ui/react";
 
 /* ---------------- utilities ---------------- */
 
@@ -268,6 +269,23 @@ export default function Videos() {
   const { changeEvent } = useEvent();
   const { deleteDocument } = useFirestore("videos");
   const bg = useColorModeValue("gray.50", "gray.900");
+const [previewId, setPreview] = useState(null);
+
+const touchTimer = useRef(null);
+
+const handleTouchStart = (id) => {
+  if (selectMode) return; // 🚫 no preview in select mode
+
+  touchTimer.current = setTimeout(() => {
+    setPreview(id);
+  }, 250); // ⏱ long-press delay
+};
+
+const handleTouchEnd = () => {
+  clearTimeout(touchTimer.current);
+  setPreview(null);
+};
+
 
 const { documents: videosRaw, isPending } = useCollection(
   "videos",
@@ -509,46 +527,110 @@ const handleDelete = async (video) => {
                 <GridItem key={v.id}>
                   <Box
                     position="relative"
-                    aspectRatio={1}
-                    bg="white"
-                    border="1px solid #eee"
+                    w="100%"
+                    pt="100%" // 🔒 square
+                    overflow="hidden"
                     cursor={selectMode ? "default" : "pointer"}
-                    onClick={() =>
-                      selectMode ? toggleSelect(v.id) : openViewerAt(i)
+                    onMouseEnter={() =>
+                      !selectMode &&
+                      v.status !== "processing" &&
+                      setPreview(v.id)
                     }
+                    onMouseLeave={() => setPreview(null)}
+                    onTouchStart={() =>
+                      !selectMode &&
+                      v.status !== "processing" &&
+                      handleTouchStart(v.id)
+                    }
+                    onTouchEnd={handleTouchEnd}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (selectMode) {
+                        toggleSelect(v.id);
+                        return;
+                      }
+                      if (v.status === "processing") return;
+                      openViewerAt(i);
+                    }}
                   >
-                   
-                    <video
-                      src={v.url}
-                      muted
-                      playsInline
-                      preload="metadata"
-                      onLoadedData={(e) => {
-                        e.currentTarget.style.opacity = 1;
-                      }}
-                      style={{
-                        position: "absolute",
-                        inset: 0,
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                        opacity: 0, // 👈 hidden until ready
-                        transition: "opacity 0.2s ease",
-                      }}
+                    {/* CONTENT */}
+                    <Box
+                      position="absolute"
+                      inset={0}
+                      bgImage={v.thumbUrl ? `url(${v.thumbUrl})` : "none"}
+                      bgSize="cover" // ✅ SAME AS PREVIEW
+                      bgPosition="center" // ✅ CENTER CROP
+                      bgRepeat="no-repeat"
+                      display={previewId === v.id ? "none" : "block"}
                     />
+
+                    {/* Preview video */}
+                    {previewId === v.id && v.previewUrl && (
+                      <video
+                        src={v.previewUrl}
+                        autoPlay
+                        muted
+                        loop
+                        playsInline
+                        style={{
+                          position: "absolute",
+                          inset: 0,
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
+                      />
+                    )}
+
+                    {/* Play icon */}
                     <Center position="absolute" inset={0} pointerEvents="none">
                       <Box bg="blackAlpha.600" borderRadius="full" p={2}>
-                        <FiPlay size={18} color="white" />
+                        <FiPlay color="white" />
                       </Box>
                     </Center>
-                    {selectMode && (
-                      <Checkbox
-                        isChecked={selected.has(v.id)}
+
+                    {/* Processing */}
+                    {v.status === "processing" && (
+                      <Center
                         position="absolute"
-                        top={3}
-                        left={3}
-                        bg="white"
+                        inset={0}
+                        bg="blackAlpha.400"
+                        color="white"
+                        fontWeight="600"
+                      >
+                        Processing…
+                      </Center>
+                    )}
+
+                    {/* selected overlay */}
+                    {selectMode && selected.has(v.id) && (
+                      <Box
+                        position="absolute"
+                        inset={0}
+                        bg="blackAlpha.400"
+                        zIndex={5}
                       />
+                    )}
+
+                    {/* checkmark */}
+                    {selectMode && (
+                      <Box
+                        position="absolute"
+                        top={2}
+                        left={2}
+                        zIndex={10}
+                        bg={selected.has(v.id) ? "#d4af37" : "white"}
+                        color={selected.has(v.id) ? "black" : "gray.400"}
+                        borderRadius="full"
+                        w="22px"
+                        h="22px"
+                        display="flex"
+                        alignItems="center"
+                        justifyContent="center"
+                        fontWeight="bold"
+                      >
+                        {selected.has(v.id) ? "✓" : ""}
+                      </Box>
                     )}
                   </Box>
                 </GridItem>
@@ -563,15 +645,23 @@ const handleDelete = async (video) => {
         eventId={id}
         user={user}
         accept="video/*"
-        onUploadComplete={async ({ mediaUrl, file }) => {
+        onUploadComplete={async ({ mediaUrl, file, type, storagePath }) => {
+          if (type !== "video") return;
+
           await addDocument({
             eventId: id,
             url: mediaUrl,
             filename: file?.name || "video",
+            storagePath, // ✅ EXACT MATCH
             createdAt: new Date(),
             createdBy: user?.uid || null,
+            userId: user?.uid || "guest",
             uploaderName: user?.displayName || "Guest",
+            status: "processing",
+            thumbUrl: null,
+            previewUrl: null,
           });
+          console.log("FIRESTORE STORAGE PATH:", storagePath);
         }}
       />
 

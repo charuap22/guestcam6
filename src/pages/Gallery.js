@@ -878,6 +878,8 @@ if (!eventLoading && !eventDoc) {
               url: mediaUrl,
               filename: file?.name || "image",
               createdAt: new Date(),
+              // ✅ REQUIRED BY RULES
+              userId: user?.uid || "guest",
               createdBy: user?.uid || null,
               uploaderName: user?.displayName || "Guest",
             });
