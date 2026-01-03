@@ -44,7 +44,7 @@ export default function Signup() {
   const [thumbnailError, setThumbnailError] = useState(null);
   const [avatarImg, setAvatarImg] = useState(null);
 
-  const { signup, isPending, error } = useSignup();
+  const { signup, isPending} = useSignup();
 
   const resizeFile = (file) =>
     new Promise((resolve) => {
@@ -72,30 +72,32 @@ export default function Signup() {
   const redirectTo = params.get("redirect") || "/pricing";
 
   const handleFileChange = async (e) => {
-    setThumbnail(null);
     let selected = e.target.files && e.target.files[0];
 
     if (!selected) {
-      setThumbnailError("Please select a file");
+      toast.error("Please select an image");
       return;
     }
+
     if (!selected.type.includes("image")) {
-      setThumbnailError("Selected file must be an image");
+      toast.error("Selected file must be an image");
       return;
     }
+
     if (selected.size > 2_000_000) {
-      setThumbnailError("Image file size must be less than 2mb");
+      toast.error("Image size must be less than 2MB");
       return;
     }
+
     try {
       const resizedImage = await resizeFile(selected);
       setAvatarImg(URL.createObjectURL(resizedImage));
-      setThumbnailError(null);
       setThumbnail(resizedImage);
-    } catch (err) {
-      setThumbnailError("Failed to resize image");
+    } catch {
+      toast.error("Failed to process image");
     }
   };
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -106,9 +108,29 @@ export default function Signup() {
       // redirect after successful signup
       history.replace(redirectTo);
     } catch (err) {
-      toast.error(err?.message || "Signup failed. Please try again.");
-      // signup hook may also set `error`, which you are already rendering below
+      toast.error(getSignupErrorMessage(err), {
+        position: "top-center",
+        autoClose: 4000,
+      });
     }
+  };
+
+  const getSignupErrorMessage = (err) => {
+    const code = err?.code || err?.message || "";
+
+    if (code.includes("auth/email-already-in-use")) {
+      return "An account with this email already exists.";
+    }
+
+    if (code.includes("auth/weak-password")) {
+      return "Password should be at least 6 characters.";
+    }
+
+    if (code.includes("auth/invalid-email")) {
+      return "Please enter a valid email address.";
+    }
+
+    return "Signup failed. Please try again.";
   };
 
   return (
@@ -142,19 +164,7 @@ export default function Signup() {
 
             <form onSubmit={handleSubmit}>
               <Stack spacing={4}>
-                {thumbnailError && (
-                  <Alert status="error">
-                    <AlertIcon />
-                    {thumbnailError}
-                  </Alert>
-                )}
-                {error && (
-                  <Alert status="error">
-                    <AlertIcon />
-                    {error}
-                  </Alert>
-                )}
-
+               
                 <FormControl id="email">
                   <FormLabel>Email address</FormLabel>
                   <Input

@@ -329,8 +329,8 @@ export default function DashboardSE() {
             </VStack>
 
             {/* RIGHT CARD */}
-            <Box bg={cardBg} p={6} borderRadius="xl" boxShadow="lg">
-              <Heading size="md" mb={2}>
+            <Box bg={cardBg} p={6}   borderRadius="xl" boxShadow="lg">
+              <Heading size="lg" mb={2}>
                 {firstEvent.eventPageHeader || firstEvent.eventName}
               </Heading>
 

@@ -5,6 +5,8 @@ import { Center, Spinner } from "@chakra-ui/react";
 import { useAuthContext } from "../hooks/useAuthContext";
 import { useUserInfo } from "../hooks/useUserInfo";
 import { usePlan } from "../context/PlanContext";
+import firebase from "firebase/app";
+import "firebase/firestore";
 
 export default function AdminGuard({ children }) {
   const history = useHistory();
@@ -26,9 +28,25 @@ export default function AdminGuard({ children }) {
     }
 
     // ✅ ALLOW GUESTS / ANONYMOUS USERS (DO NOTHING)
-    if (user.isAnonymous || UserInfo?.role === "guest") {
-      return;
-    }
+ const isGuest = user.isAnonymous || UserInfo?.role === "guest";
+ const isGuestRoute = location.pathname.includes("/guest-");
+
+ if (isGuest && !isGuestRoute) {
+   firebase
+     .firestore()
+     .collection("guests")
+     .doc(user.uid)
+     .get()
+     .then((snap) => {
+       if (snap.exists && snap.data()?.eventId) {
+         history.replace(`/admin/guest-dashboard/${snap.data().eventId}`);
+       } else {
+         history.replace("/guest-login");
+       }
+     });
+   return;
+ }
+
 
     // 🔒 OWNER WITHOUT PLAN → PRICING
     if (!currentPlan) {

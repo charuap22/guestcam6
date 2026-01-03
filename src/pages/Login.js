@@ -97,12 +97,14 @@ const handleSubmit = async (e) => {
   } catch (err) {
     toast({
       title: "Login failed",
-      description: err.message || "Unable to login",
+      description: getAuthErrorMessage(err),
       status: "error",
-      duration: 5000,
+      duration: 4000,
       isClosable: true,
+      position: "top-center",
     });
   }
+
 };
 
 
@@ -145,6 +147,27 @@ const handleSubmit = async (e) => {
     { name: "Prosper Otemuyiwa", url: "https://bit.ly/prosper-baba" },
     { name: "Christian Nwamba", url: "https://bit.ly/code-beast" },
   ];
+const getAuthErrorMessage = (err) => {
+  const code = err?.code || err?.message || "";
+
+  if (code.includes("auth/user-not-found")) {
+    return "No account found with this email.";
+  }
+
+  if (code.includes("auth/wrong-password")) {
+    return "Incorrect password. Please try again.";
+  }
+
+  if (code.includes("auth/invalid-credential")) {
+    return "Invalid email or password.";
+  }
+
+  if (code.includes("auth/too-many-requests")) {
+    return "Too many attempts. Please try again later.";
+  }
+
+  return "Unable to login. Please try again.";
+};
 
   return (
     <>
@@ -177,12 +200,7 @@ const handleSubmit = async (e) => {
 
             <form onSubmit={handleSubmit}>
               <Stack spacing={4}>
-                {error && (
-                  <Alert status="error">
-                    <AlertIcon />
-                    {error}
-                  </Alert>
-                )}
+                
 
                 <FormControl>
                   <FormLabel>Email address</FormLabel>

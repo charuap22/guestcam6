@@ -163,6 +163,7 @@ export default function AdminLayout(props) {
                 secondary={getActiveNavbar(routes)}
                 message={getActiveNavbarText(routes)}
                 fixed={fixed}
+                eventName={"event"}
                 {...rest}
               />
             </Box>
