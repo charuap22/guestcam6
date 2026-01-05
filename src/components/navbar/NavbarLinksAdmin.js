@@ -45,6 +45,7 @@ export default function HeaderLinks(props) {
   const history = useHistory();
   const params = useParams();
   const toast = useToast();
+const [loggingOut, setLoggingOut] = React.useState(false);
 
   // Theme colors
   const deepPurple = "#2C1633";
@@ -67,23 +68,22 @@ export default function HeaderLinks(props) {
 
   // Try to detect an eventId from a guest-dashboard URL:
   // matches: /admin/guest-dashboard/:eventId
-const guestEventIdFromUrl = React.useMemo(() => {
-  if (typeof window === "undefined") return null;
+  const guestEventIdFromUrl = React.useMemo(() => {
+    if (typeof window === "undefined") return null;
 
-  const path = window.location.pathname;
+    const path = window.location.pathname;
 
-  // supports:
-  // /admin/guest-dashboard/:id
-  // /admin/gallery/guest/:id
-  // /admin/videos/guest/:id
-  // /admin/guestbook/guest/:id
-  const match = path.match(
-    /\/admin\/(guest-dashboard|gallery\/guest|videos\/guest|guestbook\/guest)\/([^/]+)/
-  );
+    // supports:
+    // /admin/guest-dashboard/:id
+    // /admin/gallery/guest/:id
+    // /admin/videos/guest/:id
+    // /admin/guestbook/guest/:id
+    const match = path.match(
+      /\/admin\/(guest-dashboard|gallery\/guest|videos\/guest|guestbook\/guest)\/([^/]+)/
+    );
 
-  return match ? match[2] : null;
-}, []);
-
+    return match ? match[2] : null;
+  }, []);
 
   // Resolve currentEventId using many fallbacks:
   // 1) event context (ctxEventId)
@@ -91,31 +91,28 @@ const guestEventIdFromUrl = React.useMemo(() => {
   // 3) guest URL extractor (guestEventIdFromUrl) — used especially when a guest is logged in
   // 4) null if none found
   const isGuest = user?.isAnonymous || UserInfo?.role === "guest";
-const normalizeId = (id) =>
-  typeof id === "string" && id.trim() === "" ? null : id;
+  const normalizeId = (id) =>
+    typeof id === "string" && id.trim() === "" ? null : id;
 
-const eventIdFromUrl = React.useMemo(() => {
-  if (typeof window === "undefined") return null;
+  const eventIdFromUrl = React.useMemo(() => {
+    if (typeof window === "undefined") return null;
 
-  const path = window.location.pathname;
+    const path = window.location.pathname;
 
-  // Supports BOTH owner + guest routes
-  const match = path.match(
-    /\/admin\/(guestbook|gallery|videos)\/(owner|guest)\/([^/]+)/
+    // Supports BOTH owner + guest routes
+    const match = path.match(
+      /\/admin\/(guestbook|gallery|videos)\/(owner|guest)\/([^/]+)/
+    );
+
+    return match ? match[3] : null;
+  }, []);
+
+  const currentEventId = normalizeId(
+    ctxEventId ||
+      eventIdFromUrl || // 🔥 THIS FIXES OWNER ROUTES
+      params.eventId ||
+      params.id
   );
-
-  return match ? match[3] : null;
-}, []);
-
-const currentEventId = normalizeId(
-  ctxEventId ||
-    eventIdFromUrl || // 🔥 THIS FIXES OWNER ROUTES
-    params.eventId ||
-    params.id
-);
-
-
-
 
   const { document: userDoc } = useDocument("users", user?.uid);
   const { document: eventDoc } = useDocument("events", currentEventId);
@@ -151,31 +148,31 @@ const currentEventId = normalizeId(
     return guestEventIdFromUrl || params.id || params.eventId || null;
   };
 
-const pickTargetId = () => {
-  // ✅ 1. ALWAYS trust route param first
-  if (params?.id) return params.id;
+  const pickTargetId = () => {
+    // ✅ 1. ALWAYS trust route param first
+    if (params?.id) return params.id;
 
-  // ✅ 2. Guests: fallback to URL parsing
-  const guestId = getGuestEventId();
-  if (guestId) return guestId;
+    // ✅ 2. Guests: fallback to URL parsing
+    const guestId = getGuestEventId();
+    if (guestId) return guestId;
 
-  // ✅ 3. Owners: context fallback
-  if (currentEventId) return currentEventId;
+    // ✅ 3. Owners: context fallback
+    if (currentEventId) return currentEventId;
 
-  // ✅ 4. Owners: first owned event
-  if (isOwner && Array.isArray(userEvents) && userEvents.length > 0) {
-    return userEvents[0].id;
-  }
+    // ✅ 4. Owners: first owned event
+    if (isOwner && Array.isArray(userEvents) && userEvents.length > 0) {
+      return userEvents[0].id;
+    }
 
-  return null;
-};
-console.log("Navbar event resolution", {
-  isGuest,
-  guestEventIdFromUrl,
-  ctxEventId,
-  params,
-  picked: pickTargetId(),
-});
+    return null;
+  };
+  console.log("Navbar event resolution", {
+    isGuest,
+    guestEventIdFromUrl,
+    ctxEventId,
+    params,
+    picked: pickTargetId(),
+  });
   useEffect(() => {
     console.debug("Navbar event resolution", {
       isGuest,
@@ -493,37 +490,34 @@ console.log("Navbar event resolution", {
             <Flex flexDirection="column" p="10px">
               <MenuItem
                 _hover={{ bg: "none", color: "red.500" }}
+                isDisabled={isPending || loggingOut}
                 onClick={async () => {
                   try {
-                    // ensure logout is called without event arg and awaited
+                    setLoggingOut(true);
+
                     await logout();
 
-                    // show toast and redirect to login (or public landing)
                     toast({
                       title: "Signed out",
+                      description: "You have been logged out safely.",
                       status: "success",
-                      duration: 3000,
+                      duration: 2000,
                     });
 
-                    // replace history so back button doesn't return to protected page
                     history.replace("/login");
                   } catch (err) {
-                    // logout hook should set isPending / error, but show toast as well
+                    setLoggingOut(false);
                     toast({
                       title: "Logout failed",
-                      description: err?.message || "Could not log out.",
+                      description: err?.message || "Something went wrong.",
                       status: "error",
-                      duration: 5000,
                     });
-                    // Do not rethrow; swallow to avoid unhandled rejection
-                    // console.error("Logout error:", err);
                   }
                 }}
-                isDisabled={isPending}
               >
                 <Icon as={FiLogOut} mr={2} />
                 <Text fontSize="sm">
-                  {isPending ? "Signing out..." : "Log out"}
+                  {loggingOut ? "Signing out…" : "Log out"}
                 </Text>
               </MenuItem>
             </Flex>

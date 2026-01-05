@@ -4,7 +4,7 @@ import { projectFirestore, projectAuth } from "../firebase/config";
 const PlanContext = createContext();
 
 export const PlanProvider = ({ children }) => {
-  const [currentPlan, setCurrentPlan] = useState({ metadata: {} });
+  const [currentPlan, setCurrentPlan] = useState(undefined);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
 
@@ -26,15 +26,15 @@ export const PlanProvider = ({ children }) => {
 
   useEffect(() => {
     const unsubscribeAuth = projectAuth.onAuthStateChanged((authUser) => {
-      if (authUser) {
-        console.log("✅ User Logged In:", authUser.uid);
-        setUser(authUser);
-      } else {
-        console.warn("🔴 No user logged in.");
-        setUser(null);
-        setCurrentPlan(null);
-        setLoading(false);
-      }
+    if (authUser) {
+      setUser(authUser);
+      setCurrentPlan(undefined); // 👈 RESET BETWEEN USERS
+      setLoading(true);
+    } else {
+      setUser(null);
+      setCurrentPlan(null); // logged out = no plan
+      setLoading(false);
+    }
     });
 
     return () => unsubscribeAuth();
@@ -60,12 +60,14 @@ export const PlanProvider = ({ children }) => {
         const userData = userSnap.data();
         console.log("🔥 User Data:", userData);
 
-        if (!userData.planId) {
-          console.warn("⚠️ No planId found in Firestore for user.");
-          setCurrentPlan(null);
-          setLoading(false);
-          return;
-        }
+    if (userData.subscriptionStatus === "active" && userData.planId) {
+      // continue loading product → OK
+    } else if (!userData.planId) {
+      setCurrentPlan(null);
+      setLoading(false);
+      return;
+    }
+
 
         const productRef = projectFirestore
           .collection("products")

@@ -58,42 +58,66 @@ export default function Login() {
 
   // Extract redirect path if exists: /login?redirect=/pricing
   const params = new URLSearchParams(location.search);
-  const redirectTo = params.get("redirect") || "/admin/dashboard";
+const rawRedirect = params.get("redirect");
+
+const redirectTo = rawRedirect?.startsWith("/admin") ? rawRedirect : "/pricing";
 
   useEffect(() => {
     if (rememberedEmail) setEmail(rememberedEmail);
   }, [rememberedEmail]);
 
+// const handleSubmit = async (e) => {
+//   e.preventDefault();
+
+//   updateRemember(email);
+
+//   try {
+//     const userCredential = await login(email, password);
+//     const uid = userCredential?.user?.uid;
+
+//     // 🔹 Fetch user doc
+//     const userSnap = await firebase
+//       .firestore()
+//       .collection("users")
+//       .doc(uid)
+//       .get();
+
+//     const userData = userSnap.exists ? userSnap.data() : null;
+
+//     // 🔹 Determine plan status
+//     const hasPlan =
+//       userData?.subscriptionStatus === "active" ||
+//       userData?.packageActive === true ||
+//       userData?.planId;
+
+//     // 🔹 Redirect logic
+//     if (!hasPlan) {
+//       history.replace("/pricing");
+//     } else {
+//       history.replace(redirectTo);
+//     }
+//   } catch (err) {
+//     toast({
+//       title: "Login failed",
+//       description: getAuthErrorMessage(err),
+//       status: "error",
+//       duration: 4000,
+//       isClosable: true,
+//       position: "top-center",
+//     });
+//   }
+
+// };
 const handleSubmit = async (e) => {
   e.preventDefault();
-
   updateRemember(email);
 
   try {
-    const userCredential = await login(email, password);
-    const uid = userCredential?.user?.uid;
+    await login(email, password);
 
-    // 🔹 Fetch user doc
-    const userSnap = await firebase
-      .firestore()
-      .collection("users")
-      .doc(uid)
-      .get();
-
-    const userData = userSnap.exists ? userSnap.data() : null;
-
-    // 🔹 Determine plan status
-    const hasPlan =
-      userData?.subscriptionStatus === "active" ||
-      userData?.packageActive === true ||
-      userData?.planId;
-
-    // 🔹 Redirect logic
-    if (!hasPlan) {
-      history.replace("/pricing");
-    } else {
-      history.replace(redirectTo);
-    }
+    // ✅ ALWAYS redirect to intended page
+    // Guards will handle plan / role / access
+    history.replace(redirectTo);
   } catch (err) {
     toast({
       title: "Login failed",
@@ -104,9 +128,7 @@ const handleSubmit = async (e) => {
       position: "top-center",
     });
   }
-
 };
-
 
   const handleForgotPassword = async () => {
     if (!email) {

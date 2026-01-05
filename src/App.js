@@ -30,12 +30,11 @@ import UseCases from "./site/pages/UseCases";
 import HowItWorks from "./site/pages/HowItWorks";
 import PricingPage from "./site/pages/PricingPage";
 
-import HorizonWrapper from "./components/HorizonWrapper";
-import HorizonDashboard from "./pages/HorizonDashboard";
 import AdminLayout from "./layouts/admin";
 import Guest_Gallery from "./pages/Guest_Gallery";
 import { Suspense } from "react";
-import AdminGuard from "./routes/AdminGuard";
+import PlanGuard from "./routes/PlanGuard";
+
 
 function App() {
   const { authIsReady, user } = useAuthContext();
@@ -59,14 +58,9 @@ function App() {
               </div>
             }
           >
-            {/* <Sidebar  /> */}
             <Switch>
               <Route path="/admin">
-                <AdminGuard>
-                  <HorizonWrapper>
-                    <HorizonDashboard />
-                  </HorizonWrapper>
-                </AdminGuard>
+                <AdminLayout />
               </Route>
 
               <Route exact path="/">
@@ -81,145 +75,11 @@ function App() {
               <Route exact path="/howitworks">
                 <HowItWorks />
               </Route>
-              {/* <Route exact path="/pricing">
-              <PricingPage />
-            </Route> */}
+           
 
-              <Route exact path="/dashboard">
-                {!user && <Redirect to="/login" />}
-                {user && (
-                  <HorizonWrapper>
-                    {/* <Sidebar role={UserInfo.role}> */}
-                    <Dashboard />
-                    {/* </Sidebar> */}
-                  </HorizonWrapper>
-                )}
-              </Route>
+ 
 
-              <Route path="/CanvaTemplates/:type">
-                {!user && <Redirect to="/login" />}
-                {user && (
-                  <HorizonWrapper>
-                    <Sidebar role={UserInfo.role}>
-                      <CanvaTemplates />
-                    </Sidebar>
-                  </HorizonWrapper>
-                )}
-              </Route>
-              <Route path="/CanvaTemplates">
-                {!user && <Redirect to="/login" />}
-                {user && (
-                  <HorizonWrapper>
-                    <Sidebar role={UserInfo.role}>
-                      <CanvaTemplates />
-                    </Sidebar>
-                  </HorizonWrapper>
-                )}
-              </Route>
-              <Route path="/admin/create-event">
-                {!user && <Redirect to="/login" />}
-                {user && (
-                  <HorizonWrapper>
-                    {/* <Sidebar role={UserInfo.role}> */}
-                    <CreateEvent />
-                    {/* </Sidebar> */}
-                  </HorizonWrapper>
-                )}
-              </Route>
-              <Route path="/admin/edit-event/:id">
-                {!user && <Redirect to="/login" />}
-                {user && (
-                  <HorizonWrapper>
-                    <UpdateEvent />
-                  </HorizonWrapper>
-                )}
-              </Route>
-              <Route path="/admin/events/:id">
-                {!user && <Redirect to="/login" />}
-                {user && (
-                  <HorizonWrapper>
-                    <Event />
-                  </HorizonWrapper>
-                )}
-              </Route>
-              {/* Owner / paid gallery */}
-              {/* <Route path="/admin/gallery/owner/:id">
-              <HorizonWrapper>
-                <Gallery />
-              </HorizonWrapper>
-            </Route> */}
-
-              {/* Public guest gallery link */}
-              <Route path="/admin/gallery/guest/:id">
-                <HorizonWrapper>
-                  <Guest_Gallery />
-                </HorizonWrapper>
-              </Route>
-
-              {/* <Route path="/admin/gallery/:userType/:id">
-              {!user && <Redirect to="/login" />}
-              {user && (
-                <HorizonWrapper>
-                  <Gallery />
-                </HorizonWrapper>
-              )}
-            </Route> */}
-              <Route path="/admin/videos/:userType/:id">
-                {!user && <Redirect to="/login" />}
-                {user && (
-                  <HorizonWrapper>
-                    <Videos />
-                  </HorizonWrapper>
-                )}
-              </Route>
-              <Route path="/admin/guestbook/:userType/:id">
-                {!user && <Redirect to="/login" />}
-                {user && (
-                  <HorizonWrapper>
-                    <Guestbook />
-                  </HorizonWrapper>
-                )}
-              </Route>
-              {/* <Route path="/gallery_guest/:id">
-              {!user && <Redirect to="/login_Guest" />}
-              {user && (
-                <HorizonWrapper>
-                  <Sidebar_Guest>
-                    <Gallery />
-                  </Sidebar_Guest>
-                </HorizonWrapper>
-              )}
-            </Route> */}
-              <Route path="/Guest/Dashboard/:id">
-                {/* {!user && <Redirect to="/login_Guest" />}
-              {user && ( */}
-                <HorizonWrapper>
-                  <Sidebar_Guest role={UserInfo.role}>
-                    <Guest_Dashboard />
-                  </Sidebar_Guest>
-                </HorizonWrapper>
-                {/* )}  */}
-              </Route>
-              {/* <Route path="/Guest/Gallery/:id">
-              {/* {!user && <Redirect to="/login_Guest" />}
-              {user && (  
-            <HorizonWrapper>
-              <Sidebar_Guest>
-                <Gallery />
-              </Sidebar_Guest>
-            </HorizonWrapper>
-            {/* )} 
-            </Route> */}
-              <Route path="/Guest/Videos/:id">
-                {/* {!user && <Redirect to="/login_Guest" />}
-              {user && ( */}
-                <HorizonWrapper>
-                  <Sidebar_Guest>
-                    <Videos />
-                  </Sidebar_Guest>
-                </HorizonWrapper>
-                {/* )}  */}
-              </Route>
+  
               <Route path="/login">
                 {/* {user && <Redirect to="/" />} */}
                 {/* {!user &&  */}
@@ -236,7 +96,8 @@ function App() {
                 <Signup />
               </Route>
               <Route path="/pricing">
-                <Pricing />
+                <PlanGuard><Pricing /></PlanGuard>
+               
               </Route>
               <Route path="/success">
                 {!user && <Redirect to="/login" />}

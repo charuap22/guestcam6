@@ -206,8 +206,8 @@ const CreateEvent = () => {
 
         console.log("Event Created & User Updated:", response);
         setIsPending(false);
-        setEventExists(true);
-        setEventData({ id: response.id, ...event });
+        // setEventExists(true);
+        // setEventData({ id: response.id, ...event });
 
         setError(null);
         // 🔹 Show success toast
@@ -218,9 +218,9 @@ const CreateEvent = () => {
           duration: 3000,
           isClosable: true,
         });
-        setTimeout(() => {
+          
           history.push("/admin/dashboard");
-        }, 1500); // ✅ Redirect after a short delay
+        
       } else {
         setError("Please select an event image.");
       }

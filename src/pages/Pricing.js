@@ -24,6 +24,8 @@ import { CheckIcon } from "@chakra-ui/icons";
 import { usePlan } from "../context/PlanContext";
 import { useHistory } from "react-router-dom";
 
+
+
 export default function GuestPovPricing() {
   // Light/dark support
   const bg = useColorModeValue("gray.50", "gray.900");
@@ -39,6 +41,8 @@ export default function GuestPovPricing() {
   const [currentSubscription, setCurrentSubscription] = useState(null);
   const toast = useToast();
   const history = useHistory();
+
+  const { currentPlan, loading: planLoading } = usePlan();
 
   // Plan context (optional) — used to update client state immediately after demo activation
   let updatePlan = null;
@@ -115,6 +119,12 @@ export default function GuestPovPricing() {
     fetchData();
   }, [fetchData]);
 
+  useEffect(() => {
+    if (!planLoading && currentPlan) {
+      history.replace("/admin/dashboard");
+    }
+  }, [planLoading, currentPlan, history]);
+
   // keep currentSubscription in sync with auth state.
   // clear subscription on sign-out and re-fetch data on sign-in
   useEffect(() => {
@@ -129,6 +139,11 @@ export default function GuestPovPricing() {
     return () => unsubscribe();
   }, [fetchData]);
 
+  // 🚀 HARD GUARD — NOW SAFE
+  if (!planLoading && currentPlan) {
+    return null;
+  }
+  
   const handleCheckout = async (user, priceId, productKey, price) => {
     if (!user || !user.uid) {
       toast({
@@ -320,7 +335,9 @@ export default function GuestPovPricing() {
         status: "demo",
       });
 
-      history.push("/admin/dashboard");
+      setTimeout(() => {
+        history.replace("/admin/dashboard");
+      }, 300);
     } catch (err) {
       console.error("Demo activation failed:", err);
       toast({
@@ -428,9 +445,14 @@ export default function GuestPovPricing() {
                 .map(([k, v]) => [k.replace(/^feature_/, ""), v]);
 
               // only show current plan badge if user is signed in AND subscription matches
-              const isCurrentPlan =
+              {
+                /* const isCurrentPlan =
                 projectAuth.currentUser &&
                 currentSubscription &&
+                currentSubscription.planId === plan.id; */
+              }
+              const isCurrentPlan =
+                !!currentSubscription?.planId &&
                 currentSubscription.planId === plan.id;
 
               const currentPlanPrice = currentSubscription

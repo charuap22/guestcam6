@@ -10,82 +10,51 @@ import { useHistory } from "react-router-dom";
 import "react-toastify/dist/ReactToastify.css";
 
 export const useSignup = () => {
-  const [IsActive, setIsActive] = useState(true);
-  const [error, setError] = useState(null);
-
   const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState(null);
   const { dispatch } = useAuthContext();
-  let history = useHistory();
+
   const signup = async (email, password, displayName, thumbnail) => {
     setError(null);
     setIsPending(true);
 
     try {
-      // signup
       const res = await projectAuth.createUserWithEmailAndPassword(
         email,
         password
       );
 
-      if (!res) {
-        throw new Error("Could not complete signup");
-      }
+      if (!res) throw new Error("Signup failed");
 
       let photoURL = "";
-      // upload user thumbnail
       if (thumbnail) {
         const uploadPath = `thumbnails/${res.user.uid}/${thumbnail.name}`;
         const img = await projectStorage.ref(uploadPath).put(thumbnail);
-        const imgUrl = await img.ref.getDownloadURL();
-         photoURL = imgUrl;
-      }  
-
-      // add display name AND PHOTO_URL  to user
-      await res.user.updateProfile({ displayName, photoURL: photoURL });
-
-      //create user document
-      await projectFirestore.collection("users").doc(res.user.uid).set({
-        online: true,
-        displayName,
-        photoURL: photoURL,
-        planId: "",
-        role: "Admin",
-        subscribedOn: "",
-        subscriptionStatus: "pending"
-      });
-
-      // dispatch login action
-      dispatch({
-        type: "LOGIN",
-        payload: res.user
-      });
-      history.push(`/pricing`);
-      if (IsActive) {
-        setIsPending(false);
-        setError(null);
-        // toast.success("Success!", {
-        //   position: "top-right",
-        //   autoClose: 2000,
-        //   hideProgressBar: false,
-        //   closeOnClick: true,
-        //   pauseOnHover: true,
-        //   draggable: true,
-        //   progress: undefined,
-        //   theme: "colored",
-        // });
+        photoURL = await img.ref.getDownloadURL();
       }
+
+      await res.user.updateProfile({ displayName, photoURL });
+
+      // ✅ CLEAN USER DOC
+     await projectFirestore.collection("users").doc(res.user.uid).set({
+       online: true,
+       displayName,
+       photoURL,
+       role: "owner", // ✅ canonical role
+       planId: null, // ✅ MUST be null
+       subscriptionStatus: null,
+       subscribedOn: null,
+       demo: false,
+     });
+
+      dispatch({ type: "LOGIN", payload: res.user });
+      setIsPending(false);
     } catch (err) {
-      if (IsActive) {
-        setError(err.message);
-        setIsPending(false);
-      }
+      setError(err.message);
+      setIsPending(false);
     }
   };
 
-  useEffect(() => {
-    setIsActive(true);
-    return () => setIsActive(false);
-  }, []);
-
   return { signup, error, isPending };
 };
+

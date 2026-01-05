@@ -20,110 +20,86 @@ const DashboardSE = React.lazy(() => import("./pages/DashboardSE"));
 const CanvaTemplates = React.lazy(() => import("./pages/CanvaTemplates"));
 
 const routes = [
+  // ───────── OWNER ROUTES ─────────
   {
     name: "Dashboard",
     layout: "/admin",
     path: "/dashboard",
-    icon: <Icon as={MdHome} w="20px" h="20px" color="inherit" />,
     component: DashboardSE,
-  },
-  {
-    path: "/guest-dashboard/:id",
-    name: "Guest Dashboard",
-    layout: "/admin",
-    component: GuestDashboard,
+    access: "owner",
   },
   {
     name: "Create Event",
     layout: "/admin",
     path: "/create-event",
-    icon: <Icon as={MdEvent} w="20px" h="20px" color="inherit" />,
     component: CreateEvent,
+    access: "owner",
   },
   {
-    name: "Edit Event",
-    layout: "/admin",
-    path: "/edit-event/:id",
-    icon: <Icon as={MdEvent} w="20px" h="20px" color="inherit" />,
-    component: EditEvent,
-  },
-  {
-    name: "Event",
-    layout: "/admin",
     path: "/events/:id",
-    icon: <Icon as={MdEvent} w="20px" h="20px" color="inherit" />,
+    layout: "/admin",
     component: Event,
+    access: "owner",
   },
-
-  // Gallery
   {
-    name: "Gallery (Owner)",
-    layout: "/admin",
     path: "/gallery/owner/:id",
-    icon: <Icon as={MdEvent} w="20px" h="20px" color="inherit" />,
-    component: Gallery,
-  },
-  {
-    name: "Gallery (Guest)",
     layout: "/admin",
-    path: "/gallery/guest/:id",
-    icon: <Icon as={MdEvent} w="20px" h="20px" color="inherit" />,
-    component: GuestGallery,
+    component: Gallery,
+    access: "owner",
   },
-
-  // Videos
   {
     path: "/videos/owner/:id",
-    name: "Owner Videos",
     layout: "/admin",
     component: Videos,
+    access: "owner",
+  },
+  {
+    path: "/guestbook/owner/:id",
+    layout: "/admin",
+    component: Guestbook,
+    access: "owner",
+  },
+
+  // ───────── GUEST ROUTES ─────────
+  {
+    path: "/guest-dashboard/:id",
+    layout: "/admin",
+    component: GuestDashboard,
+    access: "guest",
+  },
+  {
+    path: "/gallery/guest/:id",
+    layout: "/admin",
+    component: GuestGallery,
+    access: "guest",
   },
   {
     path: "/videos/guest/:id",
-    name: "Guest Videos",
     layout: "/admin",
     component: GuestVideos,
-  },
-
-  // Guestbook
-  {
-    path: "/guestbook/owner/:id",
-    name: "Owner Guestbook",
-    layout: "/admin",
-    component: Guestbook,
+    access: "guest",
   },
   {
     path: "/guestbook/guest/:id",
-    name: "Guest Guestbook",
     layout: "/admin",
     component: Guestbook,
+    access: "guest",
   },
 
-  // Live Slideshow
+  // ───────── PUBLIC / MIXED ─────────
   {
     path: "/slideshow/:id",
-    name: "Live Slideshow",
     layout: "/admin",
     component: LiveSlideshow,
-  },
-  {
-    path: "/slideshow/:id/kiosk",
-    name: "Live Slideshow (Kiosk)",
-    layout: "/admin",
-    component: LiveSlideshow,
-  },
-  {
-    path: "/slideshow/:id/embed",
-    name: "Live Slideshow (Embed)",
-    layout: "/admin",
-    component: LiveSlideshow,
+    access: "public",
   },
   {
     path: "/canvatemplates",
-    name: "Canva Templates",
     layout: "/admin",
     component: CanvaTemplates,
+    access: "owner",
   },
 ];
+
 
 export default routes;
