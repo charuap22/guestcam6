@@ -30,8 +30,8 @@ export default function RouteGuard({ children, access }) {
       return;
     }
 
-    // 🚫 Block anonymous users
-    if (user.isAnonymous) {
+    // 🚫 Anonymous users NOT allowed on OWNER routes
+    if (access === "owner" && user.isAnonymous) {
       history.replace("/login");
       return;
     }

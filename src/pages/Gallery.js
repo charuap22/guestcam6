@@ -89,6 +89,7 @@ function getUploaderUid(img) {
   return img?.createdBy || null;
 }
 
+
 function canUserDeleteImage(user, img, isAdmin = false) {
   if (isAdmin) return true;
   if (!user || !img) return false;
@@ -98,6 +99,7 @@ function canUserDeleteImage(user, img, isAdmin = false) {
 
   return uploaderId === user.uid;
 }
+
 
 /* ------------------ Viewer Modal ------------------ */
 
@@ -289,7 +291,21 @@ const prev = () => {
   };
 
   if (!hasImages) return null;
+const getUploaderLabel = (img) => {
+  if (!img) return "Guest";
 
+  // Owner uploaded (viewer user is owner)
+  if (isAdmin && img.createdBy === currentUser?.uid) {
+    return "You (Owner)";
+  }
+
+  // Named user
+  if (img.uploaderName && img.uploaderName !== "Guest") {
+    return img.uploaderName;
+  }
+
+  return "Guest";
+};
   /* ---------------- RENDER ---------------- */
   return (
     <Modal
@@ -424,7 +440,7 @@ const prev = () => {
             borderTop={`1px solid ${softBorder}`}
           >
             <Text fontSize="sm" fontWeight="600" color={primaryText}>
-              {currentImage.uploaderName || "Guest"}
+              {getUploaderLabel(currentImage)}
             </Text>
             <Text fontSize="xs" color="gray.600">
               {timeAgoFromTimestamp(currentImage.createdAt)}
@@ -457,6 +473,7 @@ const tileShadow = "sm";
   const { user } = useAuthContext();
   const { changeEvent } = useEvent();
   const { deleteDocument } = useFirestore("gallery");
+
 
   // -- NOTE: some useDocument hooks return an isPending/isLoading flag; try to capture it.
   const {
@@ -881,7 +898,11 @@ if (!eventLoading && !eventDoc) {
               // ✅ REQUIRED BY RULES
               userId: user?.uid || "guest",
               createdBy: user?.uid || null,
-              uploaderName: user?.displayName || "Guest",
+              uploaderName: (() => {
+                if (isAdmin) return "Owner";
+                if (user?.displayName) return user.displayName;
+                return "Guest";
+              })(),
             });
           }}
         />
@@ -998,45 +1019,7 @@ if (!eventLoading && !eventDoc) {
         )}
       </Box>
 
-      {/* Footer selection bar */}
-      {selectMode && selected.size > 0 && (
-        <Flex
-          mt={4}
-          p={3}
-          borderRadius="md"
-          bg="rgba(212,175,55,0.06)"
-          align="center"
-          justify="space-between"
-        >
-          <Text fontSize="sm" color="gray.700">
-            {selected.size} selected
-          </Text>
-          <HStack>
-            <Button
-              size="sm"
-              bg="#d4af37"
-              color="black"
-              onClick={downloadSelected}
-            >
-              <FiDownload style={{ marginRight: 6 }} />
-              Download
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              borderColor="red.400"
-              color="red.400"
-              onClick={deleteSelected}
-            >
-              <FiTrash2 style={{ marginRight: 6 }} />
-              Delete
-            </Button>
-            <Button size="sm" onClick={clearSelection}>
-              Clear
-            </Button>
-          </HStack>
-        </Flex>
-      )}
+  
 
       {/* Viewer */}
 
