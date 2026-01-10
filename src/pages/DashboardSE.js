@@ -4,6 +4,8 @@
   import QRCode from "qrcode.react";
 
   import {
+    Grid,Flex,
+    Divider,
     Box,
     Container,
     Heading,
@@ -49,12 +51,21 @@
     const history = useHistory();
     const toast = useToast();
 
+    const primaryBg = "#EBD9A6";
+    const primaryHover = "#D1B7A1";
+    const primaryText = "#3A2F2A";
+    const softBorder = "#a57256";
+
     // -------------------------
     // 🔹 ALL HOOKS MUST COME FIRST
     // -------------------------
     const { user } = useAuthContext();
     const { UserInfo } = useUserInfo();
 
+    useEffect(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    }, []);
+    
     // Required state/hooks
     const { deleteDocument } = useFirestore("events");
     const { changeEvent } = useEvent();
@@ -189,8 +200,13 @@
         <Box
           as="main"
           bg={outerBg}
-          mt={{ base: "130px", md: "92px" }}
           minH="100vh"
+          // pt={{
+          //   base: "calc(env(safe-area-inset-top) + 88px)",
+          //   md: "92px",
+          // }}
+          px={{ base: 4, md: 4, xl: 2 }}
+          py={6}
         >
           <Center minH="50vh">
             <Spinner size="xl" />
@@ -264,224 +280,372 @@
     // -------------------------
     // 🔹 UI
     // -------------------------
-    return (
-      <Box as="main" bg={outerBg} mt={{ base: "130px", md: "92px" }} minH="100vh">
-        {/* HERO */}
-        <Box position="relative" w="100%" h={heroHeight}>
-          <Box
-            position="absolute"
-            inset="0"
-            backgroundImage={`url(${firstEvent.featureImage})`}
-            backgroundSize="cover"
-            backgroundPosition="center"
-          />
+return (
+  <Box
+    as="main"
+    minH="100vh"
+    bg="#F7F8FA"
+    px={{ base: 0, md: 6, xl: 10 }}
+    py={{ base: 6, md: 8 }}
+  >
+    <Grid
+      templateColumns={{ base: "1fr", lg: "2fr 1fr" }}
+      gap={{ base: 6, lg: 8 }}
+      alignItems="stretch"
+    >
+      {/* IMAGE + QR (JOINED) */}
+      <Grid
+        templateColumns={{ base: "1fr", md: "1.2fr 1fr" }}
+        mt={{ base: 20, md: 0 }} // ✅ adds space ONLY on mobile
+        bg="white"
+        rounded="2xl"
+        overflow={{ base: "visible", md: "hidden" }}
+        shadow="sm"
+      >
+        {/* IMAGE */}
+        <Box
+          bgImage={`url(${firstEvent.featureImage})`}
+          bgSize="cover"
+          bgPosition="center"
+          minH={{ base: "200px", md: "420px" }}
+        />
 
-          <Box position="absolute" inset="0" bg={`rgba(0,0,0,${overlayAlpha})`} />
-
-          <Container
-            maxW={{ base: "360px", md: "90%", lg: "85%" }}
-            h="100%"
-            position="relative"
-            zIndex={5}
-            display="flex"
-            alignItems="center"
+        {/* QR SECTION */}
+        <Box
+          bg="#FFF9E8"
+          px={{ base: 5, md: 8 }}
+          py={{ base: 6, md: 8 }}
+          display="flex"
+          alignItems={{ base: "flex-start", md: "center" }} // ✅ FIX
+        >
+          <Stack
+            spacing={4}
+            w="100%"
+            align="center"
+            pb={{ base: 4, md: 0 }} // extra breathing room
           >
-            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={10}>
-              {/* LEFT */}
-              <VStack align="flex-start" spacing={6}>
-                <Heading color="white" fontWeight="900">
-                  Guest Photos & Digital Guestbook
-                </Heading>
+            <Heading size="md" textAlign="center" wordBreak="break-word">
+              Scan to add your memories
+            </Heading>
 
-                <Text color="white" maxW="520px">
-                  Share photos, upload memories — guests scan the QR.
-                </Text>
+            <Text fontSize="sm" color="gray.700" textAlign="center">
+              Your guests can easily add their photos and videos to your digital
+              guestbook by scanning this QR code or opening the guest link —
+              before, during, or even after the event.
+            </Text>
 
-                <Box bg="white" p={4} borderRadius="lg" boxShadow="lg">
-                  <QRCode
-                    id="qr-canvas"
-                    value={`https://guestpov.ca/guest_login/${firstEvent.id}`}
-                    size={qrSize}
-                  />
-                </Box>
+            <Text fontSize="sm" fontWeight="500">
+              Scan. Tap. Upload.
+            </Text>
 
-                <Stack direction={{ base: "column", md: "row" }} spacing={4}>
-                  <Button color="white" bg="rgba(0,0,0,0.3)" onClick={downloadQR}>
-                    Download QR <FaArrowRight />
-                  </Button>
+            <Box
+              bg="white"
+              p={4}
+              rounded="xl"
+              border="1px solid"
+              borderColor="gray.200"
+            >
+              <QRCode
+                id="qr-canvas"
+                value={`https://guestpov.ca/guest_login/${firstEvent.id}`}
+                size={140}
+                mt={2}
+              />
+            </Box>
 
-                  <Button
-                    color="white"
-                    bg="rgba(0,0,0,0.3)"
-                    onClick={() => history.push("/admin/canvatemplates")}
-                  >
-                    Open Canva <FaArrowRight />
-                  </Button>
-
-                  <Button
-                    color="white"
-                    bg="rgba(0,0,0,0.3)"
-                    onClick={() => setIsTestConfirmOpen(true)}
-                  >
-                    Test Link <FaArrowRight />
-                  </Button>
-                </Stack>
-              </VStack>
-
-              {/* RIGHT CARD */}
-              <Box bg={cardBg} p={6} borderRadius="xl" boxShadow="lg">
-                <Heading size="lg" mb={2}>
-                  {firstEvent.eventPageHeader || firstEvent.eventName}
-                </Heading>
-
-                <Text color={muted} mb={4}>
-                  {firstEvent.welcomeMessage}
-                </Text>
-
-                <Text fontWeight="700">Date</Text>
-                <Text color={muted} mb={4}>
-                  {firstEvent.dateOfEvent?.toDate
-                    ? firstEvent.dateOfEvent.toDate().toDateString()
-                    : firstEvent.dateOfEvent}
-                </Text>
-
-                <Text fontWeight="700">Site Closes</Text>
-                <Text color={muted} mb={4}>
-                  {firstEvent.siteCloses?.toDate
-                    ? firstEvent.siteCloses.toDate().toDateString()
-                    : firstEvent.siteCloses}
-                </Text>
-
-                <Stack
-                  direction={{ base: "column", md: "row" }}
-                  spacing={3}
-                  mb={4}
-                >
-                  <Button
-                    leftIcon={<FaImages />}
-                    bgGradient={GRADIENT}
-                    color="white"
-                    onClick={() =>
-                      history.push(
-                        `/admin/gallery/owner/${
-                          firstEvent.id
-                        }`
-                      )
-                    }
-                  >
-                    Photos
-                  </Button>
-
-                  <Button
-                    leftIcon={<FaVideo />}
-                    bgGradient={GRADIENT}
-                    color="white"
-                    onClick={() =>
-                      history.push(
-                        `/admin/videos/owner/${firstEvent.id}`
-                      )
-                    }
-                  >
-                    Videos
-                  </Button>
-
-                  <Button
-                    leftIcon={<FaBook />}
-                    bgGradient={GRADIENT}
-                    color="white"
-                    onClick={() =>
-                      history.push(
-                        `/admin/guestbook/owner/${
-                          firstEvent.id
-                        }`
-                      )
-                    }
-                  >
-                    Guestbook
-                  </Button> 
-                </Stack>
-
-                <HStack justifyContent="flex-end">
-                  <Button
-                    leftIcon={<FaEdit />}
-                    onClick={() =>
-                      history.push(`/admin/edit-event/${firstEvent.id}`)
-                    }
-                  >
-                    Edit
-                  </Button>
-
-                  <Button
-                    leftIcon={<FaTrash />}
-                    variant="outline"
-                    borderColor="red.400"
-                    color="red.500"
-                    onClick={() => setIsDeleteOpen(true)}
-                  >
-                    Delete
-                  </Button>
-                </HStack>
-              </Box>
-            </SimpleGrid>
-          </Container>
-        </Box>
-
-        {/* DELETE DIALOG */}
-        <AlertDialog
-          isOpen={isDeleteOpen}
-          leastDestructiveRef={deleteCancelRef}
-          onClose={() => setIsDeleteOpen(false)}
-        >
-          <AlertDialogOverlay />
-          <AlertDialogContent>
-            <AlertDialogHeader>Delete event?</AlertDialogHeader>
-            <AlertDialogBody>This action cannot be undone.</AlertDialogBody>
-            <AlertDialogFooter>
+            {/* BUTTONS — CONSISTENT */}
+            {/* PRIMARY QR ACTIONS */}
+            <HStack w="100%" spacing={3}>
               <Button
-                ref={deleteCancelRef}
-                onClick={() => setIsDeleteOpen(false)}
+                flex="1"
+                bg="gray.900"
+                color="white"
+                _hover={{ bg: "gray.800" }}
+                onClick={downloadQR}
               >
-                Cancel
+                Download QR
               </Button>
-              <Button
-                colorScheme="red"
-                ml={3}
-                isLoading={loadingDelete}
-                onClick={confirmDelete}
-              >
-                Yes, delete
-              </Button>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
 
-        {/* TEST LINK */}
-        <AlertDialog
-          isOpen={isTestConfirmOpen}
-          leastDestructiveRef={testConfirmRef}
-          onClose={() => setIsTestConfirmOpen(false)}
-        >
-          <AlertDialogOverlay />
-          <AlertDialogContent>
-            <AlertDialogHeader>Open Guest Link?</AlertDialogHeader>
-            <AlertDialogBody>
-              You will go to guest login and be logged out as admin.
-            </AlertDialogBody>
-            <AlertDialogFooter>
-              <Button onClick={() => setIsTestConfirmOpen(false)}>Cancel</Button>
               <Button
-                colorScheme="blue"
-                ml={3}
+                flex="1"
+                variant="outline"
+                borderColor="gray.300"
+                color="gray.700"
+                _hover={{ bg: "gray.50", borderColor: "gray.400" }}
                 onClick={() => {
-                  setIsTestConfirmOpen(false);
-                  window.location.href = `/guest_login/${firstEvent.id}`;
+                  navigator.clipboard.writeText(
+                    `https://guestpov.ca/guest_login/${firstEvent.id}`
+                  );
+
+                  toast({
+                    title: "Link copied",
+                    description: "Guest upload link copied to clipboard.",
+                    status: "success",
+                    duration: 2000,
+                    isClosable: true,
+                    position: "bottom",
+                  });
                 }}
               >
-                Continue
+                Copy Guest Link
               </Button>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+            </HStack>
+
+            <Button
+              w="100%"
+              variant="outline"
+              onClick={() => history.push("/admin/canvatemplates")}
+              borderColor="gray.400"
+            >
+              Open canva for printed cards and signs.
+            </Button>
+
+            <Button
+              w="100%"
+              variant="outline"
+              onClick={() => setIsTestConfirmOpen(true)}
+              borderColor="gray.400"
+            >
+              Test Guest Link
+            </Button>
+
+            {/* TRUST POINTS */}
+            <Stack
+              spacing={1}
+              pt={2}
+              fontSize="xs"
+              color="gray.600"
+              textAlign="center"
+            >
+              <Text>• Share as a link through email, SMS, or chat apps</Text>
+              <Text>• Share as a QR code on printed cards and signs</Text>
+              <Text fontWeight="500">
+                • No app downloads. No registrations needed.
+              </Text>
+            </Stack>
+          </Stack>
+        </Box>
+      </Grid>
+
+      {/* EVENT DETAILS — EDITORIAL STYLE */}
+      <Box
+        bg="white"
+        rounded="2xl"
+        shadow="sm"
+        px={{ base: 6, md: 7 }}
+        py={{ base: 6, md: 7 }}
+      >
+        <Stack spacing={5}>
+          {/* EYEBROW */}
+
+          <Text
+            fontSize="xs"
+            fontWeight="600"
+            letterSpacing="wide"
+            color="gray.500"
+            mb={2}
+          >
+            EVENT DETAILS
+          </Text>
+          <Heading size="md" mb={1}>
+            {firstEvent.eventPageHeader || firstEvent.eventName}
+          </Heading>
+
+          <Text fontSize="sm" color="gray.600">
+            {firstEvent.welcomeMessage}
+          </Text>
+
+          {/* META — CLEAN & PROFESSIONAL */}
+          <Stack spacing={4} fontSize="sm">
+            <Flex justify="space-between">
+              <Text color="gray.500">Date</Text>
+              <Text fontWeight="500">
+                {firstEvent.dateOfEvent?.toDate
+                  ? firstEvent.dateOfEvent.toDate().toDateString()
+                  : firstEvent.dateOfEvent}
+              </Text>
+            </Flex>
+
+            <Flex justify="space-between">
+              <Text color="gray.500">Site closes</Text>
+              <Text fontWeight="500">
+                {firstEvent.siteCloses?.toDate
+                  ? firstEvent.siteCloses.toDate().toDateString()
+                  : firstEvent.siteCloses}
+              </Text>
+            </Flex>
+
+            <Flex justify="space-between">
+              <Text color="gray.500">Status</Text>
+              <HStack>
+                <Box w="8px" h="8px" bg="green.400" rounded="full" />
+                <Text fontWeight="500" color="green.600">
+                  Live
+                </Text>
+              </HStack>
+            </Flex>
+          </Stack>
+
+          {/* NAV ACTIONS */}
+          <HStack spacing={2} pt={2} flexWrap="wrap">
+            <Button
+              bg={primaryBg}
+              color={primaryText}
+              _hover={{ bg: primaryHover }}
+              borderRadius="full"
+              px={4}
+              py={4}
+              onClick={() =>
+                history.push(`/admin/gallery/owner/${firstEvent.id}`)
+              }
+            >
+              Photos
+            </Button>
+
+            <Button
+              borderRadius="full"
+              px={4}
+              py={4}
+              variant="outline"
+              onClick={() =>
+                history.push(`/admin/videos/owner/${firstEvent.id}`)
+              }
+              borderColor="gray.400"
+            >
+              Videos
+            </Button>
+
+            <Button
+              borderRadius="full"
+              px={4}
+              py={4}
+              bg="gray.900"
+              color="white"
+              _hover={{ bg: "gray.600" }}
+              onClick={() =>
+                history.push(`/admin/guestbook/owner/${firstEvent.id}`)
+              }
+            >
+              Guestbook
+            </Button>
+          </HStack>
+        </Stack>
+
+        <HStack justifyContent="flex-end" mt={6}>
+          <Button
+            leftIcon={<FaEdit />}
+            onClick={() => history.push(`/admin/edit-event/${firstEvent.id}`)}
+          >
+            Edit
+          </Button>
+
+          <Button
+            leftIcon={<FaTrash />}
+            variant="outline"
+            borderColor="red.400"
+            color="red.500"
+            onClick={() => setIsDeleteOpen(true)}
+          >
+            Delete
+          </Button>
+        </HStack>
+
+        {/* PLAN DETAILS */}
+        <Divider my={4} />
+
+        <Stack spacing={4} pt={2}>
+          {/* Eyebrow */}
+          <Text
+            fontSize="xs"
+            fontWeight="600"
+            letterSpacing="wide"
+            color="gray.500"
+          >
+            PLAN DETAILS
+          </Text>
+
+          {/* Plan Name */}
+          <Heading size="sm" lineHeight="1.3">
+            {UserInfo?.planName || "Free"} Plan
+          </Heading>
+
+          {/* Sub text */}
+          <Text fontSize="sm" color="gray.600">
+            Unlock more features and storage for your events.
+          </Text>
+
+          {/* CTA */}
+          <Button
+            size="sm"
+            borderRadius="full"
+            px={6}
+            fontWeight="600"
+            onClick={() => history.push("/pricing", { allowUpgrade: true })}
+          >
+            Upgrade Plan
+          </Button>
+        </Stack>
       </Box>
-    );
+    </Grid>
+    {/* DELETE DIALOG */}
+    <AlertDialog
+      isOpen={isDeleteOpen}
+      leastDestructiveRef={deleteCancelRef}
+      onClose={() => setIsDeleteOpen(false)}
+    >
+      <AlertDialogOverlay />
+      <AlertDialogContent>
+        <AlertDialogHeader>Delete event?</AlertDialogHeader>
+        <AlertDialogBody>This action cannot be undone.</AlertDialogBody>
+        <AlertDialogFooter>
+          <Button ref={deleteCancelRef} onClick={() => setIsDeleteOpen(false)}>
+            Cancel
+          </Button>
+          <Button
+            colorScheme="red"
+            ml={3}
+            isLoading={loadingDelete}
+            onClick={confirmDelete}
+          >
+            Yes, delete
+          </Button>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
+    {/* TEST LINK */}
+    <AlertDialog
+      isOpen={isTestConfirmOpen}
+      leastDestructiveRef={testConfirmRef}
+      onClose={() => setIsTestConfirmOpen(false)}
+    >
+      <AlertDialogOverlay />
+      <AlertDialogContent>
+        <AlertDialogHeader>Open Guest Link?</AlertDialogHeader>
+        <AlertDialogBody>
+          You will go to guest login and be logged out as admin.
+        </AlertDialogBody>
+        <AlertDialogFooter>
+          <Button onClick={() => setIsTestConfirmOpen(false)}>Cancel</Button>
+          <Button
+            colorScheme="yellow"
+            ml={3}
+            onClick={() => {
+              setIsTestConfirmOpen(false);
+              window.location.href = `/guest_login/${firstEvent.id}`;
+            }}
+          >
+            Continue
+          </Button>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  </Box>
+);
+
+
+
+
+
+
   }

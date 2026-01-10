@@ -654,8 +654,10 @@ const handleDelete = async (video) => {
             filename: file?.name || "video",
             storagePath, // ✅ EXACT MATCH
             createdAt: new Date(),
-            createdBy: user?.uid || null,
-            userId: user?.uid || "guest",
+            userId: user.uid,
+            createdBy: user.uid,
+
+            // ✅ RAW name only
             uploaderName: user?.displayName || "Guest",
             status: "processing",
             thumbUrl: null,

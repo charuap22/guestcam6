@@ -125,8 +125,8 @@ export default function Guest_Dashboard() {
       <Flex mb={6} align="center" justify="space-between">
         <HStack spacing={4}>
           <IconButton aria-label="menu" icon={<FiMenu />} />
-          <Heading size="lg">Horizon Dashboard</Heading>
-          <Badge colorScheme="purple">Horizon UI • Chakra</Badge>
+          <Heading size="lg">GuestPov Dashboard</Heading>
+          
         </HStack>
 
         <HStack spacing={4}>

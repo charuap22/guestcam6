@@ -320,12 +320,12 @@ const CreateEvent = () => {
     <Flex direction="column" align="center" minH="100vh" p={6} mt={20}>
       <Box rounded="lg" bg="white" boxShadow="lg" p={8} width="full">
         <Stack spacing={0}>
-          <Heading fontSize={"xl"} mb={0} pb={0}>
+          <Heading fontSize={"xl"} mb={2} pb={0}>
             Create Event
           </Heading>
           <hr></hr>
 
-          <Stack spacing={4}>
+          <Stack spacing={4} mt={10}>
             {successMessage && (
               <Alert status="success" mt={4}>
                 <AlertIcon />

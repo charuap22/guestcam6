@@ -14,6 +14,8 @@ import HorizonWrapper from "../../components/HorizonWrapper";
 import routes from "../../routes";
 
 export default function AdminLayout(props) {
+  console.log("🏗 AdminLayout rendered");
+
   const { showOwnerNavbar, showGuestNavbar } = useRouteAccess();
 
   const getRoutes = (routesArray) =>
@@ -49,7 +51,11 @@ export default function AdminLayout(props) {
 
       {/* ✅ CONTENT */}
       <HorizonWrapper>
-        <Box pt="80px" px="24px" minH="calc(100vh - 80px)">
+        <Box
+          pt={{ base: "80px", md: "92px" }}
+          px={{ base: 0, md: "24px" }} // ✅ remove mobile side padding
+          minH={{ base: "100vh", md: "calc(100vh - 92px)" }}
+        >
           <Switch>
             {getRoutes(routes)}
             <Redirect from="/admin" to="/admin/dashboard" />

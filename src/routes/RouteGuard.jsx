@@ -1,4 +1,3 @@
-// src/routes/RouteGuard.jsx
 import { useEffect } from "react";
 import { useHistory, useLocation } from "react-router-dom";
 import { Center, Spinner } from "@chakra-ui/react";
@@ -14,7 +13,7 @@ export default function RouteGuard({ children, access }) {
   const { UserInfo } = useUserInfo();
   const { currentPlan, loading: planLoading } = usePlan();
 
-  // ✅ WAIT FOR EVERYTHING
+  // ⏳ Wait for ALL async state
   const isLoading =
     !authIsReady ||
     UserInfo === undefined ||
@@ -30,21 +29,24 @@ export default function RouteGuard({ children, access }) {
       return;
     }
 
-    // 🚫 Anonymous users NOT allowed on OWNER routes
+    // 🚫 Anonymous users
     if (access === "owner" && user.isAnonymous) {
       history.replace("/login");
       return;
     }
 
-    // 🚫 Guest accessing owner route
+    // 🚫 Guest on owner route
     if (access === "owner" && UserInfo?.role === "guest") {
       history.replace(`/admin/guest-dashboard/${UserInfo?.eventId || ""}`);
       return;
     }
 
-    // 🚫 Owner WITHOUT plan → pricing
-    // ⚠️ THIS IS THE KEY FIX
-    if (access === "owner" && currentPlan === null) {
+    // 🚫 Owner WITHOUT plan → pricing (ONLY after plan loads)
+    if (
+      access === "owner" &&
+      !planLoading &&
+      currentPlan === null 
+    ) {
       history.replace("/pricing");
       return;
     }
@@ -53,6 +55,7 @@ export default function RouteGuard({ children, access }) {
     user,
     UserInfo,
     currentPlan,
+    planLoading,
     access,
     history,
     location.pathname,
@@ -65,10 +68,6 @@ export default function RouteGuard({ children, access }) {
       </Center>
     );
   }
-  console.log("PLAN STATE", {
-    plan: currentPlan,
-    loading: planLoading,
-  });
 
   return children;
 }

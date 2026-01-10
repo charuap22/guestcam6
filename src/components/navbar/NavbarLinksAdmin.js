@@ -520,6 +520,7 @@ const [loggingOut, setLoggingOut] = React.useState(false);
                   {loggingOut ? "Signing out…" : "Log out"}
                 </Text>
               </MenuItem>
+              
             </Flex>
           </MenuList>
         </Menu>

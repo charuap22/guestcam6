@@ -23,6 +23,8 @@ import HeaderSpacer from "../components/HeaderSpacer";
 import { FiTrash2 } from "react-icons/fi";
 import UniversalUploadModal from "../components/UniversalUploadModal";
 
+import { useToast } from "@chakra-ui/react";
+import { useRef } from "react";
 
 /* ---------- utils ---------- */
 const timeAgo = (ts) => {
@@ -44,12 +46,36 @@ export default function Guestbook() {
   const [loading, setLoading] = useState(true);
   const [adminId, setAdminId] = useState(null);
 
+  const toast = useToast();
+  const inputRef = useRef(null);
+
+  const bottomRef = React.useRef(null);
+
   /* ---------- Upload modal ---------- */
   const {
     isOpen: uploadOpen,
     onOpen: openUpload,
     onClose: closeUpload,
   } = useDisclosure();
+
+const scrollToLastMessage = () => {
+  if (!bottomRef.current) return;
+
+  const NAVBAR_OFFSET = 200; // header + breathing space
+  const rect = bottomRef.current.getBoundingClientRect();
+  const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+
+  window.scrollTo({
+    top: rect.top + scrollTop - NAVBAR_OFFSET,
+    behavior: "smooth",
+  });
+};
+
+
+useEffect(() => {
+  scrollToLastMessage();
+}, [messages]);
+
 
   /* ---------- LOAD EVENT (HOST) ---------- */
   useEffect(() => {
@@ -81,22 +107,54 @@ export default function Guestbook() {
     return () => unsub();
   }, [eventId, db]);
 
+
+
   /* ---------- SEND TEXT ---------- */
   const sendText = async () => {
-    if (!text.trim()) return;
+    const message = text.trim();
+    if (!message) return;
 
-    await db.collection("guestbook").add({
-      eventId,
-      type: "text",
-      content: text.trim(),
-      userId: user.uid,
-      displayName: user.displayName || "Guest",
-      photoURL: user.photoURL || "",
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      deleted: false,
+    // 👇 FIX MOBILE: blur keyboard first
+    inputRef.current?.blur();
+
+    // Optimistic UI
+    setText("");
+ 
+
+    toast({
+      title: "Message sent",
+      status: "success",
+      duration: 1500,
+      position: "bottom",
+      isClosable: false,
     });
 
-    setText("");
+    try {
+      await db.collection("guestbook").add({
+        eventId,
+        type: "text",
+        content: message,
+        userId: user.uid,
+        displayName: user.displayName || "Guest",
+        photoURL: user.photoURL || "",
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        deleted: false,
+      });
+    } catch (err) {
+      toast({
+        title: "Failed to send message",
+        status: "error",
+        duration: 2000,
+        position: "bottom",
+      });
+    }
+  };
+  const handleKeyDown = (e) => {
+    // Desktop Enter → send
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault(); // stop newline
+      sendText();
+    }
   };
 
   /* ---------- MEDIA UPLOAD (IMAGE / VIDEO) ---------- */
@@ -133,7 +191,7 @@ export default function Guestbook() {
     <Box minH="100vh" bg="gray.50" pb="140px">
       <HeaderSpacer />
 
-      <Box px={{ base: 3, md: 8 }} >
+      <Box px={{ base: 3, md: 8 }}>
         <Flex direction={{ base: "column", md: "row" }} gap={10}>
           {/* ================= YOUR MESSAGES ================= */}
           <Box w={{ base: "100%", md: "30%" }}>
@@ -144,15 +202,20 @@ export default function Guestbook() {
             <Flex direction="column" gap={6}>
               {messages
                 .filter((m) => m.userId === user.uid && !m.deleted)
-                .map((m) => (
-                  <MessageCard
-                    key={m.id}
-                    m={m}
-                    role="self"
-                    canDelete
-                    onDelete={softDelete}
-                  />
-                ))}
+                .map((m, index, arr) => {
+                  const isLast = index === arr.length - 1;
+
+                  return (
+                    <Box key={m.id} ref={isLast ? bottomRef : null}>
+                      <MessageCard
+                        m={m}
+                        role="self"
+                        canDelete
+                        onDelete={softDelete}
+                      />
+                    </Box>
+                  );
+                })}
             </Flex>
           </Box>
 
@@ -196,17 +259,27 @@ export default function Guestbook() {
           </Button>
 
           <Textarea
+            ref={inputRef}
             value={text}
             onChange={(e) => setText(e.target.value)}
+            onKeyDown={handleKeyDown}
             placeholder="Type a message…"
+            resize="none"
             rows={1}
+            sx={{
+              overflow: "hidden",
+            }}
           />
 
           <Button
             bg="#EBD9A6"
             color="#3A2F2A"
             _hover={{ bg: "#D1B7A1" }}
-            onClick={sendText}
+            isDisabled={!text.trim()}
+            onPointerDown={(e) => {
+              e.preventDefault(); // 🚨 stops blur-first behavior
+              sendText();
+            }}
           >
             Send
           </Button>

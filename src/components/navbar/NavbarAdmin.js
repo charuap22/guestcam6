@@ -29,7 +29,8 @@ export default function AdminNavbar(props) {
 
     if (path === "/admin" || path === "/admin/") return "Dashboard";
     if (path.includes("/dashboard")) return "Dashboard";
-    if (path.includes("/gallery")) return "Gallery";
+    if (path.includes("/guest-dashboard")) return "Dashboard";
+    if (path.includes("/gallery")) return "Photos";
     if (path.includes("/videos")) return "Videos";
     if (path.includes("/guestbook")) return "Guestbook";
     if (

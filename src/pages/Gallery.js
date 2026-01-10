@@ -750,6 +750,8 @@ if (!eventLoading && !eventDoc) {
     return "Guest";
   };
   const pageTitle = "Photos"; // static
+    console.log("user:", user);
+    console.log("uid:", user?.uid);
   return (
     <Box
       minH="100vh"
@@ -883,6 +885,7 @@ if (!eventLoading && !eventDoc) {
       )}
 
       {allowUpload && (
+       
         <UniversalUploadModal
           isOpen={uploadOpen}
           onClose={closeUpload}
@@ -890,19 +893,19 @@ if (!eventLoading && !eventDoc) {
           user={user}
           accept="image/*"
           onUploadComplete={async ({ mediaUrl, file }) => {
+           
             await addDocument({
               eventId: id,
               url: mediaUrl,
               filename: file?.name || "image",
               createdAt: new Date(),
               // ✅ REQUIRED BY RULES
-              userId: user?.uid || "guest",
-              createdBy: user?.uid || null,
-              uploaderName: (() => {
-                if (isAdmin) return "Owner";
-                if (user?.displayName) return user.displayName;
-                return "Guest";
-              })(),
+              // ✅ always UID
+              userId: user.uid,
+              createdBy: user.uid,
+
+              // ✅ RAW name only
+              uploaderName: user?.displayName || "Guest",
             });
           }}
         />

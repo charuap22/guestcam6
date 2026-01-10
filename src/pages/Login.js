@@ -204,7 +204,13 @@ const getAuthErrorMessage = (err) => {
         color="black"
         borderRadius="full"
         px={4}
-        onClick={() => history.push("/")}
+        onClick={() => {
+          if (history.length > 1) {
+            history.goBack();
+          } else {
+            history.replace("/pricing"); // safe page
+          }
+        }}
         _hover={{ bg: "white" }}
       >
         ← Back
@@ -212,7 +218,13 @@ const getAuthErrorMessage = (err) => {
 
       <Stack minH="100vh" direction={{ base: "column", md: "row" }}>
         {/* LEFT SIDE: FORM */}
-        <Flex p={8} flex={1} align="center" justify="center">
+        <Flex
+          p={8}
+          pt={{ base: "80px", md: 8 }} // 👈 push down on mobile only
+          flex={1}
+          align="center"
+          justify="center"
+        >
           <Stack spacing={4} w="full" maxW="md">
             <Heading fontSize="2xl">Sign in to your account</Heading>
             <Text pb="20px">
@@ -222,8 +234,6 @@ const getAuthErrorMessage = (err) => {
 
             <form onSubmit={handleSubmit}>
               <Stack spacing={4}>
-                
-
                 <FormControl>
                   <FormLabel>Email address</FormLabel>
                   <Input

@@ -34,6 +34,8 @@ export const useSignup = () => {
       }
 
       await res.user.updateProfile({ displayName, photoURL });
+await res.user.reload(); // 🔥 important
+dispatch({ type: "LOGIN", payload: res.user });
 
       // ✅ CLEAN USER DOC
      await projectFirestore.collection("users").doc(res.user.uid).set({

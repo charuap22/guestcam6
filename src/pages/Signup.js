@@ -152,7 +152,13 @@ export default function Signup() {
         ← Back
       </Button>
       <Stack minH={"100vh"} direction={{ base: "column", md: "row" }}>
-        <Flex p={8} flex={1} align={"center"} justify={"center"}>
+        <Flex
+          p={8}
+          pt={{ base: "80px", md: 8 }} // 👈 push down on mobile only
+          flex={1}
+          align="center"
+          justify="center"
+        >
           <Stack spacing={4} w={"full"} maxW={"md"}>
             <Heading fontSize={"2xl"}>Sign up</Heading>
             <Text paddingBottom="20px">
@@ -164,7 +170,6 @@ export default function Signup() {
 
             <form onSubmit={handleSubmit}>
               <Stack spacing={4}>
-               
                 <FormControl id="email">
                   <FormLabel>Email address</FormLabel>
                   <Input

@@ -4,6 +4,41 @@ import { projectAuth, projectFirestore } from "../firebase/config";
 import { useAuthContext } from "./useAuthContext";
 import { useHistory } from "react-router-dom";
 import firebase from "firebase/app";
+const syncUserProfile = async (user) => {
+  if (!user) return;
+
+  const ref = projectFirestore.collection("users").doc(user.uid);
+  const snap = await ref.get();
+
+  const authName = user.displayName || null;
+  const authPhoto = user.photoURL || null;
+
+  if (!snap.exists) {
+    // 🔹 First-time social login
+    await ref.set(
+      {
+        displayName: authName,
+        photoURL: authPhoto,
+        online: true,
+        role: "owner",
+        demo: false,
+      },
+      { merge: true }
+    );
+    return;
+  }
+
+  const data = snap.data();
+
+  // 🔹 Repair missing fields
+  const patch = {};
+  if (!data.displayName && authName) patch.displayName = authName;
+  if (!data.photoURL && authPhoto) patch.photoURL = authPhoto;
+
+  if (Object.keys(patch).length > 0) {
+    await ref.set(patch, { merge: true });
+  }
+};
 
 export const useLogin = () => {
   const [isCancelled, setIsCancelled] = useState(false);
@@ -62,7 +97,9 @@ export const useLogin = () => {
       const documentRef = projectFirestore
         .collection("users")
         .doc(res.user.uid);
-      await documentRef.update({ online: true });
+      //await documentRef.update({ online: true });
+await syncUserProfile(res.user);
+await documentRef.set({ online: true }, { merge: true });
 
       dispatch({ type: "LOGIN", payload: res.user });
       history.push(`/admin/dashboard`);

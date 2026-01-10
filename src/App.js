@@ -33,7 +33,8 @@ import PricingPage from "./site/pages/PricingPage";
 import AdminLayout from "./layouts/admin";
 import Guest_Gallery from "./pages/Guest_Gallery";
 import { Suspense } from "react";
-import PlanGuard from "./routes/PlanGuard";
+import RouteGuard from "./routes/RouteGuard";
+ 
 
 
 function App() {
@@ -75,11 +76,7 @@ function App() {
               <Route exact path="/howitworks">
                 <HowItWorks />
               </Route>
-           
 
- 
-
-  
               <Route path="/login">
                 {/* {user && <Redirect to="/" />} */}
                 {/* {!user &&  */}
@@ -96,8 +93,12 @@ function App() {
                 <Signup />
               </Route>
               <Route path="/pricing">
-                <PlanGuard><Pricing /></PlanGuard>
-               
+                <Pricing />
+              </Route>
+              <Route path="/admin">
+                <RouteGuard access="owner">
+                  <AdminLayout />
+                </RouteGuard>
               </Route>
               <Route path="/success">
                 {!user && <Redirect to="/login" />}

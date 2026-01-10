@@ -24,9 +24,14 @@ import { CheckIcon } from "@chakra-ui/icons";
 import { usePlan } from "../context/PlanContext";
 import { useHistory } from "react-router-dom";
 
+import { useLocation } from "react-router-dom";
+
 
 
 export default function GuestPovPricing() {
+  const location = useLocation();
+  const allowUpgrade = location.state?.allowUpgrade === true;
+
   // Light/dark support
   const bg = useColorModeValue("gray.50", "gray.900");
   const cardBg = useColorModeValue("white", "gray.800");
@@ -114,16 +119,22 @@ export default function GuestPovPricing() {
     }
   }, [toast]);
 
+  console.log("💰 Pricing page rendered");
+
   // initial load
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  useEffect(() => {
-    if (!planLoading && currentPlan) {
-      history.replace("/admin/dashboard");
-    }
-  }, [planLoading, currentPlan, history]);
+useEffect(() => {
+  if (planLoading) return;
+
+  // User already has a plan AND did NOT come for upgrade
+  if (currentPlan && !allowUpgrade) {
+    history.replace("/admin/dashboard");
+  }
+}, [currentPlan, planLoading, allowUpgrade, history]);
+  
 
   // keep currentSubscription in sync with auth state.
   // clear subscription on sign-out and re-fetch data on sign-in
@@ -139,10 +150,7 @@ export default function GuestPovPricing() {
     return () => unsubscribe();
   }, [fetchData]);
 
-  // 🚀 HARD GUARD — NOW SAFE
-  if (!planLoading && currentPlan) {
-    return null;
-  }
+ 
   
   const handleCheckout = async (user, priceId, productKey, price) => {
     if (!user || !user.uid) {
@@ -335,9 +343,8 @@ export default function GuestPovPricing() {
         status: "demo",
       });
 
-      setTimeout(() => {
-        history.replace("/admin/dashboard");
-      }, 300);
+      // ✅ SINGLE intentional redirect
+      history.replace("/admin/dashboard");
     } catch (err) {
       console.error("Demo activation failed:", err);
       toast({
