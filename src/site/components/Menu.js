@@ -22,11 +22,7 @@ const Menu = () => {
   };
   const displayNameLocal = computeDisplayName();
 
-  // helper: decide if we should show a login link
-  // show login when no user, or the user is anonymous, or role === 'guest'
-  const shouldShowLogin =
-    !user || user.isAnonymous || (UserInfo && UserInfo.role === "guest");
-
+ 
   const handleLogout = async () => {
     try {
       await logout();
@@ -126,53 +122,56 @@ const Menu = () => {
 
                       {/* Admin-only links */}
                       <li>
-                        {!isPending && user && UserInfo?.role === "Admin" && (
+                        {!isPending && user && !user.isAnonymous && (
                           <NavLink to="/admin/dashboard">Dashboard</NavLink>
                         )}
                       </li>
-                      <li>
-                        {!isPending && user && UserInfo?.role === "Admin" && (
-                          // show a reserved space for the name to avoid jumps
-                          <Box
-                            as="span"
-                            className="username"
-                            style={{ minWidth: 120, display: "inline-block" }}
-                          >
-                            {displayNameLocal}
-                            {!authIsReady && <Spinner size="xs" ml={2} />}
-                          </Box>
-                        )}
-                      </li>
+                     
 
                       {/* ---------- Right-side actions (Login/Logout) ---------- */}
                       <li className="menu-right">
-                        {/* If ADMIN is logged in → show Logout */}
-                        {user && UserInfo?.role === "Admin" ? (
-                          <button
-                            type="button"
-                            onClick={handleLogout}
-                            disabled={isPending}
-                            aria-disabled={isPending}
-                            aria-busy={isPending}
-                            style={{
-                              background: "transparent",
-                              border: "none",
-                              padding: 0,
-                              cursor: isPending ? "default" : "pointer",
-                              color: isPending ? "#888" : "inherit",
-                              textDecoration: "underline",
-                            }}
-                          >
-                            {isPending ? (
-                              <>
-                                <Spinner size="xs" mr={2} /> Signing out...
-                              </>
-                            ) : (
-                              "Logout"
-                            )}
-                          </button>
+                        {!authIsReady ? null : user && !user.isAnonymous ? (
+                          <Box display="flex" alignItems="center" gap="14px">
+                            {/* Username */}
+                            <Box
+                              fontWeight="500"
+                              color="#d4af37"
+                              whiteSpace="nowrap"
+                            >
+                              {displayNameLocal}
+                            </Box>
+
+                            {/* Divider */}
+                            <Box
+                              height="14px"
+                              width="1px"
+                              bg="rgba(255,255,255,0.3)"
+                            />
+
+                            {/* Logout */}
+                            <button
+                              type="button"
+                              onClick={handleLogout}
+                              disabled={isPending}
+                              style={{
+                                background: "transparent",
+                                border: "none",
+                                padding: 0,
+                                cursor: isPending ? "default" : "pointer",
+                                color: "inherit",
+                                fontWeight: 500,
+                              }}
+                            >
+                              {isPending ? (
+                                <>
+                                  <Spinner size="xs" mr={2} /> Signing out...
+                                </>
+                              ) : (
+                                "Logout"
+                              )}
+                            </button>
+                          </Box>
                         ) : (
-                          /* Otherwise show Login (visitors, guests, anonymous users) */
                           <NavLink to="/login">Login</NavLink>
                         )}
                       </li>
