@@ -199,14 +199,13 @@
       return (
         <Box
           as="main"
-          bg={outerBg}
           minH="100vh"
-          // pt={{
-          //   base: "calc(env(safe-area-inset-top) + 88px)",
-          //   md: "92px",
-          // }}
-          px={{ base: 4, md: 4, xl: 2 }}
-          py={6}
+          bg="#F7F8FA"
+          w="100vw" // 🔒 lock width
+          maxW="100vw" // 🔒 prevent expansion
+          overflowX="hidden" // 🔒 kill horizontal pan
+          px={0} // 🔒 no horizontal padding at root
+          py={{ base: 6, md: 8 }}
         >
           <Center minH="50vh">
             <Spinner size="xl" />
@@ -218,18 +217,36 @@
     // -------------------------
     // 🔹 No Events
     // -------------------------
-    if (!firstEvent) {
-      return (
-        <Center minH="60vh" pt="120px">
-          <VStack spacing={5}>
-            <Heading>No events yet</Heading>
-            <Button onClick={() => history.push("/admin/create-event")}>
-              Create Event
-            </Button>
-          </VStack>
-        </Center>
-      );
-    }
+if (!firstEvent) {
+  return (
+    <Box w="100%" maxW="100vw" overflowX="hidden">
+      <Center minH="calc(100vh - 120px)" w="100%" px={4}>
+        <VStack
+          spacing={6}
+          textAlign="center"
+          w="100%"
+          maxW="360px" // ✅ keeps it visually centered
+        >
+          <Heading size="lg">No events yet</Heading>
+
+          <Text color="gray.500" fontSize="sm">
+            Create your first event and start collecting memories.
+          </Text>
+
+          <Button
+            size="lg"
+            borderRadius="full"
+            w="100%"
+            onClick={() => history.push("/admin/create-event")}
+          >
+            Create Event
+          </Button>
+        </VStack>
+      </Center>
+    </Box>
+  );
+}
+
 
     // -------------------------
     // 🔹 Helpers
