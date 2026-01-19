@@ -65,7 +65,7 @@
     useEffect(() => {
       window.scrollTo({ top: 0, left: 0, behavior: "instant" });
     }, []);
-    
+
     // Required state/hooks
     const { deleteDocument } = useFirestore("events");
     const { changeEvent } = useEvent();
@@ -287,11 +287,13 @@ return (
     bg="#F7F8FA"
     px={{ base: 0, md: 6, xl: 10 }}
     py={{ base: 6, md: 8 }}
+    overflowX="hidden" // ✅ FIX
   >
     <Grid
       templateColumns={{ base: "1fr", lg: "2fr 1fr" }}
       gap={{ base: 6, lg: 8 }}
       alignItems="stretch"
+      overflowX="hidden"
     >
       {/* IMAGE + QR (JOINED) */}
       <Grid
@@ -299,7 +301,7 @@ return (
         mt={{ base: 20, md: 0 }} // ✅ adds space ONLY on mobile
         bg="white"
         rounded="2xl"
-        overflow={{ base: "visible", md: "hidden" }}
+        overflow="hidden"
         shadow="sm"
       >
         {/* IMAGE */}
@@ -348,7 +350,7 @@ return (
               <QRCode
                 id="qr-canvas"
                 value={`https://guestpov.ca/guest_login/${firstEvent.id}`}
-                size={140}
+                size={qrSize} // ✅ responsive
                 mt={2}
               />
             </Box>
