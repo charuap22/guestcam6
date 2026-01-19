@@ -53,8 +53,10 @@ export default function AdminLayout(props) {
       <HorizonWrapper>
         <Box
           pt={{ base: "80px", md: "92px" }}
-          px={{ base: 0, md: "24px" }} // ✅ remove mobile side padding
-          minH={{ base: "100vh", md: "calc(100vh - 92px)" }}
+           minH={{ base: "100vh", md: "calc(100vh - 92px)" }}
+          w="100%"
+          maxW="100vw"
+          overflowX="hidden"
         >
           <Switch>
             {getRoutes(routes)}

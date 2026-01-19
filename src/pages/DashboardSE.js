@@ -204,7 +204,7 @@
           w="100vw" // 🔒 lock width
           maxW="100vw" // 🔒 prevent expansion
           overflowX="hidden" // 🔒 kill horizontal pan
-          px={0} // 🔒 no horizontal padding at root
+          px={{ base: 4, md: 6, xl: 10 }}
           py={{ base: 6, md: 8 }}
         >
           <Center minH="50vh">
