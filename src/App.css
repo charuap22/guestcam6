@@ -17,6 +17,10 @@ body {
   overflow-x: hidden;
   touch-action: pan-y;
 }
+#root {
+  width: 100%;
+  overflow-x: hidden;
+}
 .App-logo {
   height: 40vmin;
   pointer-events: none;
