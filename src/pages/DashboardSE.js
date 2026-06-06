@@ -293,6 +293,15 @@ if (!firstEvent) {
         setIsDeleteOpen(false);
       }
     };
+ 
+    const featureImage = firstEvent?.featureImage;
+
+    console.log("featureImage =", featureImage);
+    console.log("event =", firstEvent);
+console.log(
+  "backgroundImage string =",
+  featureImage ? `url("${featureImage}")` : "none",
+);
 
     // -------------------------
     // 🔹 UI
@@ -322,10 +331,17 @@ return (
         shadow="sm"
       >
         {/* IMAGE */}
-        <Box
+        {/* <Box
           bgImage={`url(${firstEvent.featureImage})`}
           bgSize="cover"
           bgPosition="center"
+          minH={{ base: "200px", md: "420px" }}
+        /> */}
+        <Box
+          backgroundImage={`url("${firstEvent.featureImage}")`}
+          backgroundSize="cover"
+          backgroundPosition="center"
+          backgroundRepeat="no-repeat"
           minH={{ base: "200px", md: "420px" }}
         />
 
@@ -393,7 +409,7 @@ return (
                 _hover={{ bg: "gray.50", borderColor: "gray.400" }}
                 onClick={() => {
                   navigator.clipboard.writeText(
-                    `https://guestpov.ca/guest_login/${firstEvent.id}`
+                    `https://guestpov.ca/guest_login/${firstEvent.id}`,
                   );
 
                   toast({
@@ -601,7 +617,7 @@ return (
             fontWeight="600"
             onClick={() => history.push("/pricing", { allowUpgrade: true })}
           >
-            Upgrade Plan
+            Change Plan
           </Button>
         </Stack>
       </Box>

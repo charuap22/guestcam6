@@ -576,8 +576,8 @@ useEffect(() => {
                         (plan.name === "Lite"
                           ? "Perfect for one special event."
                           : plan.name === "Flex"
-                          ? "Most popular choice for weddings and family events."
-                          : "For multi-day, large-scale celebrations.")}
+                            ? "Most popular choice for weddings and family events."
+                            : "For multi-day, large-scale celebrations.")}
                     </Text>
 
                     <UnorderedList spacing={2} pl={0} styleType="none" w="100%">
@@ -601,7 +601,7 @@ useEffect(() => {
                             .trim();
 
                         const featureKeys = Object.keys(meta).filter((k) =>
-                          k.startsWith("feature_")
+                          k.startsWith("feature_"),
                         );
                         const normMap = featureKeys.reduce((acc, k) => {
                           acc[normalizeKey(k)] = k;
@@ -614,7 +614,8 @@ useEffect(() => {
                             if (canonNorm in normMap) return normMap[canonNorm];
                             const found = Object.keys(normMap).find(
                               (nk) =>
-                                nk.includes(canonNorm) || canonNorm.includes(nk)
+                                nk.includes(canonNorm) ||
+                                canonNorm.includes(nk),
                             );
                             return found ? normMap[found] : null;
                           })
@@ -653,6 +654,24 @@ useEffect(() => {
                         ));
                       })()}
                     </UnorderedList>
+
+                    {/* Secondary actions row: Demo */}
+                    <HStack width="100%" spacing={3} mt={2}>
+                      <Button
+                        width="full"
+                        size="sm"
+                        borderRadius="full"
+                        variant="outline"
+                        border={`1px solid ${borderGold}`}
+                        onClick={() =>
+                          handleActivateDemo(plan.id, plan.name, amount)
+                        }
+                        isLoading={loadingPlan === plan.id}
+                        isDisabled={!projectAuth.currentUser || isCurrentPlan}
+                      >
+                       Try Free Demo
+                      </Button>
+                    </HStack>
 
                     {/* ACTIONS: Buy, Demo */}
                     <HStack width="100%" spacing={3}>
@@ -708,7 +727,7 @@ useEffect(() => {
                                 projectAuth.currentUser,
                                 priceObj?.id,
                                 plan.id,
-                                amount
+                                amount,
                               )
                             }
                             isLoading={loadingPlan === plan.id}
@@ -719,24 +738,6 @@ useEffect(() => {
                           </Button>
                         </Tooltip>
                       )}
-                    </HStack>
-
-                    {/* Secondary actions row: Demo */}
-                    <HStack width="100%" spacing={3} mt={2}>
-                      <Button
-                        width="full"
-                        size="sm"
-                        borderRadius="full"
-                        variant="outline"
-                        border={`1px solid ${borderGold}`}
-                        onClick={() =>
-                          handleActivateDemo(plan.id, plan.name, amount)
-                        }
-                        isLoading={loadingPlan === plan.id}
-                        isDisabled={!projectAuth.currentUser || isCurrentPlan}
-                      >
-                        Activate Demo (no charge)
-                      </Button>
                     </HStack>
                   </VStack>
                 </Box>

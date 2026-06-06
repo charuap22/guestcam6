@@ -36,6 +36,13 @@
       access: "owner",
     },
     {
+      name: "Edit Event",
+      layout: "/admin",
+      path: "/edit-event/:id",
+      component: EditEvent,
+      access: "owner",
+    },
+    {
       path: "/events/:id",
       layout: "/admin",
       component: Event,
