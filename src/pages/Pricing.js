@@ -26,8 +26,6 @@ import { useHistory } from "react-router-dom";
 
 import { useLocation } from "react-router-dom";
 
-
-
 export default function GuestPovPricing() {
   const location = useLocation();
   const allowUpgrade = location.state?.allowUpgrade === true;
@@ -97,7 +95,7 @@ export default function GuestPovPricing() {
             metadata: data.metadata || {},
             prices,
           };
-        })
+        }),
       );
 
       setPlans(plansData.filter(Boolean));
@@ -105,7 +103,7 @@ export default function GuestPovPricing() {
       setCurrentSubscription(
         purchaseSnapshot && !purchaseSnapshot.empty
           ? purchaseSnapshot.docs[0].data()
-          : null
+          : null,
       );
     } catch (err) {
       console.error("Error fetching plans:", err);
@@ -126,15 +124,14 @@ export default function GuestPovPricing() {
     fetchData();
   }, [fetchData]);
 
-useEffect(() => {
-  if (planLoading) return;
+  useEffect(() => {
+    if (planLoading) return;
 
-  // User already has a plan AND did NOT come for upgrade
-  if (currentPlan && !allowUpgrade) {
-    history.replace("/admin/dashboard");
-  }
-}, [currentPlan, planLoading, allowUpgrade, history]);
-  
+    // User already has a plan AND did NOT come for upgrade
+    if (currentPlan && !allowUpgrade) {
+      history.replace("/admin/dashboard");
+    }
+  }, [currentPlan, planLoading, allowUpgrade, history]);
 
   // keep currentSubscription in sync with auth state.
   // clear subscription on sign-out and re-fetch data on sign-in
@@ -150,8 +147,6 @@ useEffect(() => {
     return () => unsubscribe();
   }, [fetchData]);
 
- 
-  
   const handleCheckout = async (user, priceId, productKey, price) => {
     if (!user || !user.uid) {
       toast({
@@ -188,7 +183,7 @@ useEffect(() => {
     const extraAmount = (newPrice - currentPlanPrice).toFixed(2);
     if (currentSubscription && currentSubscription.planId) {
       const confirmUpgrade = window.confirm(
-        `Upgrading: You will be charged an additional $${extraAmount}. Continue?`
+        `Upgrading: You will be charged an additional $${extraAmount}. Continue?`,
       );
       if (!confirmUpgrade) return;
     }
@@ -206,8 +201,10 @@ useEffect(() => {
       await sessionRef.set({
         sessionId,
         mode: "payment",
-        success_url: `http://localhost:3000/success?session_id=${sessionId}`,
-        cancel_url: "http://localhost:3000/cancel",
+        allow_promotion_codes: true,
+
+        success_url: `https://guestpov.ca/success?session_id=${sessionId}`,
+        cancel_url: "https://guestpov.ca/cancel",
         createdAt: new Date(),
         line_items: [
           {
@@ -300,7 +297,7 @@ useEffect(() => {
           subscriptionStatus: "active",
           demo: true,
         },
-        { merge: true }
+        { merge: true },
       );
 
       await purchaseRef.set({
@@ -669,7 +666,7 @@ useEffect(() => {
                         isLoading={loadingPlan === plan.id}
                         isDisabled={!projectAuth.currentUser || isCurrentPlan}
                       >
-                       Try Free Demo
+                        Try Free Demo
                       </Button>
                     </HStack>
 
