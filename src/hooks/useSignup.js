@@ -39,6 +39,7 @@ dispatch({ type: "LOGIN", payload: res.user });
 
       // ✅ CLEAN USER DOC
      await projectFirestore.collection("users").doc(res.user.uid).set({
+       email,
        online: true,
        displayName,
        photoURL,

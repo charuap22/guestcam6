@@ -17,13 +17,14 @@ const syncUserProfile = async (user) => {
     // 🔹 First-time social login
     await ref.set(
       {
+        email: user.email || "",
         displayName: authName,
         photoURL: authPhoto,
         online: true,
         role: "owner",
         demo: false,
       },
-      { merge: true }
+      { merge: true },
     );
     return;
   }
@@ -31,13 +32,23 @@ const syncUserProfile = async (user) => {
   const data = snap.data();
 
   // 🔹 Repair missing fields
-  const patch = {};
-  if (!data.displayName && authName) patch.displayName = authName;
-  if (!data.photoURL && authPhoto) patch.photoURL = authPhoto;
+const patch = {};
 
-  if (Object.keys(patch).length > 0) {
-    await ref.set(patch, { merge: true });
-  }
+if (!data.displayName && authName) {
+  patch.displayName = authName;
+}
+
+if (!data.photoURL && authPhoto) {
+  patch.photoURL = authPhoto;
+}
+
+if (!data.email && user.email) {
+  patch.email = user.email;
+}
+
+if (Object.keys(patch).length > 0) {
+  await ref.set(patch, { merge: true });
+}
 };
 
 export const useLogin = () => {

@@ -17,6 +17,7 @@ import {
   Skeleton,
   SkeletonText,
   Tooltip,
+  Input,
   useToast,
 } from "@chakra-ui/react";
 import { projectFirestore, projectAuth } from "../firebase/config";
@@ -42,6 +43,11 @@ export default function GuestPovPricing() {
   const [loading, setLoading] = useState(true);
   const [loadingPlan, setLoadingPlan] = useState(null);
   const [currentSubscription, setCurrentSubscription] = useState(null);
+
+  const [couponCode, setCouponCode] = useState("");
+  const [coupon, setCoupon] = useState(null);
+  const [couponLoading, setCouponLoading] = useState(false);
+
   const toast = useToast();
   const history = useHistory();
 
@@ -147,7 +153,136 @@ export default function GuestPovPricing() {
     return () => unsubscribe();
   }, [fetchData]);
 
-  const handleCheckout = async (user, priceId, productKey, price) => {
+  const applyCoupon = async () => {
+    if (!couponCode.trim()) return;
+
+    try {
+      setCouponLoading(true);
+
+      const snapshot = await projectFirestore
+        .collection("coupons")
+        .where("code", "==", couponCode.toUpperCase())
+        .limit(1)
+        .get();
+
+      if (snapshot.empty) {
+        setCoupon(null);
+
+        toast({
+          title: "Invalid coupon",
+          status: "error",
+        });
+
+        return;
+      }
+
+      const couponData = snapshot.docs[0].data();
+
+      if (!couponData.active) {
+        toast({
+          title: "Coupon disabled",
+          status: "error",
+        });
+        return;
+      }
+
+      if (couponData.expiresAt && couponData.expiresAt.toDate() < new Date()) {
+        toast({
+          title: "Coupon expired",
+          status: "error",
+        });
+        return;
+      }
+
+setCoupon(couponData);
+
+if (couponData.type === "free_plan") {
+  toast({
+    title: "Gift Package Applied",
+    status: "success",
+  });
+} else {
+  toast({
+    title: `${couponData.value}% discount applied`,
+    status: "success",
+  });
+}
+    } catch (err) {
+      console.error(err);
+
+      toast({
+        title: "Failed to apply coupon",
+        status: "error",
+      });
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+  const activateGiftPlan = async (plan) => {
+    const user = projectAuth.currentUser;
+
+    if (!user) return;
+
+    try {
+      setLoadingPlan(plan.id);
+
+      const purchasedAt = new Date();
+
+      const userRef = projectFirestore.collection("users").doc(user.uid);
+
+      const purchaseRef = projectFirestore
+        .collection("customers")
+        .doc(user.uid)
+        .collection("purchases")
+        .doc();
+
+      await userRef.set(
+        {
+          planId: plan.id,
+          planName: plan.name,
+          price: 0,
+          subscribedOn: purchasedAt,
+          subscriptionStatus: "active",
+          gift: true,
+        },
+        { merge: true },
+      );
+
+      await purchaseRef.set({
+        planId: plan.id,
+        planName: plan.name,
+        price: 0,
+        purchasedAt,
+        status: "gift",
+        gift: true,
+        couponCode: coupon?.code || "",
+      });
+
+      toast({
+        title: "Gift Package Activated",
+        status: "success",
+      });
+
+      history.replace("/admin/dashboard");
+    } catch (err) {
+      console.error(err);
+
+      toast({
+        title: "Failed to activate package",
+        status: "error",
+      });
+    } finally {
+      setLoadingPlan(null);
+    }
+  };
+
+  const handleCheckout = async (
+  user,
+  priceId,
+  productKey,
+  price,
+  couponData = null
+) => {
     if (!user || !user.uid) {
       toast({
         title: "Sign in required",
@@ -159,7 +294,12 @@ export default function GuestPovPricing() {
     }
 
     const newPlan = plans.find((p) => p.id === productKey);
-    const newPrice = newPlan?.prices?.[0]?.unit_amount / 100 || 0;
+   const originalPrice = newPlan?.prices?.[0]?.unit_amount / 100 || 0;
+
+  const discountedPrice =
+    coupon?.type === "percentage"
+      ? originalPrice - (originalPrice * coupon.value) / 100
+      : originalPrice;
     const currentPlanPrice = parseFloat(currentSubscription?.price || 0);
 
     if (currentSubscription?.planId === productKey) {
@@ -171,7 +311,7 @@ export default function GuestPovPricing() {
       return;
     }
 
-    if (currentSubscription && newPrice < currentPlanPrice) {
+    if (currentSubscription && discountedPrice < currentPlanPrice) {
       toast({
         title: "Downgrade not allowed",
         description: "Downgrades are not supported.",
@@ -180,7 +320,9 @@ export default function GuestPovPricing() {
       return;
     }
 
-    const extraAmount = (newPrice - currentPlanPrice).toFixed(2);
+   const extraAmount = Math.max(0, discountedPrice - currentPlanPrice).toFixed(
+     2,
+   );
     if (currentSubscription && currentSubscription.planId) {
       const confirmUpgrade = window.confirm(
         `Upgrading: You will be charged an additional $${extraAmount}. Continue?`,
@@ -224,7 +366,11 @@ export default function GuestPovPricing() {
           userId: user.uid,
           planId: productKey,
           planName: newPlan.name,
-          price,
+          originalPrice,
+          discountedPrice,
+          chargedAmount: extraAmount,
+          couponCode: couponData?.code || "",
+          couponDiscount: couponData?.value || 0,
           upgrade: currentSubscription ? "true" : "false",
           oldPlanId: currentSubscription?.planId || "",
         },
@@ -258,101 +404,7 @@ export default function GuestPovPricing() {
     }
   };
 
-  /**
-   * DEMO FLOW (no charge)
-   */
-  const handleActivateDemo = async (productKey, planName, priceAmount = 0) => {
-    const user = projectAuth.currentUser;
-    if (!user || !user.uid) {
-      toast({
-        title: "Sign in required",
-        description: "Please sign in to activate a demo plan.",
-        status: "info",
-        duration: 3000,
-      });
-      return;
-    }
-
-    setLoadingPlan(productKey);
-    try {
-      const purchasedAt = new Date();
-      const subscriptionEndDate = new Date(purchasedAt);
-      // Demo duration: 7 days
-      subscriptionEndDate.setDate(subscriptionEndDate.getDate() + 7);
-
-      const userRef = projectFirestore.collection("users").doc(user.uid);
-      const purchaseRef = projectFirestore
-        .collection("customers")
-        .doc(user.uid)
-        .collection("purchases")
-        .doc(); // auto ID
-
-      await userRef.set(
-        {
-          planId: productKey,
-          planName,
-          price: 0,
-          subscribedOn: purchasedAt,
-          subscriptionEndDate,
-          subscriptionStatus: "active",
-          demo: true,
-        },
-        { merge: true },
-      );
-
-      await purchaseRef.set({
-        planId: productKey,
-        planName,
-        price: 0,
-        purchasedAt,
-        subscriptionEndDate,
-        previousPlanId: currentSubscription?.planId || null,
-        status: "demo",
-        demo: true,
-      });
-
-      try {
-        if (updatePlan) {
-          updatePlan({
-            planId: productKey,
-            planName,
-            price: 0,
-            demo: true,
-          });
-        }
-      } catch (err) {
-        console.warn("PlanContext not available or updatePlan failed:", err);
-      }
-
-      toast({
-        title: "Demo activated",
-        description: `Demo for "${planName}" is active for 7 days.`,
-        status: "success",
-        duration: 3000,
-      });
-
-      setCurrentSubscription({
-        planId: productKey,
-        planName,
-        price: 0,
-        purchasedAt,
-        subscriptionEndDate,
-        status: "demo",
-      });
-
-      // ✅ SINGLE intentional redirect
-      history.replace("/admin/dashboard");
-    } catch (err) {
-      console.error("Demo activation failed:", err);
-      toast({
-        title: "Error",
-        description: "Failed to activate demo plan.",
-        status: "error",
-      });
-    } finally {
-      setLoadingPlan(null);
-    }
-  };
+ 
 
   // Show skeleton while loading
   if (loading) {
@@ -432,6 +484,53 @@ export default function GuestPovPricing() {
             </Text>
           </VStack>
 
+          <Flex justify="center" gap={3} mb={8} wrap="wrap">
+            <Input
+              maxW="250px"
+              placeholder="Coupon Code"
+              value={couponCode}
+              onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+            />
+
+            <Button
+              onClick={applyCoupon}
+              isLoading={couponLoading}
+              bg={accentGold}
+              color="white"
+            >
+              Apply Coupon
+            </Button>
+          </Flex>
+
+          {coupon?.type === "percentage" && (
+            <Box
+              bg="green.50"
+              border="1px solid"
+              borderColor="green.200"
+              p={3}
+              borderRadius="md"
+              textAlign="center"
+              mb={6}
+            >
+              🎉 Coupon Applied: {coupon.code} ({coupon.value}% OFF)
+            </Box>
+          )}
+
+          {coupon?.type === "free_plan" && (
+            <Box
+              bg="green.50"
+              border="1px solid"
+              borderColor="green.200"
+              p={3}
+              borderRadius="md"
+              textAlign="center"
+              mb={6}
+            >
+              🎁 Gift Package Applied
+              <br />
+              This package will be activated free of charge.
+            </Box>
+          )}
           {/* Pricing Grid */}
           <Stack
             direction={{ base: "column", md: "row" }}
@@ -440,9 +539,13 @@ export default function GuestPovPricing() {
           >
             {plans.map((plan) => {
               const priceObj = plan.prices?.[0];
-              const amount = priceObj
-                ? (priceObj.unit_amount / 100).toFixed(0)
-                : "N/A";
+              const originalPrice = priceObj ? priceObj.unit_amount / 100 : 0;
+
+              const discountedPrice = coupon
+                ? originalPrice - (originalPrice * coupon.value) / 100
+                : originalPrice;
+
+              const amount = discountedPrice.toFixed(0);
 
               const featureEntries = Object.entries(plan.metadata || {})
                 .filter(([k]) => k.startsWith("feature_"))
@@ -551,13 +654,25 @@ export default function GuestPovPricing() {
                     </Heading>
 
                     <HStack align="baseline" spacing={1}>
-                      <Text
-                        fontSize={{ base: "3xl", md: "4xl" }}
-                        fontWeight={900}
-                        color={accentGold}
-                      >
-                        ${amount}
-                      </Text>
+                      <VStack align="start" spacing={0}>
+                        {coupon && (
+                          <Text
+                            textDecoration="line-through"
+                            color="gray.500"
+                            fontSize="lg"
+                          >
+                            ${originalPrice}
+                          </Text>
+                        )}
+
+                        <Text
+                          fontSize={{ base: "3xl", md: "4xl" }}
+                          fontWeight={900}
+                          color={accentGold}
+                        >
+                          ${amount}
+                        </Text>
+                      </VStack>
                       <Text color="gray.500" fontSize="sm">
                         CAD
                       </Text>
@@ -652,24 +767,6 @@ export default function GuestPovPricing() {
                       })()}
                     </UnorderedList>
 
-                    {/* Secondary actions row: Demo */}
-                    <HStack width="100%" spacing={3} mt={2}>
-                      <Button
-                        width="full"
-                        size="sm"
-                        borderRadius="full"
-                        variant="outline"
-                        border={`1px solid ${borderGold}`}
-                        onClick={() =>
-                          handleActivateDemo(plan.id, plan.name, amount)
-                        }
-                        isLoading={loadingPlan === plan.id}
-                        isDisabled={!projectAuth.currentUser || isCurrentPlan}
-                      >
-                        Try Free Demo
-                      </Button>
-                    </HStack>
-
                     {/* ACTIONS: Buy, Demo */}
                     <HStack width="100%" spacing={3}>
                       {!projectAuth.currentUser ? (
@@ -719,14 +816,19 @@ export default function GuestPovPricing() {
                             }}
                             transition="all 0.3s ease"
                             isDisabled={isCurrentPlan || isDowngrade}
-                            onClick={() =>
-                              handleCheckout(
-                                projectAuth.currentUser,
-                                priceObj?.id,
-                                plan.id,
-                                amount,
-                              )
-                            }
+                            onClick={() => {
+                              if (coupon?.type === "free_plan") {
+                                activateGiftPlan(plan);
+                              } else {
+                                handleCheckout(
+                                  projectAuth.currentUser,
+                                  priceObj?.id,
+                                  plan.id,
+                                  amount,
+                                  coupon,
+                                );
+                              }
+                            }}
                             isLoading={loadingPlan === plan.id}
                           >
                             {loadingPlan === plan.id
