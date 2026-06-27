@@ -136,6 +136,8 @@ const [loggingOut, setLoggingOut] = React.useState(false);
     eventOwnerId === normalize(user.uid)
   );
 
+  const isOwnerUser = !!user && !user.isAnonymous;
+
   const isMobile = useBreakpointValue({ base: true, md: false });
 
   // constants
@@ -286,7 +288,7 @@ const [loggingOut, setLoggingOut] = React.useState(false);
       {/* -----------------------------
           OWNER SECTION (LEFT BUTTON)
          ----------------------------- */}
-      {isOwner && (
+      {isOwnerUser && (
         <>
           {isMobile ? (
             <MobileIcon
@@ -349,7 +351,7 @@ const [loggingOut, setLoggingOut] = React.useState(false);
               const id = pickTargetId();
               if (id)
                 history.push(
-                  `/admin/videos/${isOwner ? "owner" : "guest"}/${id}`
+                  `/admin/videos/${isOwner ? "owner" : "guest"}/${id}`,
                 );
               else
                 toast({
@@ -367,7 +369,7 @@ const [loggingOut, setLoggingOut] = React.useState(false);
               const id = pickTargetId();
               if (id)
                 history.push(
-                  `/admin/guestbook/${isOwner ? "owner" : "guest"}/${id}`
+                  `/admin/guestbook/${isOwner ? "owner" : "guest"}/${id}`,
                 );
               else toast({ title: "No event found", status: "warning" });
             }}
@@ -396,7 +398,7 @@ const [loggingOut, setLoggingOut] = React.useState(false);
               const id = pickTargetId();
               if (id)
                 history.push(
-                  `/admin/gallery/${isOwner ? "owner" : "guest"}/${id}`
+                  `/admin/gallery/${isOwner ? "owner" : "guest"}/${id}`,
                 );
               else toast({ title: "No event found", status: "warning" });
             }}
@@ -413,7 +415,7 @@ const [loggingOut, setLoggingOut] = React.useState(false);
               const id = pickTargetId();
               if (id)
                 history.push(
-                  `/admin/videos/${isOwner ? "owner" : "guest"}/${id}`
+                  `/admin/videos/${isOwner ? "owner" : "guest"}/${id}`,
                 );
               else toast({ title: "No event found", status: "warning" });
             }}
@@ -430,7 +432,7 @@ const [loggingOut, setLoggingOut] = React.useState(false);
               const id = pickTargetId();
               if (id)
                 history.push(
-                  `/admin/guestbook/${isOwner ? "owner" : "guest"}/${id}`
+                  `/admin/guestbook/${isOwner ? "owner" : "guest"}/${id}`,
                 );
               else toast({ title: "No event found", status: "warning" });
             }}
