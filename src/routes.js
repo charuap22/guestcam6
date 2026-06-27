@@ -106,6 +106,12 @@
       component: CanvaTemplates,
       access: "owner",
     },
+    {
+      path: "/canvatemplates/:type",
+      layout: "/admin",
+      component: CanvaTemplates,
+      access: "owner",
+    },
   ];
 
 

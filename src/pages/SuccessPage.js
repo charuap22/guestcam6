@@ -55,6 +55,7 @@ const SuccessPage = () => {
           price = 0,
           upgrade,
           oldPlanId,
+          couponCode,
         } = sessionData.metadata || {};
 
         if (!planId || !planName) {
@@ -93,6 +94,7 @@ const SuccessPage = () => {
             subscriptionEndDate,
             previousPlanId: upgrade === "true" ? oldPlanId : null,
             status: "active",
+            couponCode: couponCode || null,
           });
 
           // 🔐 mark session as processed
@@ -102,6 +104,22 @@ const SuccessPage = () => {
           });
         });
 
+        if (couponCode) {
+          const couponSnapshot = await projectFirestore
+            .collection("coupons")
+            .where("code", "==", couponCode)
+            .limit(1)
+            .get();
+
+          if (!couponSnapshot.empty) {
+            const couponDoc = couponSnapshot.docs[0];
+
+            await couponDoc.ref.update({
+              usedCount: (couponDoc.data().usedCount || 0) + 1,
+            });
+          }
+        }
+        
         // ─────────────────────────────────────────────
         // Update client plan context
         // ─────────────────────────────────────────────

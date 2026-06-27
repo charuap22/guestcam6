@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 
 import TCT_DigitalGuestbook_10x15cm from "../assets/canva/TCT_DigitalGuestbook_10x15cm.jpg";
 import TCT_ISpy_10x15 from "../assets/canva/TCT_ISpy_10x15.jpg";
@@ -44,6 +44,7 @@ import { MdCheckCircle } from "react-icons/md";
 const CanvaTemplates = () => {
   const { type } = useParams();
   const [error, setError] = useState(false);
+const templatesRef = useRef(null);
 
   const srces_10x15_1s = [
     {
@@ -139,7 +140,6 @@ const CanvaTemplates = () => {
       image: BusinessCard_Capturethelove,
       link: "https://www.canva.com/design/DAFvxzQShEg/UcLP39IhE-JIhiwGNWOeSg/edit?utm_content=DAFvxzQShEg&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton",
     },
-    ,
     {
       image: BusinessCard_vertical_DigitalGuestbook,
       link: "https://www.canva.com/design/DAFwEDrCuag/1XuEc_n9Q6KBmVaksoqL6A/edit?utm_content=DAFwEDrCuag&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton",
@@ -178,6 +178,16 @@ const CanvaTemplates = () => {
   } else {
     title = "";
   }
+
+  useEffect(() => {
+    if (type && templatesRef.current) {
+      templatesRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
+  }, [type]);
+
   return (
     <>
       <Flex
@@ -227,31 +237,31 @@ const CanvaTemplates = () => {
             <List spacing={3} color="yellow.600" fontWeight={600}>
               <ListItem>
                 <ListIcon as={MdCheckCircle} color="green.500" />
-                <Link to={"/canvatemplates/10x15"}>
+                <Link to={"/admin/canvatemplates/10x15"}>
                   Table Card Templates (10 x 15 cm)
                 </Link>
               </ListItem>
               <ListItem>
                 <ListIcon as={MdCheckCircle} color="green.500" />
-                <Link to={"/canvatemplates/20x20"}>
+                <Link to={"/admin/canvatemplates/20x20"}>
                   Photobooth Signages (20 x 20 cm)
                 </Link>
               </ListItem>
               <ListItem>
                 <ListIcon as={MdCheckCircle} color="green.500" />
-                <Link to={"/canvatemplates/10x10"}>
+                <Link to={"/admin/canvatemplates/10x10"}>
                   Table Card Templates (10 x 10 cm)
                 </Link>
               </ListItem>
               <ListItem>
                 <ListIcon as={MdCheckCircle} color="green.500" />
-                <Link to={"/canvatemplates/50x65"}>
+                <Link to={"/admin/canvatemplates/50x65"}>
                   Signage Templates (50 x 65 cm)
                 </Link>
               </ListItem>
               <ListItem>
                 <ListIcon as={MdCheckCircle} color="green.500" />
-                <Link to={"/canvatemplates/BusinessCard"}>
+                <Link to={"/admin/canvatemplates/BusinessCard"}>
                   Take Home QR Code Cards<br></br>&nbsp;&nbsp;&nbsp;&nbsp; (
                   Business Card Size )
                 </Link>
@@ -260,7 +270,14 @@ const CanvaTemplates = () => {
           </Box>
           <br />
           <br />
-          <Heading as="h3" size="lg" pb={5} pt={5} color={"gray.400"}>
+          <Heading
+            ref={templatesRef}
+            as="h3"
+            size="lg"
+            pb={5}
+            pt={5}
+            color={"gray.400"}
+          >
             {title}
           </Heading>
         </Box>
@@ -274,9 +291,8 @@ const CanvaTemplates = () => {
           mx="auto"
         >
           {srces_1sided.map((src) => (
-            <a href={src.link} target="_blank" rel="noreferrer" >
-             <Image
-                key={src.image}
+            <a key={src.image} href={src.link} target="_blank" rel="noreferrer">
+              <Image
                 w="100%"
                 borderRadius="xl"
                 mb={2}
@@ -295,7 +311,7 @@ const CanvaTemplates = () => {
           mx="auto"
         >
           {srces_2sided.map((src) => (
-             <a href={src.link} target="_blank" rel="noreferrer" >
+            <a href={src.link} target="_blank" rel="noreferrer">
               <Image
                 key={src.image}
                 w="100%"

@@ -194,19 +194,19 @@ export default function GuestPovPricing() {
         return;
       }
 
-setCoupon(couponData);
+      setCoupon(couponData);
 
-if (couponData.type === "free_plan") {
-  toast({
-    title: "Gift Package Applied",
-    status: "success",
-  });
-} else {
-  toast({
-    title: `${couponData.value}% discount applied`,
-    status: "success",
-  });
-}
+      if (couponData.type === "free_plan") {
+        toast({
+          title: "Gift Package Applied",
+          status: "success",
+        });
+      } else {
+        toast({
+          title: `${couponData.value}% discount applied`,
+          status: "success",
+        });
+      }
     } catch (err) {
       console.error(err);
 
@@ -258,13 +258,52 @@ if (couponData.type === "free_plan") {
         couponCode: coupon?.code || "",
       });
 
-      toast({
-        title: "Gift Package Activated",
-        status: "success",
+      // Update local state immediately
+      setCurrentSubscription({
+        planId: plan.id,
+        planName: plan.name,
+        price: 0,
+        status: "gift",
       });
 
-      history.replace("/admin/dashboard");
+      if (updatePlan) {
+        updatePlan({
+          planId: plan.id,
+          planName: plan.name,
+          price: 0,
+        });
+      }
+
+      console.log("Activating gift plan:", plan);
+      toast({
+        title: "Gift Package Activated",
+        description: `${plan.name} has been activated successfully`,
+        status: "success",
+        duration: 3000,
+      });
+
+      if (coupon?.code) {
+        const couponSnapshot = await projectFirestore
+          .collection("coupons")
+          .where("code", "==", coupon.code)
+          .limit(1)
+          .get();
+
+        if (!couponSnapshot.empty) {
+          const couponDoc = couponSnapshot.docs[0];
+
+          await couponDoc.ref.update({
+            usedCount: (couponDoc.data().usedCount || 0) + 1,
+          });
+        }
+      }
+
+      setTimeout(() => {
+        console.log("Redirecting to dashboard");
+        history.replace("/admin/dashboard");
+      }, 500);
     } catch (err) {
+      console.error("Gift activation error:", err);
       console.error(err);
 
       toast({
@@ -277,12 +316,12 @@ if (couponData.type === "free_plan") {
   };
 
   const handleCheckout = async (
-  user,
-  priceId,
-  productKey,
-  price,
-  couponData = null
-) => {
+    user,
+    priceId,
+    productKey,
+    price,
+    couponData = null,
+  ) => {
     if (!user || !user.uid) {
       toast({
         title: "Sign in required",
@@ -294,12 +333,12 @@ if (couponData.type === "free_plan") {
     }
 
     const newPlan = plans.find((p) => p.id === productKey);
-   const originalPrice = newPlan?.prices?.[0]?.unit_amount / 100 || 0;
+    const originalPrice = newPlan?.prices?.[0]?.unit_amount / 100 || 0;
 
-  const discountedPrice =
-    coupon?.type === "percentage"
-      ? originalPrice - (originalPrice * coupon.value) / 100
-      : originalPrice;
+    const discountedPrice =
+      coupon?.type === "percentage"
+        ? originalPrice - (originalPrice * coupon.value) / 100
+        : originalPrice;
     const currentPlanPrice = parseFloat(currentSubscription?.price || 0);
 
     if (currentSubscription?.planId === productKey) {
@@ -320,9 +359,9 @@ if (couponData.type === "free_plan") {
       return;
     }
 
-   const extraAmount = Math.max(0, discountedPrice - currentPlanPrice).toFixed(
-     2,
-   );
+    const extraAmount = Math.max(0, discountedPrice - currentPlanPrice).toFixed(
+      2,
+    );
     if (currentSubscription && currentSubscription.planId) {
       const confirmUpgrade = window.confirm(
         `Upgrading: You will be charged an additional $${extraAmount}. Continue?`,
@@ -343,7 +382,9 @@ if (couponData.type === "free_plan") {
       await sessionRef.set({
         sessionId,
         mode: "payment",
-        allow_promotion_codes: true,
+        automatic_tax: {
+          enabled: true,
+        },
 
         success_url: `https://guestpov.ca/success?session_id=${sessionId}`,
         cancel_url: "https://guestpov.ca/cancel",
@@ -403,8 +444,6 @@ if (couponData.type === "free_plan") {
       setLoadingPlan(null);
     }
   };
-
- 
 
   // Show skeleton while loading
   if (loading) {
@@ -562,12 +601,27 @@ if (couponData.type === "free_plan") {
                 !!currentSubscription?.planId &&
                 currentSubscription.planId === plan.id;
 
-              const currentPlanPrice = currentSubscription
+              {
+                /* const currentPlanPrice = currentSubscription
                 ? parseFloat(currentSubscription.price)
                 : 0;
               const newPlanPrice = priceObj ? priceObj.unit_amount / 100 : 0;
               const isDowngrade =
-                currentSubscription && newPlanPrice < currentPlanPrice;
+                currentSubscription && newPlanPrice < currentPlanPrice; */
+              }
+
+              const currentPlan = plans.find(
+                (p) => p.id === currentSubscription?.planId,
+              );
+
+              const currentPlanPrice =
+                Number(currentPlan?.prices?.[0]?.unit_amount || 0) / 100;
+
+              const newPlanPrice = Number(priceObj?.unit_amount || 0) / 100;
+
+              const isDowngrade =
+                !!currentSubscription?.planId &&
+                newPlanPrice < currentPlanPrice;
 
               return (
                 <Box
@@ -833,7 +887,13 @@ if (couponData.type === "free_plan") {
                           >
                             {loadingPlan === plan.id
                               ? "Redirecting..."
-                              : plan.metadata?.cta_text || "Choose"}
+                              : isCurrentPlan
+                                ? "Current Plan"
+                                : isDowngrade
+                                  ? "Not Available"
+                                  : currentSubscription
+                                    ? "Upgrade"
+                                    : plan.metadata?.cta_text || "Choose"}
                           </Button>
                         </Tooltip>
                       )}
