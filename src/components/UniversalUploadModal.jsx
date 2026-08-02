@@ -33,8 +33,6 @@ export default function UniversalUploadModal({
   const [progressMap, setProgressMap] = useState({});
   const [uploading, setUploading] = useState(false); // ✅ ADDED
 
-  
-
   /* ---------- FILE SELECT ---------- */
   const handleSelect = (e) => {
     const selected = Array.from(e.target.files).map((file) => ({
@@ -60,33 +58,31 @@ export default function UniversalUploadModal({
       const task = ref.put(file);
       uploadTasks.current[id] = task;
 
-     task.on(
-       "state_changed",
-       (snap) => {
-         const percent = Math.round(
-           (snap.bytesTransferred / snap.totalBytes) * 100
-         );
-         setProgressMap((p) => ({ ...p, [id]: percent }));
-       },
-       console.error,
-       async () => {
-         const url = await ref.getDownloadURL();
+      task.on(
+        "state_changed",
+        (snap) => {
+          const percent = Math.round(
+            (snap.bytesTransferred / snap.totalBytes) * 100,
+          );
+          setProgressMap((p) => ({ ...p, [id]: percent }));
+        },
+        console.error,
+        async () => {
+          const url = await ref.getDownloadURL();
 
-        await onUploadComplete({
-          type,
-          mediaUrl: url,
-          file,
-          storagePath: path, // 🔥 PASS EXACT PATH
-        });
+          await onUploadComplete({
+            type,
+            mediaUrl: url,
+            file,
+            storagePath: path, // 🔥 PASS EXACT PATH
+          });
 
-         setFiles((prev) => prev.filter((f) => f.id !== id));
+          setFiles((prev) => prev.filter((f) => f.id !== id));
 
-         setTimeout(() => setUploading(false), 300);
-         console.log("UPLOAD PATH:", path);
-
-       }
-     );
-
+          setTimeout(() => setUploading(false), 300);
+          console.log("UPLOAD PATH:", path);
+        },
+      );
     });
   };
 
@@ -100,7 +96,15 @@ export default function UniversalUploadModal({
     <Modal isOpen={isOpen} onClose={onClose} isCentered size="lg">
       <ModalOverlay bg="blackAlpha.600" />
       <ModalContent borderRadius="xl" p={4}>
-        <ModalCloseButton />
+        <ModalCloseButton
+          zIndex={10}
+          color="gray.700"
+          bg="white"
+          borderRadius="full"
+          _hover={{ bg: "gray.100" }}
+          top={3}
+          right={3}
+        />
         <ModalBody>
           <Text fontWeight="600" mb={3}>
             Upload photos or videos

@@ -159,10 +159,16 @@ const Viewer = ({
   const canDelete = canUserDeleteVideo(currentUser, current, isAdmin);
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="full">
-      <ModalOverlay bg="blackAlpha.800" />
-      <ModalContent bg="transparent" boxShadow="none">
-        <ModalBody p={0} h="100vh">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      size="full"
+      motionPreset="none"
+      scrollBehavior="inside"
+    >
+      <ModalOverlay bg="black" />
+      <ModalContent m={0} maxW="100vw" h="100vh" bg="black" borderRadius="0">
+        <ModalBody p={0} position="relative">
           {/* top bar */}
           <Flex
             position="absolute"
@@ -217,25 +223,24 @@ const Viewer = ({
 
           {/* video */}
           <Center
-            h="100%"
+            w="100%"
+            h="100vh"
             bg="black"
             onPointerDown={onPointerDown}
             onPointerUp={onPointerUp}
           >
-            <Box position="relative">
-              <video
-                ref={videoRef}
-                src={current.url}
-                muted
-                playsInline
-                onClick={togglePlay}
-                style={{
-                  maxHeight: "90vh",
-                  maxWidth: "95vw",
-                  objectFit: "contain",
-                }}
-              />
-            </Box>
+            <video
+              ref={videoRef}
+              src={current.url}
+              playsInline
+              muted
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+                background: "black",
+              }}
+            />
           </Center>
 
           {/* footer */}
