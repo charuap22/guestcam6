@@ -24,6 +24,7 @@ import { projectFirestore, projectAuth } from "../firebase/config";
 import { CheckIcon } from "@chakra-ui/icons";
 import { usePlan } from "../context/PlanContext";
 import { useHistory } from "react-router-dom";
+import { getReferralCode, setReferralCode } from "../utils/referral";
 
 import { useLocation } from "react-router-dom";
 
@@ -47,6 +48,10 @@ export default function GuestPovPricing() {
   const [couponCode, setCouponCode] = useState("");
   const [coupon, setCoupon] = useState(null);
   const [couponLoading, setCouponLoading] = useState(false);
+
+  const [referralCode, setReferralCodeInput] = useState("");
+  const [referral, setReferral] = useState(null);
+  const [referralLoading, setReferralLoading] = useState(false);
 
   const toast = useToast();
   const history = useHistory();
@@ -152,6 +157,75 @@ export default function GuestPovPricing() {
     });
     return () => unsubscribe();
   }, [fetchData]);
+
+  // prefill the referral code input if the visitor arrived via a ?ref= link
+  // or applied one on a previous visit. The code still travels with checkout
+  // (see getReferralCode() fallback in handleCheckout's metadata), but the
+  // "Referral Applied" banner only shows after an explicit Apply click.
+  useEffect(() => {
+    const stored = getReferralCode();
+    if (stored) {
+      setReferralCodeInput(stored);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const applyReferral = async (codeOverride) => {
+    const code = (codeOverride || referralCode).trim();
+
+    if (!code) return;
+
+    try {
+      setReferralLoading(true);
+
+      const snapshot = await projectFirestore
+        .collection("affiliates")
+        .where("code", "==", code.toUpperCase())
+        .limit(1)
+        .get();
+
+      if (snapshot.empty) {
+        setReferral(null);
+
+        toast({
+          title: "Invalid referral code",
+          status: "error",
+        });
+
+        return;
+      }
+
+      const affiliateData = { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+
+      if (!affiliateData.active) {
+        setReferral(null);
+
+        toast({
+          title: "This referral code is no longer active",
+          status: "error",
+        });
+
+        return;
+      }
+
+      setReferral(affiliateData);
+      setReferralCode(affiliateData.code);
+
+      toast({
+        title: `Referral applied: ${affiliateData.name}`,
+        status: "success",
+      });
+    } catch (err) {
+      console.error(err);
+
+      toast({
+        title: "Failed to apply referral code",
+        status: "error",
+      });
+    } finally {
+      setReferralLoading(false);
+    }
+  };
 
   const applyCoupon = async () => {
     if (!couponCode.trim()) return;
@@ -298,6 +372,21 @@ export default function GuestPovPricing() {
         }
       }
 
+      if (referral?.id) {
+        await projectFirestore.collection("affiliateSales").add({
+          affiliateId: referral.id,
+          affiliateCode: referral.code,
+          affiliateName: referral.name,
+          saleAmount: 0,
+          commissionRate: referral.commissionRate || 0,
+          commissionAmount: 0,
+          note: `${plan.name} (gift coupon)`,
+          status: "unpaid",
+          payoutId: null,
+          createdAt: purchasedAt,
+        });
+      }
+
       setTimeout(() => {
         console.log("Redirecting to dashboard");
         history.replace("/admin/dashboard");
@@ -412,6 +501,7 @@ export default function GuestPovPricing() {
           chargedAmount: extraAmount,
           couponCode: couponData?.code || "",
           couponDiscount: couponData?.value || 0,
+          affiliateCode: referral?.code || getReferralCode() || "",
           upgrade: currentSubscription ? "true" : "false",
           oldPlanId: currentSubscription?.planId || "",
         },
@@ -540,6 +630,38 @@ export default function GuestPovPricing() {
               Apply Coupon
             </Button>
           </Flex>
+
+          <Flex justify="center" gap={3} mb={8} wrap="wrap">
+            <Input
+              maxW="250px"
+              placeholder="Referral Code"
+              value={referralCode}
+              onChange={(e) => setReferralCodeInput(e.target.value.toUpperCase())}
+            />
+
+            <Button
+              onClick={() => applyReferral()}
+              isLoading={referralLoading}
+              bg={accentGold}
+              color="white"
+            >
+              Apply Referral
+            </Button>
+          </Flex>
+
+          {referral && (
+            <Box
+              bg="green.50"
+              border="1px solid"
+              borderColor="green.200"
+              p={3}
+              borderRadius="md"
+              textAlign="center"
+              mb={6}
+            >
+              ✅ Referral Applied: {referral.name} ({referral.code})
+            </Box>
+          )}
 
           {coupon?.type === "percentage" && (
             <Box

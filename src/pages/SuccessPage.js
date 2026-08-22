@@ -52,15 +52,18 @@ const SuccessPage = () => {
         const {
           planId,
           planName,
-          price = 0,
           upgrade,
           oldPlanId,
           couponCode,
+          affiliateCode,
+          chargedAmount,
         } = sessionData.metadata || {};
 
         if (!planId || !planName) {
           throw new Error("Missing plan metadata");
         }
+
+        const price = Number(chargedAmount || 0);
 
         const purchasedAt = new Date();
         const subscriptionEndDate = new Date(purchasedAt);
@@ -119,7 +122,41 @@ const SuccessPage = () => {
             });
           }
         }
-        
+
+        // ─────────────────────────────────────────────
+        // Attribute sale to affiliate (if referred)
+        // ─────────────────────────────────────────────
+        if (affiliateCode) {
+          const affiliateSnapshot = await projectFirestore
+            .collection("affiliates")
+            .where("code", "==", affiliateCode)
+            .where("active", "==", true)
+            .limit(1)
+            .get();
+
+          if (!affiliateSnapshot.empty) {
+            const affiliateDoc = affiliateSnapshot.docs[0];
+            const affiliate = affiliateDoc.data();
+            const saleAmount = Number(chargedAmount || 0);
+            const commissionAmount =
+              (saleAmount * (affiliate.commissionRate || 0)) / 100;
+
+            await projectFirestore.collection("affiliateSales").add({
+              affiliateId: affiliateDoc.id,
+              affiliateCode: affiliate.code,
+              affiliateName: affiliate.name,
+              saleAmount,
+              commissionRate: affiliate.commissionRate || 0,
+              commissionAmount,
+              note: planName,
+              status: "unpaid",
+              payoutId: null,
+              createdAt: purchasedAt,
+            });
+          }
+        }
+
+
         // ─────────────────────────────────────────────
         // Update client plan context
         // ─────────────────────────────────────────────

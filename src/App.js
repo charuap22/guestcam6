@@ -32,15 +32,21 @@ import PricingPage from "./site/pages/PricingPage";
 
 import AdminLayout from "./layouts/admin";
 import Guest_Gallery from "./pages/Guest_Gallery";
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import RouteGuard from "./routes/RouteGuard";
- 
+import { captureReferral } from "./utils/referral";
+
 
 
 function App() {
   const { authIsReady, user } = useAuthContext();
   const { UserInfo } = useUserInfo();
   console.log("UserInfo", UserInfo);
+
+  useEffect(() => {
+    captureReferral();
+  }, []);
+
   return (
     <>
       {authIsReady && (
