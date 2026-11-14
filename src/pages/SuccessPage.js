@@ -1,7 +1,12 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useLocation, useHistory } from "react-router-dom";
 import { projectFirestore, projectAuth } from "../firebase/config";
 import { usePlan } from "../context/PlanContext";
+
+// The plan is activated server-side by the `activatePlanOnPayment` Cloud
+// Function once Stripe reports the payment as succeeded. This page only waits
+// for that to land in Firestore and then redirects; it writes nothing.
+const SLOW_AFTER_MS = 60 * 1000;
 
 const SuccessPage = () => {
   const location = useLocation();
@@ -11,185 +16,105 @@ const SuccessPage = () => {
 
   const { updatePlan } = usePlan();
 
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [slow, setSlow] = useState(false);
+
+  // updatePlan changes identity on every PlanContext render; keep the latest
+  // in a ref so the listeners below are set up once per session id.
+  const updatePlanRef = useRef(updatePlan);
+  updatePlanRef.current = updatePlan;
 
   useEffect(() => {
-    const run = async () => {
-      try {
-        if (!sessionId) {
-          throw new Error("Missing session ID");
-        }
+    if (!sessionId) {
+      setError("Missing session ID");
+      return undefined;
+    }
 
-        const user = projectAuth.currentUser;
-        if (!user) {
-          history.replace("/login");
-          return;
-        }
+    const user = projectAuth.currentUser;
+    if (!user) {
+      history.replace("/login");
+      return undefined;
+    }
 
-        // ─────────────────────────────────────────────
-        // Fetch checkout session
-        // ─────────────────────────────────────────────
-        const sessionRef = projectFirestore
-          .collection("customers")
-          .doc(user.uid)
-          .collection("checkout_sessions")
-          .doc(sessionId);
+    let finished = false;
+    const unsubscribers = [];
+    const stop = () => unsubscribers.forEach((unsub) => unsub());
 
-        const sessionSnap = await sessionRef.get();
-        if (!sessionSnap.exists) {
-          throw new Error("Checkout session not found");
-        }
-
-        const sessionData = sessionSnap.data();
-
-        // 🛑 ALREADY PROCESSED → SAFE EXIT
-        if (sessionData.processed) {
-          history.replace("/admin/dashboard");
-          return;
-        }
-
-        const {
-          planId,
-          planName,
-          upgrade,
-          oldPlanId,
-          couponCode,
-          affiliateCode,
-          chargedAmount,
-        } = sessionData.metadata || {};
-
-        if (!planId || !planName) {
-          throw new Error("Missing plan metadata");
-        }
-
-        const price = Number(chargedAmount || 0);
-
-        const purchasedAt = new Date();
-        const subscriptionEndDate = new Date(purchasedAt);
-        subscriptionEndDate.setFullYear(subscriptionEndDate.getFullYear() + 1);
-
-        const userRef = projectFirestore.collection("users").doc(user.uid);
-        const purchaseRef = projectFirestore
-          .collection("customers")
-          .doc(user.uid)
-          .collection("purchases")
-          .doc();
-
-        // ─────────────────────────────────────────────
-        // Transaction (IDEMPOTENT)
-        // ─────────────────────────────────────────────
-        await projectFirestore.runTransaction(async (tx) => {
-          tx.update(userRef, {
-            planId,
-            planName,
-            price,
-            subscribedOn: purchasedAt,
-            subscriptionEndDate,
-            subscriptionStatus: "active",
-          });
-
-          tx.set(purchaseRef, {
-            planId,
-            planName,
-            price,
-            purchasedAt,
-            subscriptionEndDate,
-            previousPlanId: upgrade === "true" ? oldPlanId : null,
-            status: "active",
-            couponCode: couponCode || null,
-          });
-
-          // 🔐 mark session as processed
-          tx.update(sessionRef, {
-            processed: true,
-            processedAt: new Date(),
-          });
-        });
-
-        if (couponCode) {
-          const couponSnapshot = await projectFirestore
-            .collection("coupons")
-            .where("code", "==", couponCode)
-            .limit(1)
-            .get();
-
-          if (!couponSnapshot.empty) {
-            const couponDoc = couponSnapshot.docs[0];
-
-            await couponDoc.ref.update({
-              usedCount: (couponDoc.data().usedCount || 0) + 1,
-            });
-          }
-        }
-
-        // ─────────────────────────────────────────────
-        // Attribute sale to affiliate (if referred)
-        // ─────────────────────────────────────────────
-        if (affiliateCode) {
-          const affiliateSnapshot = await projectFirestore
-            .collection("affiliates")
-            .where("code", "==", affiliateCode)
-            .where("active", "==", true)
-            .limit(1)
-            .get();
-
-          if (!affiliateSnapshot.empty) {
-            const affiliateDoc = affiliateSnapshot.docs[0];
-            const affiliate = affiliateDoc.data();
-            const saleAmount = Number(chargedAmount || 0);
-            const commissionAmount =
-              (saleAmount * (affiliate.commissionRate || 0)) / 100;
-
-            await projectFirestore.collection("affiliateSales").add({
-              affiliateId: affiliateDoc.id,
-              affiliateCode: affiliate.code,
-              affiliateName: affiliate.name,
-              saleAmount,
-              commissionRate: affiliate.commissionRate || 0,
-              commissionAmount,
-              note: planName,
-              status: "unpaid",
-              payoutId: null,
-              createdAt: purchasedAt,
-            });
-          }
-        }
-
-
-        // ─────────────────────────────────────────────
-        // Update client plan context
-        // ─────────────────────────────────────────────
-        updatePlan({
-          planId,
-          planName,
-          price,
-        });
-
-        // ✅ SINGLE, FINAL REDIRECT
-        history.replace("/admin/dashboard");
-      } catch (err) {
-        console.error("Success page error:", err);
-        setError(err.message || "Something went wrong");
-      } finally {
-        setLoading(false);
-      }
+    const finish = ({ planId, planName, price }) => {
+      if (finished) return;
+      finished = true;
+      stop();
+      updatePlanRef.current({ planId, planName, price });
+      history.replace("/admin/dashboard");
     };
 
-    run();
-  }, [sessionId, history, updatePlan]);
+    const customerRef = projectFirestore.collection("customers").doc(user.uid);
+
+    // 1) The purchase the function writes for this checkout session.
+    unsubscribers.push(
+      customerRef
+        .collection("purchases")
+        .where("checkoutSessionId", "==", sessionId)
+        .limit(1)
+        .onSnapshot(
+          (snap) => {
+            if (!snap.empty) finish(snap.docs[0].data());
+          },
+          (err) => console.error("Purchase listener error:", err),
+        ),
+    );
+
+    // 2) Fallback: the user's plan switching to the plan bought in this
+    //    session (covers checkouts started before checkoutSessionId existed).
+    customerRef
+      .collection("checkout_sessions")
+      .doc(sessionId)
+      .get()
+      .then((sessionSnap) => {
+        if (finished) return;
+        if (!sessionSnap.exists) {
+          setError("Checkout session not found");
+          return;
+        }
+        const planId = sessionSnap.data()?.metadata?.planId;
+        if (!planId) return;
+        unsubscribers.push(
+          projectFirestore
+            .collection("users")
+            .doc(user.uid)
+            .onSnapshot(
+              (userSnap) => {
+                const data = userSnap.data() || {};
+                if (
+                  data.subscriptionStatus === "active" &&
+                  data.planId === planId
+                ) {
+                  finish(data);
+                }
+              },
+              (err) => console.error("User listener error:", err),
+            ),
+        );
+        // A listener added after cleanup ran must not leak.
+        if (finished) stop();
+      })
+      .catch((err) => {
+        console.error("Success page error:", err);
+        setError(err.message || "Something went wrong");
+      });
+
+    const slowTimer = setTimeout(() => setSlow(true), SLOW_AFTER_MS);
+
+    return () => {
+      finished = true;
+      clearTimeout(slowTimer);
+      stop();
+    };
+  }, [sessionId, history]);
 
   // ─────────────────────────────────────────────
   // UI STATES
   // ─────────────────────────────────────────────
-  if (loading) {
-    return (
-      <div style={{ textAlign: "center", marginTop: 80 }}>
-        Processing your payment…
-      </div>
-    );
-  }
-
   if (error) {
     return (
       <div style={{ textAlign: "center", marginTop: 80 }}>
@@ -200,8 +125,19 @@ const SuccessPage = () => {
     );
   }
 
-  // Should never reach here (redirect happens)
-  return null;
+  return (
+    <div style={{ textAlign: "center", marginTop: 80 }}>
+      <p>Processing your payment…</p>
+      {slow && (
+        <p style={{ maxWidth: 480, margin: "16px auto" }}>
+          This is taking longer than usual. Your plan will be activated as
+          soon as the payment is confirmed; you can keep this page open or
+          check your <a href="/admin/dashboard">dashboard</a> in a few
+          minutes. If it still isn't active, please contact support.
+        </p>
+      )}
+    </div>
+  );
 };
 
 export default SuccessPage;

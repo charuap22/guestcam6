@@ -20,7 +20,11 @@ import {
   Input,
   useToast,
 } from "@chakra-ui/react";
-import { projectFirestore, projectAuth } from "../firebase/config";
+import {
+  projectFirestore,
+  projectAuth,
+  projectFunctions,
+} from "../firebase/config";
 import { CheckIcon } from "@chakra-ui/icons";
 import { usePlan } from "../context/PlanContext";
 import { useHistory } from "react-router-dom";
@@ -297,106 +301,54 @@ export default function GuestPovPricing() {
 
     if (!user) return;
 
+    if (!coupon?.code) return;
+
     try {
       setLoadingPlan(plan.id);
 
-      const purchasedAt = new Date();
-
-      const userRef = projectFirestore.collection("users").doc(user.uid);
-
-      const purchaseRef = projectFirestore
-        .collection("customers")
-        .doc(user.uid)
-        .collection("purchases")
-        .doc();
-
-      await userRef.set(
-        {
-          planId: plan.id,
-          planName: plan.name,
-          price: 0,
-          subscribedOn: purchasedAt,
-          subscriptionStatus: "active",
-          gift: true,
-        },
-        { merge: true },
-      );
-
-      await purchaseRef.set({
+      // The coupon is validated, the plan activated and the coupon's use
+      // counted server-side (functions/activation.js redeemGiftCoupon).
+      const redeem = projectFunctions.httpsCallable("redeemGiftCoupon");
+      const { data } = await redeem({
+        code: coupon.code,
         planId: plan.id,
-        planName: plan.name,
-        price: 0,
-        purchasedAt,
-        status: "gift",
-        gift: true,
-        couponCode: coupon?.code || "",
+        affiliateCode: referral?.code || getReferralCode() || "",
       });
 
       // Update local state immediately
       setCurrentSubscription({
-        planId: plan.id,
-        planName: plan.name,
+        planId: data.planId,
+        planName: data.planName,
         price: 0,
         status: "gift",
       });
 
       if (updatePlan) {
         updatePlan({
-          planId: plan.id,
-          planName: plan.name,
+          planId: data.planId,
+          planName: data.planName,
           price: 0,
         });
       }
 
-      console.log("Activating gift plan:", plan);
       toast({
         title: "Gift Package Activated",
-        description: `${plan.name} has been activated successfully`,
+        description: `${data.planName} has been activated successfully`,
         status: "success",
         duration: 3000,
       });
 
-      if (coupon?.code) {
-        const couponSnapshot = await projectFirestore
-          .collection("coupons")
-          .where("code", "==", coupon.code)
-          .limit(1)
-          .get();
-
-        if (!couponSnapshot.empty) {
-          const couponDoc = couponSnapshot.docs[0];
-
-          await couponDoc.ref.update({
-            usedCount: (couponDoc.data().usedCount || 0) + 1,
-          });
-        }
-      }
-
-      if (referral?.id) {
-        await projectFirestore.collection("affiliateSales").add({
-          affiliateId: referral.id,
-          affiliateCode: referral.code,
-          affiliateName: referral.name,
-          saleAmount: 0,
-          commissionRate: referral.commissionRate || 0,
-          commissionAmount: 0,
-          note: `${plan.name} (gift coupon)`,
-          status: "unpaid",
-          payoutId: null,
-          createdAt: purchasedAt,
-        });
-      }
-
       setTimeout(() => {
-        console.log("Redirecting to dashboard");
         history.replace("/admin/dashboard");
       }, 500);
     } catch (err) {
       console.error("Gift activation error:", err);
-      console.error(err);
 
       toast({
         title: "Failed to activate package",
+        // HttpsError messages from the function are meant for the customer
+        // (e.g. "Coupon expired", "You have already redeemed this coupon").
+        description: err?.message,
         status: "error",
       });
     } finally {
@@ -492,7 +444,13 @@ export default function GuestPovPricing() {
             quantity: 1,
           },
         ],
+        // Stripe copies this metadata onto the payment. The server-side
+        // activation (activatePlanOnPayment) treats it as a claim only: it
+        // re-prices planId/couponCode from Firestore and checks the amount
+        // Stripe actually received. checkoutSessionId lets SuccessPage find
+        // the purchase it creates.
         metadata: {
+          checkoutSessionId: sessionId,
           userId: user.uid,
           planId: productKey,
           planName: newPlan.name,

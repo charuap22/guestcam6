@@ -55,6 +55,9 @@ dispatch({ type: "LOGIN", payload: res.user });
     } catch (err) {
       setError(err.message);
       setIsPending(false);
+      // Let the caller show the error (e.g. "email already in use") instead of
+      // treating a failed signup as a success and redirecting.
+      throw err;
     }
   };
 

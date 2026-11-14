@@ -6,8 +6,81 @@ const path = require("path");
 const os = require("os");
 const fs = require("fs");
 
+const {
+  ActivationError,
+  activatePayment,
+  becameSucceeded,
+  redeemGiftCoupon,
+} = require("./activation");
+
 admin.initializeApp();
 ffmpeg.setFfmpegPath(ffmpegPath);
+
+// Retried events older than this are dropped instead of retried forever.
+const MAX_EVENT_AGE_MS = 6 * 60 * 60 * 1000;
+
+/**
+ * Activates a paid plan when the Stripe extension records a succeeded
+ * payment. Replaces the browser-side transaction in SuccessPage.js.
+ * Idempotent (keyed on the payment id), so retries are safe.
+ */
+exports.activatePlanOnPayment = functions
+  .runWith({failurePolicy: true})
+  .firestore.document("customers/{uid}/payments/{paymentId}")
+  .onWrite(async (change, context) => {
+    const before = change.before.exists ? change.before.data() : null;
+    const after = change.after.exists ? change.after.data() : null;
+    if (!becameSucceeded(before, after)) return;
+
+    const age = Date.now() - Date.parse(context.timestamp);
+    if (age > MAX_EVENT_AGE_MS) {
+      functions.logger.error("Dropping stale payment event", {
+        paymentId: context.params.paymentId,
+        age,
+      });
+      return;
+    }
+
+    const {uid, paymentId} = context.params;
+    const result = await activatePayment(
+      admin.firestore(),
+      admin,
+      uid,
+      paymentId,
+      after,
+    );
+    const log = result.status === "rejected" ?
+      functions.logger.error :
+      functions.logger.info;
+    log("Plan activation", {uid, paymentId, ...result});
+  });
+
+/**
+ * Redeems a 100% gift ("free_plan") coupon for the signed-in user.
+ * Replaces activateGiftPlan's client writes in Pricing.js.
+ */
+exports.redeemGiftCoupon = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError(
+      "unauthenticated",
+      "Sign in to redeem a coupon.",
+    );
+  }
+  try {
+    return await redeemGiftCoupon(
+      admin.firestore(),
+      admin,
+      context.auth.uid,
+      data || {},
+    );
+  } catch (err) {
+    if (err instanceof ActivationError) {
+      throw new functions.https.HttpsError(err.code, err.message);
+    }
+    functions.logger.error("Gift redemption failed", err);
+    throw new functions.https.HttpsError("internal", "Could not redeem.");
+  }
+});
 exports.processVideo = functions
   .runWith({ memory: "1GB", timeoutSeconds: 540 })
   .storage.object()
