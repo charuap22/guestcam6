@@ -1,19 +1,21 @@
 module.exports = {
   env: {
-    es6: true,
     node: true,
   },
   parserOptions: {
-    "ecmaVersion": 2018,
+    ecmaVersion: 2018,
   },
-  extends: [
-    "eslint:recommended",
-    "google",
-  ],
+  extends: ["eslint:recommended", "google"],
   rules: {
     "no-restricted-globals": ["error", "name", "length"],
     "prefer-arrow-callback": "error",
-    "quotes": ["error", "double", {"allowTemplateLiterals": true}],
+
+    // 🔥 REQUIRED to stop Google ESLint loop
+    "quote-props": "off",
+
+    quotes: ["error", "double"],
+    indent: "off",
+    "object-curly-spacing": "off",
   },
   overrides: [
     {
@@ -24,5 +26,4 @@ module.exports = {
       rules: {},
     },
   ],
-  globals: {},
 };

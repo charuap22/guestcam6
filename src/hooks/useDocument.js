@@ -6,33 +6,45 @@ export const useDocument = (collection, id) => {
   const [error, setError] = useState(null);
   const [isPending, setIsPending] = useState(false);
 
-  // realtime document data
   useEffect(() => {
+    // ✅ if id or collection is missing, skip Firestore call
+    if (!collection || !id) {
+      setDocument(null);
+      setIsPending(false);
+      setError(null);
+      return;
+    }
+
     setIsPending(true);
 
-    const ref = projectFirestore.collection(collection).doc(id);
+    try {
+      const ref = projectFirestore.collection(collection).doc(id);
 
-    const unsubscribe = ref.onSnapshot(
-      (snapshot) => {
-        // need to make sure the doc exists & has data
-        if (snapshot.data()) {
-          setDocument({ ...snapshot.data(), id: snapshot.id });
-          setError(null);
+      const unsubscribe = ref.onSnapshot(
+        (snapshot) => {
+          if (snapshot.exists) {
+            setDocument({ ...snapshot.data(), id: snapshot.id });
+            setError(null);
+          } else {
+            setDocument(null);
+            setError("No such document exists");
+          }
           setIsPending(false);
-        } else {
-          setError("No such document exists");
+        },
+        (err) => {
+          console.error("useDocument error:", err.message);
+          setError("Failed to get document");
           setIsPending(false);
         }
-      },
-      (err) => {
-        console.log(err.message);
-        setError("failed to get document");
-        setIsPending(false);
-      }
-    );
+      );
 
-    // unsubscribe on unmount
-    return () => unsubscribe();
+      // cleanup
+      return () => unsubscribe();
+    } catch (err) {
+      console.error("Invalid Firestore reference:", err);
+      setError("Invalid document reference");
+      setIsPending(false);
+    }
   }, [collection, id]);
 
   return { document, error, isPending };

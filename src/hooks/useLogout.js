@@ -13,20 +13,25 @@ export const useLogout = () => {
     setIsPending(true);
 
     try {
-      //update online status
       const { uid } = user;
-      await projectFirestore
-        .collection("users")
-        .doc(uid)
-        .update({ online: false });
 
-      // sign the user out
+      // -----------------------------
+      // FIX: Only update Firestore if user doc exists
+      // -----------------------------
+      const userRef = projectFirestore.collection("users").doc(uid);
+      const docSnap = await userRef.get();
+
+      if (docSnap.exists) {
+        await userRef.update({ online: false });
+      }
+      // (Guests / anonymous users skip this safely)
+
+      // sign out
       await projectAuth.signOut();
 
       // dispatch logout action
       dispatch({ type: "LOGOUT" });
 
-      // update state
       if (!isCancelled) {
         setIsPending(false);
         setError(null);

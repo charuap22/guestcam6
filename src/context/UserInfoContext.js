@@ -1,49 +1,51 @@
+// src/context/UserInfoContext.js
 import { createContext, useEffect, useReducer } from "react";
 import { projectFirestore } from "../firebase/config";
 import { useAuthContext } from "../hooks/useAuthContext";
 
 export const UserInfoContext = createContext();
 
-const UserInfoReducer = (state, action) => {
+const reducer = (state, action) => {
   switch (action.type) {
-    case "CHANGE_USERINFO":
-      return { ...state, UserInfo: action.payload };
+    case "SET":
+      return { UserInfo: action.payload };
+    case "CLEAR":
+      return { UserInfo: null };
     default:
       return state;
   }
 };
 
 export function UserInfoProvider({ children }) {
-  //let p = "";
-  let UserInfoDetails = {};
   const { user } = useAuthContext();
+  const [state, dispatch] = useReducer(reducer, { UserInfo: null });
+
   useEffect(() => {
-    if (user) {
-      projectFirestore
-        .collection("users")
-        .doc(user.uid)
-        .get()
-        .then((doc) => {
-          if (doc.exists) {
-             if (doc.data()) {
-               UserInfoDetails = doc.data();
-               UserInfoDetails.uid = user.uid;
-               console.log("UserInfo from context", doc.data());
-               changeUserInfo(UserInfoDetails);
-             }
-          }
+    if (!user) {
+      dispatch({ type: "CLEAR" });
+      return;
+    }
+
+    const unsub = projectFirestore
+      .collection("users")
+      .doc(user.uid)
+      .onSnapshot((doc) => {
+        if (!doc.exists) {
+          dispatch({ type: "CLEAR" });
+          return;
+        }
+
+        dispatch({
+          type: "SET",
+          payload: { ...doc.data(), uid: user.uid },
         });
-    }   
+      });
+
+    return () => unsub();
   }, [user]);
 
-  const [state, dispatch] = useReducer(UserInfoReducer, { UserInfo: UserInfoDetails });
-
-  const changeUserInfo = (UserInfo) => {
-    dispatch({ type: "CHANGE_USERINFO", payload: UserInfo });
-  };
-
   return (
-    <UserInfoContext.Provider value={{ ...state, changeUserInfo }}>
+    <UserInfoContext.Provider value={state}>
       {children}
     </UserInfoContext.Provider>
   );

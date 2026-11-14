@@ -2,7 +2,7 @@ import firebase from 'firebase/app'
 import 'firebase/auth'
 import 'firebase/firestore'
 import 'firebase/storage'
-// import "firebase/functions"; // For the extension
+import 'firebase/functions'
 
 const firebaseConfig = {
   // apiKey: "AIzaSyA9A5kUQyN5cN9ASLjII8xrD3SfOyCwTJk",
@@ -27,10 +27,10 @@ firebase.initializeApp(firebaseConfig)
 const projectFirestore = firebase.firestore()
 const projectAuth = firebase.auth()
 const projectStorage = firebase.storage()
+// Callable Cloud Functions (us-central1, the default deploy region)
+const projectFunctions = firebase.functions()
 
 //timestamp
 const timestamp = firebase.firestore.Timestamp
 
-//const functions = firebase.functions(); // Get the functions instance
-
-export { projectAuth, projectFirestore, projectStorage, timestamp }//, functions
+export { projectAuth, projectFirestore, projectStorage, projectFunctions, timestamp }

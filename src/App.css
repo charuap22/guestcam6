@@ -11,7 +11,16 @@
 .App {
   text-align: center;
 } */
-
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  touch-action: pan-y;
+}
+#root {
+  width: 100%;
+  overflow-x: hidden;
+}
 .App-logo {
   height: 40vmin;
   pointer-events: none;
@@ -98,4 +107,42 @@ p{
         margin-right: 0;
         margin-left: 10px;
     }
+}
+/* Select-mode toolbar polish */
+[data-select-toolbar] {
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(12px);
+  border: none !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Buttons */
+[data-select-toolbar] button {
+  border-radius: 999px !important;
+  font-weight: 500;
+}
+
+/* Primary action */
+[data-select-toolbar] button:nth-child(2) {
+  background: #1a202c !important;
+  color: white !important;
+}
+
+/* Delete button */
+[data-select-toolbar] button:nth-child(3) {
+  color: #e53e3e !important;
+}
+
+/* Selected text */
+[data-select-toolbar] span,
+[data-select-toolbar] p {
+  color: #4a5568 !important;
+}
+/* Hide native big play button */
+video::-webkit-media-controls-overlay-play-button {
+  display: none !important;
+}
+
+video::-webkit-media-controls-start-playback-button {
+  display: none !important;
 }

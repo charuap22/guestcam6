@@ -33,7 +33,7 @@ import {
   functions,
 } from "../firebase/config";
 import { useAuthContext } from "../hooks/useAuthContext";
-import { usePlan } from "../hooks/usePlan";
+import { usePlan } from "../context/PlanContext";
 import { loadStripe } from "@stripe/stripe-js";
 import firebase from "firebase/app";
 import "firebase/firestore";
@@ -73,8 +73,6 @@ const PricingPlans = ({ plans }) => {
   const { user } = useAuthContext();
   let history = useHistory();
 
- 
-
   const buyNow = async (plan) => {
     setError(null);
     setIsPending(true);
@@ -94,56 +92,56 @@ const PricingPlans = ({ plans }) => {
       setIsPending(false);
     }
   };
- 
-const checkout2 = async (user, priceId, productKey) => {
-  console.log("Checkout started");
-  setError(null);
-  setIsPending(true);
 
-  if (!user || !user.uid) {
-    console.error("User is not authenticated");
-    return;
-  }
+  const checkout2 = async (user, priceId, productKey) => {
+    console.log("Checkout started");
+    setError(null);
+    setIsPending(true);
 
-  try {
-    const sessionRef = await projectFirestore
-      .collection("customers")
-      .doc(user.uid)
-      .collection("checkout_sessions")
-      .doc(); // Create a reference without adding immediately  const sessionId = sessionRef.id; // Use this ID for the Firestore document
+    if (!user || !user.uid) {
+      console.error("User is not authenticated");
+      return;
+    }
 
-    const sessionId = sessionRef.id; // Use this ID for the Firestore document
+    try {
+      const sessionRef = await projectFirestore
+        .collection("customers")
+        .doc(user.uid)
+        .collection("checkout_sessions")
+        .doc(); // Create a reference without adding immediately  const sessionId = sessionRef.id; // Use this ID for the Firestore document
 
-    await sessionRef.set({
-      sessionId: sessionId, // Store the session ID inside Firestore
-      mode: "payment",
-      price: priceId,
-      success_url: `http://localhost:3000/success?session_id=${sessionId}`,
-      cancel_url: "http://localhost:3000/cancel",
-      createdAt: new Date(),
-      metadata: {
-        userId: user.uid,
-        planId: productKey,
-      },
-    });
+      const sessionId = sessionRef.id; // Use this ID for the Firestore document
 
-    // Wait for the CheckoutSession to get attached by the extension
-    console.log("Session document created with ID:", sessionId);
+      await sessionRef.set({
+        sessionId: sessionId, // Store the session ID inside Firestore
+        mode: "payment",
+        price: priceId,
+        success_url: `http://localhost:3000/success?session_id=${sessionId}`,
+        cancel_url: "http://localhost:3000/cancel",
+        createdAt: new Date(),
+        metadata: {
+          userId: user.uid,
+          planId: productKey,
+        },
+      });
 
-    // Wait for the CheckoutSession to get attached by the extension
-    sessionRef.onSnapshot((snap) => {
-      const { error, url } = snap.data();
-      if (error) {
-        alert(`An error occurred: ${error.message}`);
-      }
-      if (url) {
-        window.location.assign(url);
-      }
-    });
-  } catch (err) {
-    console.error("Firestore error:", err.message);
-  }
-};
+      // Wait for the CheckoutSession to get attached by the extension
+      console.log("Session document created with ID:", sessionId);
+
+      // Wait for the CheckoutSession to get attached by the extension
+      sessionRef.onSnapshot((snap) => {
+        const { error, url } = snap.data();
+        if (error) {
+          alert(`An error occurred: ${error.message}`);
+        }
+        if (url) {
+          window.location.assign(url);
+        }
+      });
+    } catch (err) {
+      console.error("Firestore error:", err.message);
+    }
+  };
   const breakpoints = {
     sm: "30em", // 480px
     md: "48em", // 768px
@@ -221,7 +219,6 @@ const checkout2 = async (user, priceId, productKey) => {
                         {/* Align items vertically */}
                         <Text fontSize="5xl" fontWeight="900">
                           {priceInDollars}{" "}
-                          
                         </Text>
                         <Text
                           color="gray.500"

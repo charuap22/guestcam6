@@ -1,15 +1,52 @@
+// src/components/header/Menu.jsx
 import React from "react";
-import { useHistory, NavLink, Link } from "react-router-dom";
-import { AvatarInfo_Mobile } from "../../components/AvatarInfo_Mobile";
+import { useHistory, NavLink } from "react-router-dom";
 import { useAuthContext } from "../../hooks/useAuthContext";
 import { useLogout } from "../../hooks/useLogout";
-import { Text } from "@chakra-ui/react";
+import { Spinner, useToast, Box } from "@chakra-ui/react";
 import { useUserInfo } from "../../hooks/useUserInfo";
-import { AvatarInfo } from "../../components/AvatarInfo";
+
 const Menu = () => {
   const { authIsReady, user } = useAuthContext();
   const { logout, isPending } = useLogout();
   const { UserInfo } = useUserInfo();
+  const history = useHistory();
+  const toast = useToast();
+
+  // Quick, deterministic display name to avoid layout flicker:
+  const computeDisplayName = () => {
+    if (UserInfo?.displayName) return UserInfo.displayName;
+    if (user?.displayName) return user.displayName;
+    if (user?.email) return user.email.split("@")[0];
+    return "Guest";
+  };
+  const displayNameLocal = computeDisplayName();
+
+ 
+  const handleLogout = async () => {
+    try {
+      await logout();
+
+      toast({
+        title: "Signed out",
+        status: "success",
+        duration: 2500,
+        isClosable: true,
+      });
+
+      // replace so back button doesn't return to a protected page
+      history.replace("/login");
+    } catch (err) {
+      toast({
+        title: "Sign out failed",
+        description: err?.message || "Could not sign out. Try again.",
+        status: "error",
+        duration: 4000,
+        isClosable: true,
+      });
+    }
+  };
+
   return (
     <>
       {/* <!-- ttm-header-wrap --> */}
@@ -24,14 +61,14 @@ const Menu = () => {
               <div className="container">
                 {/* <!-- site-branding --> */}
                 <div className="site-branding">
-                  <Link to="/">
+                  <NavLink to="/">
                     <img
                       id="logo-img"
                       className="img-center"
-                      src="images/GuestPOV.svg"
+                      src="/images/GuestPOV.svg"
                       alt="logo-img"
                     />
-                  </Link>
+                  </NavLink>
                 </div>
                 {/* <!-- site-branding end --> */}
 
@@ -48,6 +85,7 @@ const Menu = () => {
                       <span className="toggle-block toggle-blocks-3"></span>
                     </label>
                   </div>
+
                   <nav id="menu" className="menu">
                     <ul className="dropdown">
                       <li className="active">
@@ -59,7 +97,7 @@ const Menu = () => {
                         <NavLink to="/about">About Us</NavLink>
                       </li>
                       <li>
-                        <NavLink to="/usecases">Use Cases</NavLink>
+                        <NavLink to="/usecases">Events</NavLink>
                         <ul>
                           <li>
                             <a href="/usecases#wedding">Wedding</a>
@@ -82,27 +120,60 @@ const Menu = () => {
                         <NavLink to="/pricing">Pricing</NavLink>
                       </li>
 
+                      {/* Admin-only links */}
                       <li>
-                        {!isPending && user && UserInfo.role === "Admin" && (
-                          <>
-                            <NavLink to="/dashboard">Dashboard</NavLink>
-                          </>
+                        {!isPending && user && !user.isAnonymous && (
+                          <NavLink to="/admin/dashboard">Dashboard</NavLink>
                         )}
                       </li>
-                      <li>
-                        {!isPending && user && UserInfo.role === "Admin" && (
-                          <>{user.displayName + ","}</>
+                     
+
+                      {/* ---------- Right-side actions (Login/Logout) ---------- */}
+                      <li className="menu-right">
+                        {!authIsReady ? null : user && !user.isAnonymous ? (
+                          <Box display="flex" alignItems="center" gap="14px">
+                            {/* Username */}
+                            <Box
+                              fontWeight="500"
+                              color="#d4af37"
+                              whiteSpace="nowrap"
+                            >
+                              {displayNameLocal}
+                            </Box>
+
+                            {/* Divider */}
+                            <Box
+                              height="14px"
+                              width="1px"
+                              bg="rgba(255,255,255,0.3)"
+                            />
+
+                            {/* Logout */}
+                            <button
+                              type="button"
+                              onClick={handleLogout}
+                              disabled={isPending}
+                              style={{
+                                background: "transparent",
+                                border: "none",
+                                padding: 0,
+                                cursor: isPending ? "default" : "pointer",
+                                color: "inherit",
+                                fontWeight: 500,
+                              }}
+                            >
+                              {isPending ? (
+                                <>
+                                  <Spinner size="xs" mr={2} /> Signing out...
+                                </>
+                              ) : (
+                                "Logout"
+                              )}
+                            </button>
+                          </Box>
+                        ) : (
+                          <NavLink to="/login">Login</NavLink>
                         )}
-                      </li>
-                      <li>
-                        {!isPending && user && UserInfo.role === "Admin" && (
-                          <>
-                            <NavLink to="#" onClick={logout}>
-                              Logout
-                            </NavLink>
-                          </>
-                        )}
-                        {!user && <NavLink to="/login">Login</NavLink>}
                       </li>
                     </ul>
                   </nav>

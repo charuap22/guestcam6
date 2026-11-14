@@ -1,20 +1,326 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // This rule allows anyone with your Firestore database reference to view, edit,
-    // and delete all data in your Firestore database. It is useful for getting
-    // started, but it is configured to expire after 30 days because it
-    // leaves your app open to attackers. At that time, all client
-    // requests to your Firestore database will be denied.
-    //
-    // Make sure to write security rules for your app before that time, or else
-    // all client requests to your Firestore database will be denied until you Update
-    // your rules
-    match /{document=**} {
-      allow read: if true;
-      allow write: if request.auth!=null;
+    /* ==============================
+       Rollout switch
+       ------------------------------
+       true  = phase 1: the website still activates plans in the browser
+               (SuccessPage.js, gift coupons in Pricing.js), so customers may
+               write their own plan fields / purchases, bump coupon usedCount
+               and record a validated affiliate sale.
+       false = phase 2: activation runs server-side in Cloud Functions
+               (functions/activation.js: activatePlanOnPayment on
+               customers/{uid}/payments, redeemGiftCoupon callable), using the
+               Admin SDK, which bypasses these rules. All of the above become
+               admin/server only.
+       Deploy phase 2 only after those functions and the matching website
+       build are live and one real payment has activated through them.
+    ============================== */
+
+    function allowClientSideActivation() {
+      return false; // CLIENT_SIDE_ACTIVATION
     }
+
+    /* ==============================
+       Helper Functions
+    ============================== */
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isSelf(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+
+    // Admin panel (horizon-ui-chakra-main) treats users/{uid}.role == 'siteAdmin'
+    // as an admin. Users can never write their own `role` (see /users below),
+    // so this can only be granted from the console / Admin SDK.
+    function isSiteAdmin() {
+      return isAuthenticated()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'siteAdmin';
+    }
+
+    function changedKeys() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
+    function isUploader(data) {
+      return isAuthenticated() && data.userId == request.auth.uid;
+    }
+
+    function isEventOwner(eventId) {
+      return isAuthenticated()
+        && exists(/databases/$(database)/documents/events/$(eventId))
+        && (
+          get(/databases/$(database)/documents/events/$(eventId)).data.adminId == request.auth.uid ||
+          get(/databases/$(database)/documents/events/$(eventId)).data.createdBy == request.auth.uid ||
+          get(/databases/$(database)/documents/events/$(eventId)).data.ownerId == request.auth.uid
+        );
+    }
+
+    function validMediaDoc(data) {
+      return data.keys().hasAll([
+        'eventId',
+        'url',
+        'userId',
+        'filename',
+        'createdAt'
+      ])
+      && data.eventId is string
+      && data.url is string
+      && data.userId is string
+      && data.filename is string
+      && data.createdAt is timestamp
+      && (
+        !('status' in data) ||
+        data.status in ['processing', 'ready']
+      );
+    }
+
+    /* ==============================
+       Admin: read everything
+       (replaces the old "any signed-in user can read everything" fallback)
+    ============================== */
+
+    match /{document=**} {
+      allow read: if isSiteAdmin();
+    }
+
+    // Admin dashboard: collectionGroup(db, 'purchases')
+    match /{path=**}/purchases/{purchaseId} {
+      allow read: if isSiteAdmin();
+    }
+
+    /* ==============================
+       Events
+    ============================== */
+
+    match /events/{eventId} {
+      allow read: if true;
+      allow create: if isAuthenticated();
+      allow update, delete: if isEventOwner(eventId);
+    }
+
+    /* ==============================
+       Gallery (Photos)
+    ============================== */
+
+    match /gallery/{docId} {
+      allow read: if true;
+
+      allow create: if isAuthenticated()
+        && isUploader(request.resource.data)
+        && validMediaDoc(request.resource.data);
+
+      allow delete: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        isEventOwner(resource.data.eventId)
+      );
+    }
+
+    /* ==============================
+       Videos
+    ============================== */
+
+    match /videos/{docId} {
+      allow read: if true;
+
+      allow create: if isAuthenticated()
+        && isUploader(request.resource.data)
+        && validMediaDoc(request.resource.data);
+
+      allow delete: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        isEventOwner(resource.data.eventId)
+      );
+    }
+
+    /* ==============================
+       Guestbook
+    ============================== */
+
+    match /guestbook/{docId} {
+      allow read: if true;
+
+      allow create: if isAuthenticated()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.eventId is string
+        && request.resource.data.displayName is string
+        && request.resource.data.type in ['text', 'image', 'video']
+        && (
+          request.resource.data.createdAt is timestamp ||
+          request.resource.data.createdAt == request.time
+        );
+
+      allow update, delete: if isAuthenticated()
+        && (
+          resource.data.userId == request.auth.uid ||
+          isEventOwner(resource.data.eventId)
+        );
+    }
+
+    /* ==============================
+       Stripe / Customers
+       (the Stripe extension writes with the Admin SDK and ignores rules)
+    ============================== */
+
+    match /customers/{uid} {
+      allow read: if isSelf(uid) || isSiteAdmin();
+
+      match /checkout_sessions/{id} {
+        allow read: if isSelf(uid) || isSiteAdmin();
+        allow create: if isSelf(uid);
+        // SuccessPage marks the session processed (phase 1 only).
+        allow update: if allowClientSideActivation()
+          && isSelf(uid)
+          && changedKeys().hasOnly(['processed', 'processedAt']);
+      }
+
+      match /subscriptions/{id} {
+        allow read: if isSelf(uid) || isSiteAdmin();
+      }
+
+      // Written only by the Stripe extension. Never client-writable: a
+      // succeeded payment here is what activates a plan server-side.
+      match /payments/{id} {
+        allow read: if isSelf(uid) || isSiteAdmin();
+      }
+
+      // SuccessPage waits for the purchase whose checkoutSessionId matches.
+      match /purchases/{purchaseId} {
+        allow read: if isSelf(uid) || isSiteAdmin();
+        allow create: if allowClientSideActivation() && isSelf(uid);
+      }
+    }
+
+    match /products/{id} {
+      allow read: if true;
+
+      match /prices/{priceId} {
+        allow read: if true;
+      }
+
+      match /tax_rates/{rateId} {
+        allow read: if true;
+      }
+    }
+
+    /* ==============================
+       Users
+    ============================== */
+
+    // Fields that grant or describe a paid plan.
+    function planFields() {
+      return [
+        'planId', 'planName', 'price', 'subscribedOn',
+        'subscriptionEndDate', 'subscriptionStatus', 'gift', 'demo'
+      ];
+    }
+
+    // A brand-new user doc may not arrive with a plan already granted
+    // (signup writes planId/subscriptionStatus/subscribedOn: null, demo: false).
+    function grantsNoPlan(d) {
+      return d.get('planId', null) == null
+        && d.get('planName', null) == null
+        && d.get('price', null) == null
+        && d.get('subscribedOn', null) == null
+        && d.get('subscriptionEndDate', null) == null
+        && d.get('subscriptionStatus', null) == null
+        && d.get('gift', false) == false
+        && d.get('demo', false) == false;
+    }
+
+    match /users/{uid} {
+      allow read: if isSelf(uid) || isSiteAdmin();
+
+      allow create: if isSelf(uid)
+        && request.resource.data.get('role', 'owner') == 'owner'
+        && (allowClientSideActivation() || grantsNoPlan(request.resource.data));
+
+      // Never let a user add, change or remove their own role.
+      allow update: if isSelf(uid)
+        && !changedKeys().hasAny(['role'])
+        && (allowClientSideActivation() || !changedKeys().hasAny(planFields()));
+    }
+
+    /* ==============================
+       Guests
+    ============================== */
+
+    match /guests/{guestId} {
+      allow create, read, update: if isSelf(guestId);
+    }
+
+    /* ==============================
+       Coupons
+    ============================== */
+
+    match /coupons/{couponId} {
+      // Pricing/SuccessPage look a coupon up by code with limit(1).
+      // Listing the whole collection is admin-only.
+      allow get: if true;
+      allow list: if isSiteAdmin() || request.query.limit <= 1;
+
+      allow create, delete: if isSiteAdmin();
+      allow update: if isSiteAdmin()
+        || (allowClientSideActivation()
+            && isAuthenticated()
+            && changedKeys().hasOnly(['usedCount'])
+            && request.resource.data.usedCount == resource.data.get('usedCount', 0) + 1);
+    }
+
+    /* ==============================
+       Affiliates / sales / payouts
+    ============================== */
+
+    match /affiliates/{affiliateId} {
+      // Pricing/SuccessPage look a referral code up with limit(1).
+      allow get: if true;
+      allow list: if isSiteAdmin() || request.query.limit <= 1;
+      allow write: if isSiteAdmin();
+    }
+
+    // A sale a customer may record at checkout (phase 1 only): it must point
+    // at an existing active affiliate, copy that affiliate's code/name/rate,
+    // start unpaid, and claim no more commission than the rate allows.
+    function validClientSale(d) {
+      let aff = get(/databases/$(database)/documents/affiliates/$(d.affiliateId)).data;
+      return d.keys().hasOnly([
+          'affiliateId', 'affiliateCode', 'affiliateName', 'saleAmount',
+          'commissionRate', 'commissionAmount', 'note', 'status',
+          'payoutId', 'createdAt'
+        ])
+        && d.affiliateId is string
+        && aff.active == true
+        && d.affiliateCode == aff.code
+        && d.affiliateName == aff.name
+        && d.commissionRate == aff.get('commissionRate', 0)
+        && d.saleAmount is number && d.saleAmount >= 0
+        && d.commissionAmount is number && d.commissionAmount >= 0
+        && d.commissionAmount * 100 <= d.saleAmount * d.commissionRate + 1
+        && d.status == 'unpaid'
+        && d.payoutId == null
+        && d.createdAt is timestamp;
+    }
+
+    match /affiliateSales/{saleId} {
+      allow read: if isSiteAdmin();
+      allow create: if isSiteAdmin()
+        || (allowClientSideActivation()
+            && isAuthenticated()
+            && validClientSale(request.resource.data));
+      allow update, delete: if isSiteAdmin();
+    }
+
+    match /payouts/{payoutId} {
+      allow read, write: if isSiteAdmin();
+    }
+
+    // paymentActivations/{paymentId}: idempotency + audit record written by
+    // activatePlanOnPayment. No rule here on purpose: only siteAdmin can read
+    // it (via the match-all read above) and nobody can write it from a client.
+
   }
 }

@@ -1,4 +1,4 @@
-import { createContext, useReducer, useEffect } from "react";
+import { createContext, useReducer, useEffect, startTransition } from "react";
 import { projectAuth } from "../firebase/config";
 
 export const AuthContext = createContext();
@@ -24,12 +24,14 @@ export const AuthContextProvider = ({ children }) => {
 
   useEffect(() => {
     const unsub = projectAuth.onAuthStateChanged((user) => {
-      dispatch({ type: "AUTH_IS_READY", payload: user });
-      unsub();
+      // ⭐ FIX: Prevent synchronous Suspense crash
+      startTransition(() => {
+        dispatch({ type: "AUTH_IS_READY", payload: user });
+      });
     });
-  }, []);
 
-  console.log("AuthContext state:", state);
+    return () => unsub();
+  }, []);
 
   return (
     <AuthContext.Provider value={{ ...state, dispatch }}>

@@ -1,3 +1,4 @@
+// src/pages/EditEvent.js
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useHistory } from "react-router-dom";
 import {
@@ -19,7 +20,6 @@ import {
   Textarea,
   Avatar,
   AvatarBadge,
-  Switch,
   Alert,
   AlertIcon,
   Divider,
@@ -29,13 +29,15 @@ import { Select } from "@chakra-ui/react";
 import { usePlan } from "../context/PlanContext";
 import { useFirestore } from "../hooks/useFirestore";
 import { useDocument } from "../hooks/useDocument";
+import { useAuthContext } from "../hooks/useAuthContext";
 
 const EditEvent = () => {
   const { id } = useParams(); // Get event ID from URL
   const history = useHistory();
-  const { updateDocument, response } = useFirestore("events");
+  const { updateDocument } = useFirestore("events");
   const { document: event, error } = useDocument("events", id);
   const { currentPlan } = usePlan();
+  const { user } = useAuthContext(); // ensure we have the logged-in user
 
   const [thumbnail, setThumbnail] = useState(null);
   const [avatarImg, setAvatarImg] = useState(null);
@@ -51,31 +53,42 @@ const EditEvent = () => {
   const [category, setCategory] = useState("");
   const [customCategory, setCustomCategory] = useState("");
   const [dateOfEvent, setDateOfEvent] = useState("");
-  const [noOfGuests, setNoOfGuests] = useState("");
   const [location, setLocation] = useState("");
   const [sharePictures, setSharePictures] = useState(true);
   const [shareGuestbook, setShareGuestbook] = useState(true);
 
   useEffect(() => {
     if (event) {
-      setEventName(event.eventName);
-      setEventPageHeader(event.eventPageHeader);
-      setWelcomeMessage(event.welcomeMessage);
-      setFeatureImage(event.featureImage);
-      setCategory(event.category);
-      setDateOfEvent(event.dateOfEvent.toDate().toISOString().split("T")[0]);
-      setNoOfGuests(event.noOfGuests);
-      setLocation(event.location);
-      setSharePictures(event.sharePictures);
-      setShareGuestbook(event.shareGuestbook);
-      setAvatarImg(event.featureImage);
+      setEventName(event.eventName || "");
+      setEventPageHeader(event.eventPageHeader || "");
+      setWelcomeMessage(event.welcomeMessage || "");
+      setFeatureImage(event.featureImage || "");
+      setCategory(event.category || "");
+      setDateOfEvent(
+        event.dateOfEvent
+          ? event.dateOfEvent.toDate().toISOString().split("T")[0]
+          : ""
+      );
+      setLocation(event.location || "");
+      setSharePictures(
+        typeof event.sharePictures === "boolean" ? event.sharePictures : true
+      );
+      setShareGuestbook(
+        typeof event.shareGuestbook === "boolean" ? event.shareGuestbook : true
+      );
+      setAvatarImg(event.featureImage || null);
     }
   }, [event]);
 
+  // Updated event types as requested
   const eventOptions = {
-    Wedding: ["Reception", "Engagement", "Bridal Shower"],
-    Corporate: ["Conference", "Seminar", "Product Launch"],
-    Birthday: ["Kids Party", "18th Birthday", "50th Celebration"],
+    "Event Types": [
+      "Wedding",
+      "Corporate",
+      "Launch",
+      "Birthday",
+      "Private Party",
+    ],
   };
 
   const handleSubmit = async (e) => {
@@ -85,11 +98,45 @@ const EditEvent = () => {
     setSuccessMessage(null);
 
     try {
-      let imageURL = featureImage;
+      if (!user) {
+        throw new Error("You must be logged in to update the event.");
+      }
+
+      let imageURL = featureImage; // default to existing URL
+
+      // If a new thumbnail is selected, upload it with improved handling
       if (thumbnail) {
-        const uploadPath = `featureImages/${event.id}/${thumbnail.name}`;
-        const img = await projectStorage.ref(uploadPath).put(thumbnail);
-        imageURL = await img.ref.getDownloadURL();
+        try {
+          // make filename unique to avoid overwrites
+          const safeName = `${Date.now()}_${thumbnail.name.replace(
+            /\s+/g,
+            "_"
+          )}`;
+
+          // upload path uses user.uid so it matches your storage rules
+          const uploadPath = `featureImages/${user.uid}/${safeName}`;
+
+          // metadata: contentType + customMetadata.userId (optional but useful)
+          const metadata = {
+            contentType: thumbnail.type || "image/jpeg",
+            customMetadata: { userId: user.uid },
+          };
+
+          const snapshot = await projectStorage
+            .ref(uploadPath)
+            .put(thumbnail, metadata);
+
+          if (!snapshot || !snapshot.ref) {
+            throw new Error("Upload failed: no snapshot returned.");
+          }
+
+          imageURL = await snapshot.ref.getDownloadURL();
+        } catch (uploadErr) {
+          console.error("Image upload failed:", uploadErr);
+          throw new Error(
+            uploadErr?.message || "Image upload failed. Please try again."
+          );
+        }
       }
 
       const updates = {
@@ -99,7 +146,6 @@ const EditEvent = () => {
         featureImage: imageURL,
         category: category === "other" ? customCategory : category,
         dateOfEvent: timestamp.fromDate(new Date(dateOfEvent)),
-        noOfGuests,
         location,
         sharePictures,
         shareGuestbook,
@@ -109,7 +155,8 @@ const EditEvent = () => {
 
       setSuccessMessage("Event updated successfully!");
     } catch (err) {
-      setErrorMessage("Failed to update event.");
+      console.error(err);
+      setErrorMessage(err.message || "Failed to update event.");
     } finally {
       setIsPending(false);
     }
@@ -133,8 +180,15 @@ const EditEvent = () => {
   }
 
   return (
-    <Flex direction="column" align="center" bg="gray.50" minH="100vh" p={6}>
-      <Box rounded="lg" bg="white" boxShadow="lg" p={8} width="full">
+    <Flex
+      direction="column"
+      align="center"
+      bg="gray.50"
+      minH="100vh"
+      p={6}
+      mt={20}
+    >
+      <Box rounded="lg" bg="white" boxShadow="lg" p={8} mt={3} width="full">
         <Stack spacing={0}>
           <Heading fontSize={"xl"} mb={2}>
             Edit Event
@@ -218,17 +272,15 @@ const EditEvent = () => {
                       }}
                       value={category}
                     >
-                      {Object.entries(eventOptions).map(
-                        ([category, events]) => (
-                          <optgroup label={category} key={category}>
-                            {events.map((event) => (
-                              <option key={event} value={event}>
-                                {event}
-                              </option>
-                            ))}
-                          </optgroup>
-                        )
-                      )}
+                      {Object.entries(eventOptions).map(([group, events]) => (
+                        <optgroup label={group} key={group}>
+                          {events.map((ev) => (
+                            <option key={ev} value={ev}>
+                              {ev}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ))}
                       <option value="other">Other</option>
                     </Select>
                     {category === "other" && (
@@ -250,19 +302,6 @@ const EditEvent = () => {
                       min={new Date().toISOString().split("T")[0]}
                       onChange={(e) => setDateOfEvent(e.target.value)}
                       value={dateOfEvent}
-                    />
-                  </FormControl>
-                </Box>
-                <Box>
-                  <FormControl>
-                    <FormLabel>Number of Guests</FormLabel>
-                    <Input
-                      type="number"
-                      min={1}
-                      required
-                      onChange={(e) => setNoOfGuests(e.target.value)}
-                      value={noOfGuests}
-                      placeholder="e.g., 100"
                     />
                   </FormControl>
                 </Box>
