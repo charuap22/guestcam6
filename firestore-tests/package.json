@@ -4,7 +4,9 @@
   "type": "module",
   "scripts": {
     "test": "firebase emulators:exec --only firestore --project demo-guestcam-rules \"node --test --test-reporter=spec rules.test.js\"",
-    "test:deployed": "firebase emulators:exec --only firestore --project demo-guestcam-rules \"RULES_FILE=deployed-2026-08-02.rules node --test --test-reporter=spec rules.test.js\""
+    "test:deployed": "firebase emulators:exec --only firestore --project demo-guestcam-rules \"RULES_FILE=deployed-2026-08-02.rules node --test --test-reporter=spec rules.test.js\"",
+    "test:storage": "firebase emulators:exec --only storage --project demo-guestcam-storage \"node --test --test-reporter=spec storage.test.js\"",
+    "test:storage:deployed": "firebase emulators:exec --only storage --project demo-guestcam-storage \"STORAGE_RULES_FILE=deployed-storage-2026-01-05.rules node --test --test-reporter=spec storage.test.js\""
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "3.0.4",

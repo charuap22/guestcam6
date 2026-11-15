@@ -1,12 +1,124 @@
 rules_version = '2';
 
-// Craft rules based on data in your Firestore database
-// allow write: if firestore.get(
-//    /databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin;
+// Storage rules for guestcam-memories.firebasestorage.app
+//
+// Anonymous sign-in is enabled (invite-link guests), so "signed in" means
+// "anyone on the internet". Every client write is therefore limited to:
+//   - new files only in shared folders (no overwriting anyone's upload),
+//   - the expected media type for the folder,
+//   - a size cap well above the largest real file in the bucket (2026-11).
+// Displayed media is fetched through tokenised download URLs, which bypass
+// these read rules; read rules only govern SDK reads and folder listing.
+// Files written by Cloud Functions (previews/, video thumbnails) use the
+// Admin SDK and are not affected.
 service firebase.storage {
   match /b/{bucket}/o {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+
+    function isVideo() {
+      return request.resource.contentType.matches('video/.*');
+    }
+
+    function maxMB(mb) {
+      return request.resource.size <= mb * 1024 * 1024;
+    }
+
+    // Photos: 50 MB (largest real upload 25.5 MB). Videos: 1 GB (largest 176 MB).
+    function isEventPhoto() {
+      return isImage() && maxMB(50);
+    }
+
+    function isEventVideo() {
+      return isVideo() && maxMB(1024);
+    }
+
+    // Uploading over an existing object is evaluated as `create` too, so
+    // shared folders must check that nothing is there yet.
+    function isNewFile() {
+      return resource == null;
+    }
+
+    // useGalleryUpload.js tags uploads with customMetadata.userId = uploader.
+    function taggedWithUploader() {
+      return request.resource.metadata != null
+        && request.resource.metadata.userId == request.auth.uid;
+    }
+
+    function uploadedByMe() {
+      return isSignedIn()
+        && resource.metadata != null
+        && resource.metadata.userId == request.auth.uid;
+    }
+
+    // 📸 Event gallery: gallery/{eventId}/{uuid}
+    // Public read + list (album ZIP download lists this folder).
+    match /gallery/{eventId}/{fileId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isNewFile() && taggedWithUploader() && isEventPhoto();
+      allow delete: if uploadedByMe();
+    }
+
+    // 🎥 Event videos: videos/{eventId}/{uuid}
+    match /videos/{eventId}/{fileId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isNewFile() && taggedWithUploader() && isEventVideo();
+      allow delete: if uploadedByMe();
+    }
+
+    // 💬 Guestbook media: guestbook/{eventId}/{images|videos}/{ts}_{name}
+    // Uploads carry no uploader metadata, so clients may only add files;
+    // nobody can overwrite or delete them from a browser.
+    match /guestbook/{eventId}/{folder}/{fileName} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isNewFile() && (isEventPhoto() || isEventVideo());
+    }
+
+    // Older guestbook files stored one level up (read-only).
+    match /guestbook/{eventId}/{fileName} {
+      allow read: if isSignedIn();
+    }
+
+    // 🖼 Profile photos: thumbnails/{uid}/{fileName} (signup, guest signup).
+    // processVideo also writes thumbnails/{eventId}/{videoId}.jpg with the
+    // Admin SDK; event ids never equal a user's uid, so users can't touch those.
+    match /thumbnails/{uid}/{fileName} {
+      allow read: if true;
+      allow create, update: if isOwner(uid) && isImage() && maxMB(20);
+      allow delete: if isOwner(uid);
+    }
+
+    // 🎬 Video previews (Cloud Function only)
+    match /previews/{allPaths=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // 👤 Event cover images: featureImages/{uid}/{fileName} (CreateEvent, EditEvent)
+    match /featureImages/{userId}/{fileName} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId) && isImage() && maxMB(20);
+      allow delete: if isOwner(userId);
+    }
+
+    // 🌐 Public assets
+    match /public/{allPaths=**} {
+      allow read: if true;
+    }
+
+    // ❌ Everything else
     match /{allPaths=**} {
-      allow read, write: if request.auth!=null;
+      allow read, write: if false;
     }
   }
 }
