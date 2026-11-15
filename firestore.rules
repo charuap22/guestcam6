@@ -97,10 +97,44 @@ service cloud.firestore {
        Events
     ============================== */
 
+    // Invite-link guests sign in anonymously; they may never create events.
+    function isRealAccount() {
+      return isAuthenticated()
+        && request.auth.token.firebase.sign_in_provider != 'anonymous';
+    }
+
+    // Same test the website's RouteGuard/PlanContext uses: the user's doc has
+    // a planId that points at an existing product. Plan fields can only be
+    // written server-side (see /users), so this can't be faked.
+    function hasPlan() {
+      let planId = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('planId', null);
+      return planId is string
+        && planId != ''
+        && exists(/databases/$(database)/documents/products/$(planId));
+    }
+
+    // CreateEvent.js: adminId and createdBy.id are the creator, the site
+    // closes one year after creation.
+    function validNewEvent(d) {
+      return d.adminId == request.auth.uid
+        && d.createdBy is map
+        && d.createdBy.id == request.auth.uid
+        && (!('ownerId' in d) || d.ownerId == request.auth.uid)
+        && d.siteCloses is timestamp
+        && d.siteCloses <= request.time + duration.value(400, 'd');
+    }
+
+    // Owners edit content (EditEvent.js), soft-delete (Event.js) and manage
+    // guestBook, but never ownership, plan/amount or how long the site stays up.
+    function eventLockedFields() {
+      return ['adminId', 'createdBy', 'ownerId', 'plan', 'amount', 'siteCloses', 'createdAt'];
+    }
+
     match /events/{eventId} {
       allow read: if true;
-      allow create: if isAuthenticated();
-      allow update, delete: if isEventOwner(eventId);
+      allow create: if isRealAccount() && hasPlan() && validNewEvent(request.resource.data);
+      allow update: if isEventOwner(eventId) && !changedKeys().hasAny(eventLockedFields());
+      allow delete: if isEventOwner(eventId);
     }
 
     /* ==============================

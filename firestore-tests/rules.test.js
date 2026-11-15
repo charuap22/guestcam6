@@ -91,9 +91,15 @@ async function seed(env) {
       put('users/alice', user('owner')),
       put('users/bob', user('owner', { planId: 'basic', subscriptionStatus: 'active' })),
       put('users/olivia', user('owner', { eventId: 'e1' })),
+      put('users/carl', user('owner', { planId: 'ghost', subscriptionStatus: 'active' })), // plan points at no product
+      put('users/anonhost', user('owner', { planId: 'basic', subscriptionStatus: 'active' })), // signs in anonymously
       put('guests/guest1', { displayName: 'Gus', eventId: 'e1', online: true }),
       put('guests/guest2', { displayName: 'Gia', eventId: 'e1', online: true }),
-      put('events/e1', { name: 'Wedding', createdBy: 'olivia', adminId: 'olivia', isPublic: true }),
+      put('events/e1', {
+        name: 'Wedding', eventName: 'Wedding', createdBy: { id: 'olivia', displayName: 'Olivia' },
+        adminId: 'olivia', isPublic: true, plan: 'No Plan', amount: 0, guestBook: [],
+        siteStatus: 'Live', siteCloses: Timestamp.fromMillis(Date.now() + 365 * 86400000), createdAt: now(),
+      }),
       put('gallery/g1', { eventId: 'e1', userId: 'guest1', url: 'u', filename: 'f.jpg', createdAt: now() }),
       put('videos/v1', { eventId: 'e1', userId: 'guest1', url: 'u', filename: 'f.mp4', createdAt: now() }),
       put('guestbook/gb1', { eventId: 'e1', userId: 'guest1', displayName: 'Gus', type: 'text', createdAt: now() }),
@@ -378,6 +384,87 @@ for (const mode of loadModes()) {
         await assertFails(addDoc(collection(anon, 'affiliates'), { code: 'X' }));
         await assertFails(addDoc(collection(anon, 'affiliateSales'), validSale()));
         await assertFails(addDoc(collection(anon, 'payouts'), { amount: 1 }));
+      });
+    });
+
+    /* ------------------------------------------------------------------ */
+    describe('events: only real hosts with a plan create; owners cannot touch plan/ownership', () => {
+      // Mirrors the event object built in CreateEvent.js.
+      const newEvent = (uid, over = {}) => ({
+        category: 'Wedding',
+        dateOfEvent: Timestamp.fromDate(new Date('2027-06-01')),
+        eventName: 'Our Day',
+        eventPageHeader: 'Welcome',
+        featureImage: 'https://example.test/cover.jpg',
+        location: 'Toronto',
+        shareGuestbook: true,
+        sharePictures: true,
+        siteCloses: Timestamp.fromMillis(Date.now() + 365 * 86400000),
+        siteStatus: 'Live',
+        welcomeMessage: 'Hi',
+        guestList: [],
+        createdBy: { displayName: 'Host', photoUrl: null, id: uid },
+        adminId: uid,
+        plan: 'No Plan',
+        amount: 0,
+        guestBook: [],
+        isPublic: true,
+        createdAt: now(),
+        ...over,
+      });
+      const as = (uid, token) => env.authenticatedContext(uid, token).firestore();
+
+      it('host with a plan CAN create an event (CreateEvent.js payload)', async () => {
+        await assertSucceeds(addDoc(collection(as('bob'), 'events'), newEvent('bob')));
+      });
+      it('signed-in user without a plan cannot create an event', async () => {
+        await assertFails(addDoc(collection(alice, 'events'), newEvent('alice')));
+        await assertFails(addDoc(collection(newbie, 'events'), newEvent('newbie')));
+      });
+      it('invite-link guest (anonymous sign-in) cannot create an event, even with plan fields', async () => {
+        const anonToken = { firebase: { sign_in_provider: 'anonymous' } };
+        await assertFails(addDoc(collection(as('guest1', anonToken), 'events'), newEvent('guest1')));
+        await assertFails(addDoc(collection(as('anonhost', anonToken), 'events'), newEvent('anonhost')));
+        await assertFails(addDoc(collection(anon, 'events'), newEvent('nobody')));
+      });
+      it('a planId that points at no product does not count as a plan', async () => {
+        await assertFails(addDoc(collection(as('carl'), 'events'), newEvent('carl')));
+      });
+      it('cannot create an event owned by someone else or with a long-lived site', async () => {
+        const bob = as('bob');
+        await assertFails(addDoc(collection(bob, 'events'), newEvent('bob', { adminId: 'alice' })));
+        await assertFails(addDoc(collection(bob, 'events'), newEvent('bob', { createdBy: { id: 'alice' } })));
+        await assertFails(addDoc(collection(bob, 'events'), newEvent('bob', { ownerId: 'alice' })));
+        await assertFails(addDoc(collection(bob, 'events'), newEvent('bob', {
+          siteCloses: Timestamp.fromMillis(Date.now() + 5 * 365 * 86400000),
+        })));
+      });
+      it('owner CAN edit content (EditEvent.js), soft-delete (Event.js) and remove guestbook comments', async () => {
+        await assertSucceeds(updateDoc(doc(olivia, 'events/e1'), {
+          eventName: 'Our Wedding', eventPageHeader: 'Hello', welcomeMessage: 'Welcome all',
+          featureImage: 'https://example.test/new.jpg', category: 'Wedding',
+          dateOfEvent: Timestamp.fromDate(new Date('2027-07-01')), location: 'Ottawa',
+          sharePictures: false, shareGuestbook: true,
+        }));
+        await assertSucceeds(updateDoc(doc(olivia, 'events/e1'), { guestBook: [] }));
+        await assertSucceeds(updateDoc(doc(olivia, 'events/e1'), {
+          deleted: true, deletedAt: new Date(), deletedBy: 'olivia',
+        }));
+      });
+      it('owner cannot change plan, amount, ownership, close date or creation time', async () => {
+        const e1 = doc(olivia, 'events/e1');
+        await assertFails(updateDoc(e1, { plan: 'Max' }));
+        await assertFails(updateDoc(e1, { amount: 165 }));
+        await assertFails(updateDoc(e1, { adminId: 'alice' }));
+        await assertFails(updateDoc(e1, { ownerId: 'alice' }));
+        await assertFails(updateDoc(e1, { createdBy: { id: 'alice' } }));
+        await assertFails(updateDoc(e1, { siteCloses: Timestamp.fromMillis(Date.now() + 10 * 365 * 86400000) }));
+        await assertFails(updateDoc(e1, { createdAt: now() }));
+      });
+      it('only the owner can delete the event', async () => {
+        await assertFails(deleteDoc(doc(alice, 'events/e1')));
+        await assertFails(deleteDoc(doc(guest, 'events/e1')));
+        await assertSucceeds(deleteDoc(doc(olivia, 'events/e1')));
       });
     });
 
